@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Luxury Jewelry Theme Design System
+All colors are carefully crafted for an elegant, luxurious jewelry experience.
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base luxury pearl and cream tones */
+    --background: 48 20% 98%;
+    --foreground: 25 25% 15%;
+
+    /* Card styling with subtle warmth */
+    --card: 48 30% 96%;
+    --card-foreground: 25 25% 15%;
+
+    /* Popover with slight golden tint */
+    --popover: 48 25% 97%;
+    --popover-foreground: 25 25% 15%;
+
+    /* Primary: Deep champagne gold */
+    --primary: 38 35% 25%;
+    --primary-foreground: 48 25% 98%;
+
+    /* Secondary: Warm rose gold */
+    --secondary: 15 25% 85%;
+    --secondary-foreground: 25 35% 20%;
+
+    /* Muted: Soft pearl tones */
+    --muted: 45 15% 92%;
+    --muted-foreground: 25 15% 45%;
+
+    /* Accent: Elegant champagne */
+    --accent: 38 45% 88%;
+    --accent-foreground: 25 35% 20%;
+
+    /* Destructive: Refined error state */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 48 25% 98%;
+
+    /* Borders and inputs with warm undertones */
+    --border: 45 20% 88%;
+    --input: 45 20% 90%;
+    --ring: 38 35% 25%;
+
+    /* Luxury curved borders */
+    --radius: 0.75rem;
+
+    /* Sidebar luxury styling */
+    --sidebar-background: 48 25% 97%;
+    --sidebar-foreground: 25 25% 20%;
+    --sidebar-primary: 38 35% 25%;
+    --sidebar-primary-foreground: 48 25% 98%;
+    --sidebar-accent: 45 20% 92%;
+    --sidebar-accent-foreground: 25 25% 20%;
+    --sidebar-border: 45 20% 88%;
+    --sidebar-ring: 38 35% 25%;
+
+    /* Luxury gradients */
+    --gradient-luxury: linear-gradient(135deg, hsl(38 45% 88%) 0%, hsl(48 35% 92%) 50%, hsl(15 25% 90%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(38 35% 25%) 0%, hsl(45 40% 35%) 100%);
+    --gradient-pearl: linear-gradient(180deg, hsl(48 30% 96%) 0%, hsl(45 20% 92%) 100%);
+    
+    /* Luxury shadows */
+    --shadow-luxury: 0 10px 40px -10px hsl(38 35% 25% / 0.15);
+    --shadow-gold: 0 8px 32px -8px hsl(38 45% 35% / 0.2);
+    --shadow-elegant: 0 4px 24px -4px hsl(25 25% 15% / 0.08);
+    
+    /* Elegant transitions */
+    --transition-luxury: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .dark {
+    /* Dark mode: Sophisticated midnight with gold accents */
+    --background: 25 25% 8%;
+    --foreground: 48 25% 92%;
+
+    --card: 25 25% 10%;
+    --card-foreground: 48 25% 92%;
+
+    --popover: 25 25% 9%;
+    --popover-foreground: 48 25% 92%;
+
+    /* Primary: Bright gold for dark mode */
+    --primary: 45 85% 65%;
+    --primary-foreground: 25 25% 8%;
+
+    /* Secondary: Warm rose gold */
+    --secondary: 25 25% 15%;
+    --secondary-foreground: 48 25% 92%;
+
+    /* Muted: Sophisticated grays */
+    --muted: 25 15% 18%;
+    --muted-foreground: 45 10% 65%;
+
+    /* Accent: Elegant gold highlight */
+    --accent: 38 45% 75%;
+    --accent-foreground: 25 25% 8%;
+
+    /* Destructive: Refined error for dark */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 48 25% 92%;
+
+    --border: 25 20% 20%;
+    --input: 25 20% 18%;
+    --ring: 45 85% 65%;
+
+    /* Dark sidebar */
+    --sidebar-background: 25 25% 8%;
+    --sidebar-foreground: 48 25% 92%;
+    --sidebar-primary: 45 85% 65%;
+    --sidebar-primary-foreground: 25 25% 8%;
+    --sidebar-accent: 25 25% 15%;
+    --sidebar-accent-foreground: 48 25% 92%;
+    --sidebar-border: 25 20% 20%;
+    --sidebar-ring: 45 85% 65%;
+
+    /* Dark mode gradients */
+    --gradient-luxury: linear-gradient(135deg, hsl(25 25% 10%) 0%, hsl(25 20% 15%) 50%, hsl(38 30% 12%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45 85% 65%) 0%, hsl(38 75% 55%) 100%);
+    --gradient-pearl: linear-gradient(180deg, hsl(25 25% 10%) 0%, hsl(25 20% 12%) 100%);
+    
+    /* Dark shadows with gold glow */
+    --shadow-luxury: 0 10px 40px -10px hsl(45 85% 65% / 0.2);
+    --shadow-gold: 0 8px 32px -8px hsl(45 85% 65% / 0.25);
+    --shadow-elegant: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    @apply font-medium;
+  }
+
+  /* Luxury typography classes */
+  .font-luxury {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-luxury {
+    background: var(--gradient-luxury);
+  }
+
+  .bg-gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .bg-gradient-pearl {
+    background: var(--gradient-pearl);
+  }
+
+  /* Luxury shadows */
+  .shadow-luxury {
+    box-shadow: var(--shadow-luxury);
+  }
+
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  /* Smooth transitions */
+  .transition-luxury {
+    transition: var(--transition-luxury);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+}
