@@ -9,8 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/services/auth";
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,11 +28,41 @@ const Register = () => {
     agreeToTerms: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle registration logic here
-    console.log("Registration attempt:", formData);
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Check if passwords match
+  if (formData.password !== formData.confirmPassword) {
+    toast({
+      title: "Password Mismatch",
+      description: "Passwords do not match. Please try again.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  try {
+    await register({
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      password: formData.password,
+    });
+
+    navigate("/");
+    toast({
+      title: "Account Created Successfully!",
+      description: "Welcome! You are now logged in.",
+    });
+  } catch (error: any) {
+    console.error("Registration failed:", error);
+    toast({
+      title: "Registration Failed",
+      description: error.response?.data?.message || "Registration failed. Please try again.",
+      variant: "destructive"
+    });
+  }
+};
+
 
   const updateFormData = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -156,20 +192,17 @@ const Register = () => {
               <Separator className="my-4" />
               <div className="text-center">
                 <span className="text-sm text-muted-foreground">
-                  Or continue with
+                  Or
                 </span>
               </div>
               <div className="mt-4 space-y-2">
                 <Button variant="outline" className="w-full">
                   Continue with Google
                 </Button>
-                <Button variant="outline" className="w-full">
-                  Continue with Facebook
-                </Button>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="text-center">
+          <CardFooter className="flex justify-center text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link to="/login" className="text-primary hover:underline">
