@@ -15,6 +15,9 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'user' },
   isVerified: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
+  // Google OAuth fields
+  googleId: { type: String, unique: true, sparse: true },
+  profilePicture: { type: String },
   // Additional fields for user dashboard
   totalOrders: { type: Number, default: 0 },
   totalSpent: { type: Number, default: 0 },

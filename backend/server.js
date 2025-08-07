@@ -2,7 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('./models/user');
+const validator = require('validator');
 require('dotenv').config();
 
 const app = express();
@@ -18,6 +20,10 @@ app.use(express.json());
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+// Google OAuth Configuration
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // JWT Middleware to verify token
 const authenticateToken = (req, res, next) => {
@@ -52,6 +58,28 @@ const generateToken = (user) => {
   };
 
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
+
+// Helper function to verify Google token
+const verifyGoogleToken = async (token) => {
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    return {
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      emailVerified: payload.email_verified
+    };
+  } catch (error) {
+    console.error('Google token verification failed:', error);
+    throw new Error('Invalid Google token');
+  }
 };
 
 const PORT = process.env.PORT || 3000;
@@ -152,6 +180,69 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Google OAuth Login/Register endpoint
+app.post('/api/auth/google', async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ message: 'Google token is required' });
+  }
+
+  try {
+    // Verify Google token
+    const googleUser = await verifyGoogleToken(token);
+
+    // Check if user already exists
+    let user = await User.findOne({ email: googleUser.email });
+
+    if (user) {
+      // User exists - login
+      // Update Google ID if not set
+      if (!user.googleId) {
+        user.googleId = googleUser.googleId;
+        await user.save();
+      }
+    } else {
+      // User doesn't exist - register
+      user = new User({
+        name: googleUser.name,
+        email: googleUser.email,
+        googleId: googleUser.googleId,
+        isVerified: googleUser.emailVerified,
+        password: 'google-oauth-user', // Placeholder password for Google users
+        profilePicture: googleUser.picture
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token
+    const jwtToken = generateToken(user);
+
+    res.json({
+      message: user.isNew ? 'Registration successful' : 'Login successful',
+      token: jwtToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        totalOrders: user.totalOrders,
+        totalSpent: user.totalSpent,
+        loyaltyPoints: user.loyaltyPoints,
+        profilePicture: user.profilePicture
+      }
+    });
+
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    res.status(401).json({ message: 'Google authentication failed' });
+  }
+});
+
 // Logout endpoint (with JWT, logout is handled client-side by removing token)
 
 // Get current user endpoint (protected route)

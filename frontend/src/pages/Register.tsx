@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -12,11 +12,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/services/auth";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,6 +28,45 @@ const Register = () => {
     confirmPassword: "",
     agreeToTerms: false
   });
+
+  // Google OAuth configuration
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+  const { isLoaded, initializeGoogleAuth } = useGoogleAuth({
+    clientId,
+    onSuccess: async (credential) => {
+      try {
+        await googleLogin(credential);
+        toast({
+          title: "Registration Successful!",
+          description: "Welcome! You are now logged in.",
+        });
+        navigate("/");
+      } catch (error: any) {
+        console.error("Google registration failed:", error);
+        toast({
+          title: "Google Registration Failed",
+          description: error.response?.data?.message || "Google registration failed. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      console.error("Google Auth Error:", error);
+      toast({
+        title: "Google Registration Error",
+        description: "Failed to initialize Google registration. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Initialize Google Auth when component mounts and Google script is loaded
+  useEffect(() => {
+    if (isLoaded && clientId) {
+      initializeGoogleAuth('google-register-button');
+    }
+  }, [isLoaded, clientId, initializeGoogleAuth]);
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -196,9 +236,21 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </span>
               </div>
               <div className="mt-4 space-y-2">
-                <Button variant="outline" className="w-full">
-                  Continue with Google
-                </Button>
+                {/* Google OAuth Button */}
+                <div id="google-register-button" className="w-full">
+                  {/* Google button will be rendered here */}
+                </div>
+
+                {/* Fallback button if Google script doesn't load */}
+                {!isLoaded && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={true}
+                  >
+                    Loading Google Sign-In...
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>

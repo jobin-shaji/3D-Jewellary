@@ -11,6 +11,8 @@ export interface User {
   role?: string;
   isVerified?: boolean;
   createdAt?: string;
+  googleId?: string;
+  profilePicture?: string;
   totalOrders?: number;
   totalSpent?: number;
   loyaltyPoints?: number;
@@ -153,6 +155,23 @@ const authService = {
   // Check if user is logged in
   isLoggedIn(): boolean {
     return !!(getToken() && this.getUserFromStorage());
+  },
+
+  // Google OAuth login/register
+  async googleAuth(googleToken: string): Promise<AuthResponse> {
+    const response = await axios.post(`${API_URL}/auth/google`, {
+      token: googleToken,
+    });
+
+    // Store token and user data
+    if (response.data.token) {
+      setToken(response.data.token);
+    }
+    if (response.data.user) {
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+    }
+
+    return response.data;
   }
 };
 
@@ -164,6 +183,7 @@ interface AuthContextType {
   register: (userData: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  googleLogin: (googleToken: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -240,6 +260,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const googleLogin = async (googleToken: string) => {
+    try {
+      const response = await authService.googleAuth(googleToken);
+      setUser(response.user);
+      setIsLoggedIn(true);
+    } catch (error) {
+      setUser(null);
+      setIsLoggedIn(false);
+      throw error; // Re-throw to handle in component
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoggedIn,
@@ -248,6 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     checkAuth,
+    googleLogin,
   };
 
   return (

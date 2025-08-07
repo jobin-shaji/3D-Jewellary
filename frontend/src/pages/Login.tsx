@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -18,15 +18,58 @@ import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/services/auth";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 const Login = () => {
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+  // Google OAuth configuration
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+  const { isLoaded, initializeGoogleAuth } = useGoogleAuth({
+    clientId,
+    onSuccess: async (credential) => {
+      setIsLoading(true);
+      try {
+        await googleLogin(credential);
+        toast({
+          title: "Login Successful!",
+          description: "Welcome back! Redirecting to dashboard...",
+        });
+        navigate("/");
+      } catch (error: any) {
+        console.error("Google login failed:", error);
+        toast({
+          title: "Google Login Failed",
+          description: error.response?.data?.message || "Google login failed. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error("Google Auth Error:", error);
+      toast({
+        title: "Google Login Error",
+        description: "Failed to initialize Google login. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Initialize Google Auth when component mounts and Google script is loaded
+  useEffect(() => {
+    if (isLoaded && clientId) {
+      initializeGoogleAuth('google-login-button');
+    }
+  }, [isLoaded, clientId, initializeGoogleAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,13 +203,21 @@ const Login = () => {
                 <span className="text-sm text-muted-foreground">Or</span>
               </div>
               <div className="mt-4 space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  Continue with Google
-                </Button>
+                {/* Google OAuth Button */}
+                <div id="google-login-button" className="w-full">
+                  {/* Google button will be rendered here */}
+                </div>
+
+                {/* Fallback button if Google script doesn't load */}
+                {!isLoaded && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={true}
+                  >
+                    Loading Google Sign-In...
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
