@@ -77,7 +77,7 @@ const verifyGoogleToken = async (token) => {
       emailVerified: payload.email_verified
     };
   } catch (error) {
-    console.error('Google token verification failed:', error);
+    console.error('Google token verification failed:', error.message);
     throw new Error('Invalid Google token');
   }
 };
@@ -187,6 +187,10 @@ app.post('/api/auth/google', async (req, res) => {
 
   if (!token) {
     return res.status(400).json({ message: 'Google token is required' });
+  }
+
+  if (!GOOGLE_CLIENT_ID) {
+    return res.status(500).json({ message: 'Google OAuth not configured' });
   }
 
   try {

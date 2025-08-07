@@ -67,7 +67,6 @@ export const useGoogleAuth = ({ clientId, onSuccess, onError }: GoogleAuthConfig
         {
           theme: 'outline',
           size: 'large',
-          width: '100%',
           text: 'continue_with',
           shape: 'rectangular',
         }

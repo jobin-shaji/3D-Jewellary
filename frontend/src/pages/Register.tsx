@@ -20,6 +20,7 @@ const Register = () => {
   const { register, googleLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -81,6 +82,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
+  setIsLoading(true);
   try {
     await register({
       name: `${formData.firstName} ${formData.lastName}`,
@@ -100,6 +102,8 @@ const handleSubmit = async (e: React.FormEvent) => {
       description: error.response?.data?.message || "Registration failed. Please try again.",
       variant: "destructive"
     });
+  } finally {
+    setIsLoading(false);
   }
 };
 
