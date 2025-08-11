@@ -1,3 +1,4 @@
+import { max } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 declare global {
@@ -69,6 +70,7 @@ export const useGoogleAuth = ({ clientId, onSuccess, onError }: GoogleAuthConfig
           size: 'large',
           text: 'continue_with',
           shape: 'rectangular',
+          width: '500px'  ,
         }
       );
     } catch (error) {

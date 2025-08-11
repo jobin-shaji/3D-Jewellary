@@ -1,10 +1,12 @@
+
+const validator = require('validator');
+const bcrypt = require('bcrypt');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('./models/user');
-const validator = require('validator');
 require('dotenv').config();
 
 const app = express();
@@ -12,8 +14,18 @@ const app = express();
 // Configure CORS
 app.use(cors({
   origin: ['http://localhost:8080', 'http://localhost:8081'], // Frontend URLs (change in production)
-  credentials: false // No need for cookies with JWT
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Cross-Origin-Opener-Policy', 'Cross-Origin-Embedder-Policy']
 }));
+
+// Add these headers for Google OAuth
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  next();
+});
 
 app.use(express.json());
 
@@ -63,21 +75,21 @@ const generateToken = (user) => {
 // Helper function to verify Google token
 const verifyGoogleToken = async (token) => {
   try {
+    console.log('🔍 BACKEND: Verifying Google token with Google servers...');
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
       audience: GOOGLE_CLIENT_ID,
     });
+    console.log('✅ BACKEND: Google token verified successfully by Google!');
 
     const payload = ticket.getPayload();
     return {
-      googleId: payload.sub,
       email: payload.email,
       name: payload.name,
-      picture: payload.picture,
       emailVerified: payload.email_verified
     };
   } catch (error) {
-    console.error('Google token verification failed:', error.message);
+    console.error('❌ BACKEND: Google token verification FAILED:', error.message);
     throw new Error('Invalid Google token');
   }
 };
@@ -95,7 +107,7 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Register endpoint (no bcrypt)
+// Register endpoint
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -109,12 +121,11 @@ app.post('/api/register', async (req, res) => {
       return res.status(409).json({ message: "User already exists" });
     }
 
-    // Save new user (password should be hashed in real implementation)
+    const hashedPassword = await bcrypt.hash(password, 10); // Hash the password with bcrypt
     const newUser = new User({
       name,
       email,
-      password
-      // id, isVerified, role, createdAt, etc. are automatically set by the schema defaults
+      password: hashedPassword,
     });
 
     await newUser.save();
@@ -143,16 +154,17 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login endpoint (no bcrypt)
+// Login endpoint
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) { 
+    if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
-    else if (user.password !== password) {
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
@@ -202,9 +214,9 @@ app.post('/api/auth/google', async (req, res) => {
 
     if (user) {
       // User exists - login
-      // Update Google ID if not set
-      if (!user.googleId) {
-        user.googleId = googleUser.googleId;
+      // Update verification status if needed
+      if (!user.isVerified && googleUser.emailVerified) {
+        user.isVerified = true;
         await user.save();
       }
     } else {
@@ -212,10 +224,8 @@ app.post('/api/auth/google', async (req, res) => {
       user = new User({
         name: googleUser.name,
         email: googleUser.email,
-        googleId: googleUser.googleId,
         isVerified: googleUser.emailVerified,
-        password: 'google-oauth-user', // Placeholder password for Google users
-        profilePicture: googleUser.picture
+        password: 'google-oauth-user' // Placeholder password for Google users
       });
 
       await user.save();
@@ -236,8 +246,7 @@ app.post('/api/auth/google', async (req, res) => {
         createdAt: user.createdAt,
         totalOrders: user.totalOrders,
         totalSpent: user.totalSpent,
-        loyaltyPoints: user.loyaltyPoints,
-        profilePicture: user.profilePicture
+        loyaltyPoints: user.loyaltyPoints
       }
     });
 

@@ -204,7 +204,7 @@ const Login = () => {
               </div>
               <div className="mt-4 space-y-2">
                 {/* Google OAuth Button */}
-                <div id="google-login-button" className="w-full"style={{ minWidth: 300 }}>
+                <div id="google-login-button" className="w-full">
                   {/* Google button will be rendered here */}
                 </div>
 
