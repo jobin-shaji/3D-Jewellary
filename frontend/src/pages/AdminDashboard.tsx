@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -22,10 +22,22 @@ import {
   TrendingUp,
   Eye
 } from "lucide-react";
+import { useAuth } from "@/services/auth";
 
 const AdminDashboard = () => {
+  const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    if (!isLoggedIn || user?.role !== 'admin') {
+      navigate('/login');
+    }
+  }, [isLoggedIn, user, navigate]);
+
+  if (!isLoggedIn || user?.role !== 'admin') {
+    return null;
+  }
 
   // Mock data
   const stats = {

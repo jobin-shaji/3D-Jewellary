@@ -22,7 +22,7 @@ import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 const Login = () => {
   const { toast } = useToast();
-  const { login, googleLogin } = useAuth();
+  const { login, googleLogin, user } = useAuth(); // Get user from context
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -40,7 +40,7 @@ const Login = () => {
         await googleLogin(credential);
         toast({
           title: "Login Successful!",
-          description: "Welcome back! Redirecting to dashboard...",
+          description: "Welcome back! Redirecting to homepage...",
         });
         navigate("/");
       } catch (error: any) {
@@ -77,14 +77,15 @@ const Login = () => {
 
     try {
       await login(email, password);
-
+      
       toast({
         title: "Login Successful!",
-        description: "Welcome back! Redirecting to dashboard...",
+        description: "Welcome back! Redirecting to homepage...",
       });
-
-      // Navigate to dashboard or home page
+      
+      // Just redirect to homepage like Google login
       navigate("/");
+      
     } catch (error: any) {
       console.error("Login failed:", error);
 

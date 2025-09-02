@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -23,6 +24,7 @@ import {
   Package,
 } from "lucide-react";
 import { useAuth } from "@/services/auth";
+
 import { useToast } from "@/hooks/use-toast";
 
 export const Header = () => {
@@ -66,30 +68,50 @@ export const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Diamond className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">LuxeJewels</span>
+            <span className="text-2xl font-bold text-foreground">
+              LuxeJewels
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
-            <Link to="/products" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link
+              to="/products"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
               All
             </Link>
-            <Link to="/products?category=rings" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link
+              to="/products?category=rings"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
               Rings
             </Link>
-            <Link to="/products?category=necklaces" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link
+              to="/products?category=necklaces"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
               Necklaces
             </Link>
-            <Link to="/products?category=earrings" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link
+              to="/products?category=earrings"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
               Earrings
             </Link>
-            <Link to="/products?category=bracelets" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link
+              to="/products?category=bracelets"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
               Bracelets
             </Link>
           </nav>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center space-x-2 max-w-sm p-2">
+          <form
+            onSubmit={handleSearch}
+            className="hidden md:flex items-center space-x-2 max-w-sm p-2"
+          >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -123,7 +145,10 @@ export const Header = () => {
                 <Link to="/cart">
                   <ShoppingCart className="h-5 w-5" />
                   {cartItemsCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
                       {cartItemsCount}
                     </Badge>
                   )}
@@ -143,32 +168,58 @@ export const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">Welcome back, {user?.name}!</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-medium">
+                      Welcome back, {user?.name}!
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.email}
+                    </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/dashboard">
-                      <User className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
+
+                  {/* Conditional menu items based on user role */}
+                  {user?.role === "admin" ? (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/orders">
+                          <Package className="mr-2 h-4 w-4" />
+                          <span>My Orders</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/wishlist">
+                          <Heart className="mr-2 h-4 w-4" />
+                          <span>Wishlist</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+
                   <DropdownMenuItem asChild>
                     <Link to="/profile">
                       <Settings className="mr-2 h-4 w-4" />
-                      Profile Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/orders">
-                      <Package className="mr-2 h-4 w-4" />
-                      My Orders
+                      <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -211,16 +262,28 @@ export const Header = () => {
                     <Link to="/products" className="text-lg font-medium">
                       All
                     </Link>
-                    <Link to="/products?category=rings" className="text-lg font-medium">
+                    <Link
+                      to="/products?category=rings"
+                      className="text-lg font-medium"
+                    >
                       Rings
                     </Link>
-                    <Link to="/products?category=necklaces" className="text-lg font-medium">
+                    <Link
+                      to="/products?category=necklaces"
+                      className="text-lg font-medium"
+                    >
                       Necklaces
                     </Link>
-                    <Link to="/products?category=earrings" className="text-lg font-medium">
+                    <Link
+                      to="/products?category=earrings"
+                      className="text-lg font-medium"
+                    >
                       Earrings
                     </Link>
-                    <Link to="/products?category=bracelets" className="text-lg font-medium">
+                    <Link
+                      to="/products?category=bracelets"
+                      className="text-lg font-medium"
+                    >
                       Bracelets
                     </Link>
                   </nav>
@@ -228,25 +291,41 @@ export const Header = () => {
                   {/* Mobile User Actions - Only show when logged in */}
                   {isLoggedIn && (
                     <div className="flex flex-col space-y-2 pt-4 border-t">
-                      <Button variant="outline" className="justify-start" asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start"
+                        asChild
+                      >
                         <Link to="/wishlist">
                           <Heart className="mr-2 h-4 w-4" />
                           Wishlist
                         </Link>
                       </Button>
-                      <Button variant="outline" className="justify-start" asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start"
+                        asChild
+                      >
                         <Link to="/cart">
                           <ShoppingCart className="mr-2 h-4 w-4" />
                           Cart {cartItemsCount > 0 && `(${cartItemsCount})`}
                         </Link>
                       </Button>
-                      <Button variant="outline" className="justify-start" asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start"
+                        asChild
+                      >
                         <Link to="/dashboard">
                           <User className="mr-2 h-4 w-4" />
                           Dashboard
                         </Link>
                       </Button>
-                      <Button variant="outline" className="justify-start" onClick={handleLogout}>
+                      <Button
+                        variant="outline"
+                        className="justify-start"
+                        onClick={handleLogout}
+                      >
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout
                       </Button>
@@ -273,3 +352,5 @@ export const Header = () => {
     </header>
   );
 };
+
+export default Header;

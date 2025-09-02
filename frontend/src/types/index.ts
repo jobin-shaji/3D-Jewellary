@@ -1,13 +1,13 @@
-export interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone?: string;
-  role: 'customer' | 'admin';
-  created_at: string;
-  updated_at: string;
-}
+// export interface User {
+//   id: number;
+//   email: string;
+//   first_name: string;
+//   last_name: string;
+//   phone?: string;
+//   role: 'customer' | 'admin';
+//   created_at: string;
+//   updated_at: string;
+// }
 
 export interface Category {
   id: number;
@@ -36,10 +36,10 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
-  compare_price?: number;
+  // compare_price?: number;
   category_id: number;
   category?: Category;
-  sku?: string;
+  // sku?: string;
   stock_quantity: number;
   weight?: number;
   dimensions?: {
@@ -52,7 +52,7 @@ export interface Product {
   metal_type?: string;
   metal_purity?: string;
   is_active: boolean;
-  featured: boolean;
+  // featured: boolean;
   model_3d_url?: string;
   images: ProductImage[];
   customizations?: ProductCustomization[];
@@ -122,44 +122,21 @@ export interface OrderItem {
   created_at: string;
 }
 
-export interface Order {
-  id: number;
-  user_id: number;
-  order_number: string;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  total_amount: number;
-  tax_amount: number;
-  shipping_amount: number;
-  shipping_address: Address;
-  billing_address: Address;
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
-  payment_method?: string;
-  payment_id?: string;
-  notes?: string;
-  items: OrderItem[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProductFilters {
-  category_id?: number;
-  search?: string;
-  min_price?: number;
-  max_price?: number;
-  material?: string;
-  gemstone?: string;
-  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
-}
-
-export interface PaginationParams {
-  page: number;
-  limit: number;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// export interface Order {
+//   id: number;
+//   user_id: number;
+//   order_number: string;
+//   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+//   total_amount: number;
+//   tax_amount: number;
+//   shipping_amount: number;
+//   shipping_address: Address;
+//   billing_address: Address;
+//   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+//   payment_method?: string;
+//   payment_id?: string;
+//   notes?: string;
+//   items: OrderItem[];
+//   created_at: string;
+//   updated_at: string;
+// }
