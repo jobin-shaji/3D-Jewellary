@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -19,11 +19,14 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Plus, X, Upload, Image, Box } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProductCustomization } from "@/types";
+import { useAuth } from "@/services/auth";
+import { Loader2 } from "lucide-react";
 
 const ProductManagement = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const isEdit = !!id;
 
   // Mock product data for editing
@@ -83,6 +86,10 @@ const ProductManagement = () => {
   const [model3DPreview, setModel3DPreview] = useState<string>("");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
+  // Add state for loading and categories
+  const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+
   const handleInputChange = (
     field: string,
     value: string | number | boolean
@@ -137,11 +144,213 @@ const ProductManagement = () => {
     setCustomizations(customizations.filter((c) => c.id !== id));
   };
 
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
+  // Update the fetchCategories function with more detailed logging
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        console.log('🔄 Fetching categories...');
+        const response = await fetch('http://localhost:3000/api/categories');
+        console.log('📡 Categories response status:', response.status);
+        console.log('📡 Categories response headers:', response.headers);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Categories fetch failed:', response.status, response.statusText);
+          console.error('❌ Error response body:', errorText);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('📦 Categories data received:', data);
+        console.log('📊 Number of categories:', data.length);
+        console.log('📋 Categories structure:', data[0]); // Log first category structure
+        
+        setCategories(data);
+      } catch (error) {
+        console.error('❌ Failed to fetch categories:', error);
+      }
+    };
 
-  //   // Mock save functionality
-  //   console.log("Saving product:", { ...formData, customizations });
+    fetchCategories();
+  }, []);
+
+  // Add this function to create default categories
+  const createDefaultCategories = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/setup/categories', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        // Refresh categories
+        const categoriesResponse = await fetch('http://localhost:3000/api/categories');
+        const data = await categoriesResponse.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Failed to create default categories:', error);
+    }
+  };
+
+  // Replace the handleSubmit function
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please login again.",
+          variant: "destructive",
+        });
+        navigate('/login');
+        return;
+      }
+
+      // Check if user is admin before proceeding
+      if (!user || user.role !== 'admin') {
+        toast({
+          title: "Access Denied",
+          description: "Admin access required.",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
+        return;
+      }
+
+      // First, create the product
+      const productData = {
+        name: formData.name,
+        price: Number(formData.price),
+        category_id: Number(formData.category),
+        description: formData.description,
+        is_active: formData.inStock,
+        specifications: {
+          Material: formData.material,
+          "Diamond Weight": formData.weight,
+          "Diamond Cut": formData.cut,
+          "Diamond Color": formData.color,
+          "Diamond Clarity": formData.clarity,
+          "Ring Size": formData.size,
+          Certification: formData.certification,
+        },
+        customizations: customizations,
+      };
+
+      console.log('Creating product with data:', productData);
+      console.log('Using token:', token ? 'Token present' : 'No token');
+
+      const response = await fetch('http://localhost:3000/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Make sure Bearer is included
+        },
+        body: JSON.stringify(productData),
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || 'Failed to create product');
+      }
+
+      const createdProduct = await response.json();
+      const productId = createdProduct.product.id;
+
+      // Upload images if any
+      if (imageFiles.length > 0) {
+        try {
+          const formData = new FormData();
+          imageFiles.forEach((file) => {
+            formData.append('images', file);
+          });
+
+          console.log('🖼️ Uploading images for product:', productId);
+          console.log('📁 Number of images:', imageFiles.length);
+
+          const imageResponse = await fetch(`http://localhost:3000/api/products/${productId}/images/bulk`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          console.log('📷 Image upload response status:', imageResponse.status);
+
+          if (!imageResponse.ok) {
+            const errorData = await imageResponse.json();
+            console.error('❌ Image upload failed:', errorData);
+            toast({
+              title: "Warning",
+              description: `Product created but image upload failed: ${errorData.message}`,
+              variant: "destructive",
+            });
+          } else {
+            const imageData = await imageResponse.json();
+            console.log('✅ Images uploaded successfully:', imageData);
+            toast({
+              title: "Images Uploaded",
+              description: `${imageData.images.length} images uploaded successfully.`,
+            });
+          }
+        } catch (imageError) {
+          console.error('❌ Image upload error:', imageError);
+          toast({
+            title: "Warning",
+            description: "Product created but image upload failed.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Upload 3D model if any
+      if (model3DFile) {
+        const modelFormData = new FormData();
+        modelFormData.append('model', model3DFile);
+
+        const modelResponse = await fetch(`http://localhost:3000/api/products/${productId}/model`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: modelFormData,
+        });
+
+        if (!modelResponse.ok) {
+          console.error('Failed to upload 3D model');
+        }
+      }
+
+      toast({
+        title: "Product Created",
+        description: `${productData.name} has been created successfully.`,
+      });
+
+      navigate("/admin");
+
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create product. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // File upload handlers
   const handle3DModelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,26 +385,37 @@ const ProductManagement = () => {
     setModel3DPreview("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Protect admin route
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    if (user.role !== 'admin') {
+      toast({
+        title: "Access Denied",
+        description: "Admin access required.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+      return;
+    }
+  }, [user, navigate]);
 
-    // Mock save functionality
-    console.log("Saving product:", {
-      ...formData,
-      customizations,
-      model3DFile: model3DFile?.name,
-      imageFiles: imageFiles.map((f) => f.name),
-    });
+  // Add this debugging section right after your state declarations
+  useEffect(() => {
+    console.log('🔍 ProductManagement Debug Info:');
+    console.log('- User:', user);
+    console.log('- Categories:', categories);
+    console.log('- Categories length:', categories?.length);
+    console.log('- Backend URL:', 'http://localhost:3000/api/categories');
+  }, [user, categories]);
 
-    toast({
-      title: isEdit ? "Product Updated" : "Product Created",
-      description: `${formData.name} has been ${
-        isEdit ? "updated" : "created"
-      } successfully.`,
-    });
-
-    navigate("/admin");
-  };
+  // Don't render if not admin
+  if (!user || user.role !== 'admin') {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -209,6 +429,16 @@ const ProductManagement = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Admin Dashboard
         </Button>
+
+        {/* Add this button after the "Back to Admin Dashboard" button for testing */}
+        {categories.length === 0 && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 mb-2">No categories found. Create default categories first:</p>
+            <Button onClick={createDefaultCategories} variant="outline">
+              Create Default Categories
+            </Button>
+          </div>
+        )}
 
         <div className="max-w-4xl mx-auto">
           <Card>
@@ -252,11 +482,17 @@ const ProductManagement = () => {
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="rings">Rings</SelectItem>
-                        <SelectItem value="necklaces">Necklaces</SelectItem>
-                        <SelectItem value="earrings">Earrings</SelectItem>
-                        <SelectItem value="bracelets">Bracelets</SelectItem>
-                        <SelectItem value="watches">Watches</SelectItem>
+                        {categories.length > 0 ? (
+                          categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-categories" disabled>
+                            No categories available
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -711,9 +947,18 @@ const ProductManagement = () => {
 
                 {/* Submit Button */}
                 <div className="flex justify-end pt-6 border-t">
-                  <Button type="submit" className="w-full md:w-auto">
-                    <Save className="h-4 w-4 mr-2" />
-                    {isEdit ? "Update Product" : "Create Product"}
+                  <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating Product...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        {isEdit ? "Update Product" : "Create Product"}
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

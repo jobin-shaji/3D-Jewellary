@@ -76,45 +76,28 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      console.log('🔄 Login form submitted...');
+      const response = await login(email, password);
+      console.log('✅ Login response:', response);
+      
+      // Check if token was actually saved
+      const savedToken = localStorage.getItem('token');
+      console.log('🔍 Token check after login:', savedToken ? 'SAVED' : 'NOT SAVED');
       
       toast({
         title: "Login Successful!",
         description: "Welcome back! Redirecting to homepage...",
       });
       
-      // Just redirect to homepage like Google login
       navigate("/");
       
     } catch (error: any) {
-      console.error("Login failed:", error);
-
-      // Better error handling with toast
-      if (error.response?.data?.message) {
-        toast({
-          title: "Login Failed",
-          description: error.response.data.message,
-          variant: "destructive",
-        });
-      } else if (error.response?.status === 401) {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password",
-          variant: "destructive",
-        });
-      } else if (error.code === "NETWORK_ERROR") {
-        toast({
-          title: "Network Error",
-          description: "Please check your connection and try again.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "An error occurred. Please try again.",
-          variant: "destructive",
-        });
-      }
+      console.error('❌ Login failed:', error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

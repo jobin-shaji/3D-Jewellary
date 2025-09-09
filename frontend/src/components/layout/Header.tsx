@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { user, isLoggedIn, logout } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const { toast } = useToast();
 
   // Mock data - replace with actual state management
@@ -43,23 +43,22 @@ export const Header = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
-      navigate("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Logout Error",
-        description: "There was an error logging out. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const logout = () => {
+    console.log("Logging out...");
+    localStorage.removeItem("token");
+    // setUser(null); // Remove or handle this if setUser is not available
+    // setIsLoggedIn(false); // Remove this line as setIsLoggedIn is not available
+    navigate("/");
   };
+
+  // Debugging effect
+  useEffect(() => {
+    console.log("Header - Auth state:", { user, isLoggedIn });
+    console.log(
+      "Header - Token in localStorage:",
+      localStorage.getItem("token") ? "Present" : "Missing"
+    );
+  }, [user, isLoggedIn]);
 
   return (
     <header className="border-b bg-background sticky top-0 z-50">
@@ -217,7 +216,7 @@ export const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onClick={logout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -324,7 +323,7 @@ export const Header = () => {
                       <Button
                         variant="outline"
                         className="justify-start"
-                        onClick={handleLogout}
+                        onClick={logout}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout

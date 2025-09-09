@@ -1,4 +1,3 @@
-
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const express = require('express');
@@ -7,25 +6,32 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('./models/user');
+const Product = require('./models/product');
+const ProductImage = require('./models/productImage');
+const Category = require('./models/category');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 
 const app = express();
 
 // Configure CORS
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081'], // Frontend URLs (change in production)
-  credentials: false,
+  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081'], // Add Vite's default port
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Cross-Origin-Opener-Policy', 'Cross-Origin-Embedder-Policy']
 }));
 
 // Add these headers for Google OAuth
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-  next();
-});
+// Remove or comment out these lines if Google OAuth issues persist
+// app.use((req, res, next) => {
+//   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+//   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+//   next();
+// });
 
 app.use(express.json());
 
@@ -42,14 +48,20 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+  console.log('Auth header:', authHeader);
+  console.log('Extracted token:', token ? 'Present' : 'Missing');
+
   if (!token) {
+    console.log('No token provided');
     return res.status(401).json({ message: 'Access token required' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('Token verification failed:', err.message);
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
+    console.log('Token verified for user:', user.email);
     req.user = user;
     next();
   });
@@ -106,6 +118,50 @@ if (!MONGODB_URI || !PORT) {
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure multer for image uploads
+const imageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'products/images',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 1000, height: 1000, crop: 'limit', quality: 'auto' }
+    ]
+  }
+});
+
+// Configure multer for 3D model uploads
+const modelStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'products/models',
+    allowed_formats: ['glb', 'gltf', 'obj', 'fbx'],
+    resource_type: 'raw'
+  }
+});
+
+const uploadImage = multer({ 
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+const uploadModel = multer({ 
+  storage: modelStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for 3D models
+});
+
+const uploadMultiple = multer({ 
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
 
 // Register endpoint
 app.post('/api/register', async (req, res) => {
@@ -304,8 +360,606 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
 // Export the authenticateToken middleware for use in other routes
 module.exports = { authenticateToken };
 
-// Start server
+// Product creation endpoint (admin only)
+app.post('/api/products', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { 
+      name, 
+      price, 
+      category_id, 
+      description, 
+      is_active = true,
+      specifications = {},
+      customizations = []
+    } = req.body;
+
+    // Validation
+    if (!name || !price || !category_id) {
+      return res.status(400).json({ message: 'Name, price, and category are required' });
+    }
+
+    const product = new Product({
+      name,
+      price,
+      category_id,
+      description,
+      is_active,
+      specifications,
+      customizations
+    });
+
+    await product.save();
+
+    res.status(201).json({
+      message: 'Product created successfully',
+      product
+    });
+
+  } catch (error) {
+    console.error('Create product error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Initialize default categories (run once)
+app.post('/api/setup/categories', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const defaultCategories = [
+      { id: 1, name: 'Rings', description: 'Engagement rings, wedding bands, and fashion rings' },
+      { id: 2, name: 'Necklaces', description: 'Chains, pendants, and statement necklaces' },
+      { id: 3, name: 'Earrings', description: 'Studs, hoops, and drop earrings' },
+      { id: 4, name: 'Bracelets', description: 'Tennis bracelets, bangles, and charm bracelets' },
+      { id: 5, name: 'Watches', description: 'Luxury timepieces and smart watches' }
+    ];
+
+    for (const categoryData of defaultCategories) {
+      const existingCategory = await Category.findOne({ id: categoryData.id });
+      if (!existingCategory) {
+        const category = new Category(categoryData);
+        await category.save();
+        console.log(`Created category: ${category.name}`);
+      }
+    }
+
+    const allCategories = await Category.find();
+    console.log('All categories after setup:', allCategories);
+
+    res.json({ 
+      message: 'Default categories created successfully',
+      categories: allCategories
+    });
+  } catch (error) {
+    console.error('Setup categories error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Single image upload for product
+app.post('/api/products/:id/images', authenticateToken, uploadImage.single('image'), async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+    const { alt_text, is_primary, sort_order } = req.body;
+
+    // Check if product exists
+    const product = await Product.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Image file is required' });
+    }
+
+    // If this is set as primary, unset other primary images for this product
+    if (is_primary === 'true') {
+      await ProductImage.updateMany(
+        { product_id: productId },
+        { is_primary: false }
+      );
+    }
+
+    const productImage = new ProductImage({
+      product_id: productId,
+      image_url: req.file.path, // Cloudinary URL
+      alt_text: alt_text || `${product.name} image`,
+      is_primary: is_primary === 'true',
+      sort_order: parseInt(sort_order) || 0
+    });
+
+    await productImage.save();
+
+    res.status(201).json({
+      message: 'Product image uploaded successfully',
+      image: productImage
+    });
+
+  } catch (error) {
+    console.error('Upload product image error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Multiple images upload for product
+app.post('/api/products/:id/images/bulk', authenticateToken, uploadMultiple.array('images', 10), async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+
+    // Check if product exists
+    const product = await Product.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'At least one image file is required' });
+    }
+
+    const uploadedImages = [];
+
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+      
+      const productImage = new ProductImage({
+        product_id: productId,
+        image_url: file.path, // Cloudinary URL
+        alt_text: `${product.name} image ${i + 1}`,
+        is_primary: i === 0, // First image is primary
+        sort_order: i
+      });
+
+      await productImage.save();
+      uploadedImages.push(productImage);
+    }
+
+    res.status(201).json({
+      message: 'Product images uploaded successfully',
+      images: uploadedImages
+    });
+
+  } catch (error) {
+    console.error('Upload product images error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 3D model upload for product
+app.post('/api/products/:id/model', authenticateToken, uploadModel.single('model'), async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+
+    // Check if product exists
+    const product = await Product.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: '3D model file is required' });
+    }
+
+    // Update product with 3D model URL
+    product.model_3d_url = req.file.path; // Cloudinary URL
+    await product.save();
+
+    res.status(201).json({
+      message: '3D model uploaded successfully',
+      model_url: req.file.path,
+      product
+    });
+
+  } catch (error) {
+    console.error('Upload 3D model error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get product images
+app.get('/api/products/:id/images', async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Check if product exists
+    const product = await Product.findOne({ id: productId, is_active: true });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const images = await ProductImage.find({ product_id: productId })
+      .sort({ sort_order: 1, created_at: 1 });
+
+    res.json(images);
+
+  } catch (error) {
+    console.error('Get product images error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all categories
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await Category.find({ is_active: true })
+      .sort({ sort_order: 1, name: 1 });
+
+    console.log('Categories found:', categories.length);
+    res.json(categories);
+
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get single category by ID
+app.get('/api/categories/:id', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.id);
+
+    const category = await Category.findOne({ id: categoryId })
+      .populate('children');
+
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    res.json(category);
+
+  } catch (error) {
+    console.error('Get category error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Create new category (admin only)
+app.post('/api/categories', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { name, description, image_url, parent_id } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Category name is required' });
+    }
+
+    // If parent_id is provided, validate it exists
+    if (parent_id) {
+      const parentCategory = await Category.findOne({ id: parent_id });
+      if (!parentCategory) {
+        return res.status(400).json({ message: 'Invalid parent category ID' });
+      }
+    }
+
+    // Get the next ID for the category
+    const lastCategory = await Category.findOne().sort({ id: -1 });
+    const nextId = lastCategory ? lastCategory.id + 1 : 1;
+
+    const category = new Category({
+      id: nextId,
+      name,
+      description,
+      image_url,
+      parent_id
+    });
+
+    await category.save();
+
+    res.status(201).json({
+      message: 'Category created successfully',
+      category
+    });
+
+  } catch (error) {
+    console.error('Create category error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all products
+app.get('/api/products', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const category = req.query.category;
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
+    const featured = req.query.featured === 'true';
+    const sortBy = req.query.sortBy || 'created_at';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+    // Build filter object
+    const filter = { is_active: true };
+    
+    if (category) {
+      filter.category_id = parseInt(category);
+    }
+    
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      filter.price = {};
+      if (minPrice !== undefined) filter.price.$gte = minPrice;
+      if (maxPrice !== undefined) filter.price.$lte = maxPrice;
+    }
+    
+    if (featured) {
+      filter.featured = true;
+    }
+
+    // Execute query with pagination
+    const skip = (page - 1) * limit;
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder;
+
+    const products = await Product.find(filter)
+      .populate('category')
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Product.countDocuments(filter);
+
+    res.json({
+      products,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Get products error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update product (admin only)
+app.put('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+    const updateData = req.body;
+
+    const product = await Product.findOneAndUpdate(
+      { id: productId },
+      { ...updateData, updated_at: new Date() },
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.json({
+      message: 'Product updated successfully',
+      product
+    });
+
+  } catch (error) {
+    console.error('Update product error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete product (admin only) - soft delete
+app.delete('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+
+    // Soft delete - set is_active to false instead of actually deleting
+    const product = await Product.findOneAndUpdate(
+      { id: productId },
+      { is_active: false, updated_at: new Date() },
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+      
+    }
+
+    // Also delete associated images (optional - you might want to keep them)
+    await ProductImage.deleteMany({ product_id: productId });
+
+    res.json({
+      message: 'Product deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete product error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get product with images populated
+app.get('/api/products/:id/full', async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Get product
+    const product = await Product.findOne({ id: productId, is_active: true })
+      .populate('category');
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Get images for this product
+    const images = await ProductImage.find({ product_id: productId })
+      .sort({ sort_order: 1, createdAt: 1 });
+
+    // Get primary image
+    const primaryImage = images.find(img => img.is_primary) || images[0];
+
+    res.json({
+      ...product.toObject(),
+      images: images,
+      primaryImage: primaryImage
+    });
+
+  } catch (error) {
+    console.error('Get product full error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all products with their primary images (for listing pages)
+app.get('/api/products/with-primary-images', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    // Get products
+    const products = await Product.find({ is_active: true })
+      .populate('category')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Get primary images for all products
+    const productsWithImages = await Promise.all(
+      products.map(async (product) => {
+        const primaryImage = await ProductImage.findOne({ 
+          product_id: product.id, 
+          is_primary: true 
+        });
+        
+        return {
+          ...product.toObject(),
+          primaryImage: primaryImage
+        };
+      })
+    );
+
+    const total = await Product.countDocuments({ is_active: true });
+
+    res.json({
+      products: productsWithImages,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Get products with primary images error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete product image
+app.delete('/api/products/:productId/images/:imageId', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { productId, imageId } = req.params;
+
+    // Find and delete the image
+    const deletedImage = await ProductImage.findOneAndDelete({ 
+      id: imageId, 
+      product_id: productId 
+    });
+
+    if (!deletedImage) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    // If this was the primary image, make the first remaining image primary
+    if (deletedImage.is_primary) {
+      const firstImage = await ProductImage.findOne({ product_id: productId })
+        .sort({ sort_order: 1 });
+      
+      if (firstImage) {
+        firstImage.is_primary = true;
+        await firstImage.save();
+      }
+    }
+
+    res.json({ message: 'Image deleted successfully' });
+
+  } catch (error) {
+    console.error('Delete product image error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Set primary image
+app.put('/api/products/:productId/images/:imageId/primary', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { productId, imageId } = req.params;
+
+    // Unset all primary images for this product
+    await ProductImage.updateMany(
+      { product_id: productId },
+      { is_primary: false }
+    );
+
+    // Set the specified image as primary
+    const updatedImage = await ProductImage.findOneAndUpdate(
+      { id: imageId, product_id: productId },
+      { is_primary: true },
+      { new: true }
+    );
+
+    if (!updatedImage) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    res.json({ 
+      message: 'Primary image updated successfully',
+      image: updatedImage
+    });
+
+  } catch (error) {
+    console.error('Set primary image error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 
