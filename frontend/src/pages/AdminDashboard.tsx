@@ -175,7 +175,7 @@ const AdminDashboard = () => {
       
       toast({
         title: "Confirm Delete",
-        description: `Click delete again to permanently delete "${productName}"`,
+        description: `Double click delete to permanently delete ${productName}`,
         variant: "destructive",
         duration: 3000,
       });

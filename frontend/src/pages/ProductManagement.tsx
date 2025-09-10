@@ -16,11 +16,10 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, X, Upload, Image, Box } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, Image, Box, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ProductCustomization } from "@/types";
+import { ProductCustomization, Metal, Gemstone } from "@/types";
 import { useAuth } from "@/services/auth";
-import { Loader2 } from "lucide-react";
 
 const ProductManagement = () => {
   const { id } = useParams();
@@ -39,6 +38,7 @@ const ProductManagement = () => {
         description:
           "Exquisite diamond engagement ring crafted with precision and elegance This breathtaking diamond engagement ring represents the perfect symbol of eternal love.",
         inStock: true,
+        stock_quantity: 10, // added
         specifications: {
           Material: "18k White Gold",
           "Diamond Weight": "1.5 carats",
@@ -57,6 +57,7 @@ const ProductManagement = () => {
     category: existingProduct?.category || "",
     description: existingProduct?.description || "",
     inStock: existingProduct?.inStock ?? true,
+    stock_quantity: existingProduct?.stock_quantity?.toString?.() || "0", // added
     material: existingProduct?.specifications?.Material || "",
     weight: existingProduct?.specifications?.["Diamond Weight"] || "",
     cut: existingProduct?.specifications?.["Diamond Cut"] || "",
@@ -88,7 +89,28 @@ const ProductManagement = () => {
 
   // Add state for loading and categories
   const [isLoading, setIsLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<Array<{id: number; name: string; description?: string}>>([]);
+
+  // State for metals and gemstones
+  const [metals, setMetals] = useState<Metal[]>([]);
+  const [gemstones, setGemstones] = useState<Gemstone[]>([]);
+  const [newMetal, setNewMetal] = useState<Metal>({
+    type: '',
+    purity: '',
+    weight: 0,
+    color: '',
+    percentage: 0
+  });
+  const [newGemstone, setNewGemstone] = useState<Gemstone>({
+    type: '',
+    cut: '',
+    carat: 0,
+    color: '',
+    clarity: '',
+    count: 1,
+    shape: '',
+    setting: ''
+  });
 
   const handleInputChange = (
     field: string,
@@ -142,6 +164,69 @@ const ProductManagement = () => {
 
   const removeCustomization = (id: string) => {
     setCustomizations(customizations.filter((c) => c.id !== id));
+  };
+
+  // Metal functions
+  const addMetal = () => {
+    if (!newMetal.type.trim() || !newMetal.purity.trim() || newMetal.weight <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required metal fields (type, purity, weight > 0).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const metal: Metal = {
+      id: `metal_${Date.now()}`,
+      ...newMetal
+    };
+
+    setMetals([...metals, metal]);
+    setNewMetal({
+      type: '',
+      purity: '',
+      weight: 0,
+      color: '',
+      percentage: 0
+    });
+  };
+
+  const removeMetal = (id: string) => {
+    setMetals(metals.filter((m) => m.id !== id));
+  };
+
+  // Gemstone functions
+  const addGemstone = () => {
+    if (!newGemstone.type.trim() || newGemstone.carat <= 0 || newGemstone.count <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required gemstone fields (type, carat > 0, count > 0).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const gemstone: Gemstone = {
+      id: `gemstone_${Date.now()}`,
+      ...newGemstone
+    };
+
+    setGemstones([...gemstones, gemstone]);
+    setNewGemstone({
+      type: '',
+      cut: '',
+      carat: 0,
+      color: '',
+      clarity: '',
+      count: 1,
+      shape: '',
+      setting: ''
+    });
+  };
+
+  const removeGemstone = (id: string) => {
+    setGemstones(gemstones.filter((g) => g.id !== id));
   };
 
   // Update the fetchCategories function with more detailed logging
@@ -226,6 +311,43 @@ const ProductManagement = () => {
         return;
       }
 
+      // Validate required fields
+      if (!formData.name.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Product name is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!formData.category) {
+        toast({
+          title: "Validation Error",
+          description: "Please select a category.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!formData.price || Number(formData.price) <= 0) {
+        toast({
+          title: "Validation Error",
+          description: "Please enter a valid price greater than 0.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Product description is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // First, create the product
       const productData = {
         name: formData.name,
@@ -233,15 +355,19 @@ const ProductManagement = () => {
         category_id: Number(formData.category),
         description: formData.description,
         is_active: formData.inStock,
+        stock_quantity: Number(formData.stock_quantity || 0),
         specifications: {
-          Material: formData.material,
-          "Diamond Weight": formData.weight,
-          "Diamond Cut": formData.cut,
-          "Diamond Color": formData.color,
-          "Diamond Clarity": formData.clarity,
           "Ring Size": formData.size,
           Certification: formData.certification,
+          // Keep backward compatibility for legacy fields
+          ...(formData.material && { Material: formData.material }),
+          ...(formData.weight && { "Diamond Weight": formData.weight }),
+          ...(formData.cut && { "Diamond Cut": formData.cut }),
+          ...(formData.color && { "Diamond Color": formData.color }),
+          ...(formData.clarity && { "Diamond Clarity": formData.clarity }),
         },
+        metals: metals.map(({ id, ...metal }) => metal), // Remove frontend-only id
+        gemstones: gemstones.map(({ id, ...gemstone }) => gemstone), // Remove frontend-only id
         customizations: customizations,
       };
 
@@ -271,9 +397,9 @@ const ProductManagement = () => {
       // Upload images if any
       if (imageFiles.length > 0) {
         try {
-          const formData = new FormData();
+          const imageFormData = new FormData();
           imageFiles.forEach((file) => {
-            formData.append('images', file);
+            imageFormData.append('images', file);
           });
 
           console.log('🖼️ Uploading images for product:', productId);
@@ -284,7 +410,7 @@ const ProductManagement = () => {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
-            body: formData,
+            body: imageFormData,
           });
 
           console.log('📷 Image upload response status:', imageResponse.status);
@@ -317,19 +443,46 @@ const ProductManagement = () => {
 
       // Upload 3D model if any
       if (model3DFile) {
-        const modelFormData = new FormData();
-        modelFormData.append('model', model3DFile);
+        try {
+          const modelFormData = new FormData();
+          modelFormData.append('model', model3DFile);
 
-        const modelResponse = await fetch(`http://localhost:3000/api/products/${productId}/model`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: modelFormData,
-        });
+          console.log('📦 Uploading 3D model for product:', productId);
+          console.log('📁 3D model file:', model3DFile.name, model3DFile.type);
 
-        if (!modelResponse.ok) {
-          console.error('Failed to upload 3D model');
+          const modelResponse = await fetch(`http://localhost:3000/api/products/${productId}/model`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: modelFormData,
+          });
+
+          console.log('🎯 3D model upload response status:', modelResponse.status);
+
+          if (!modelResponse.ok) {
+            const errorData = await modelResponse.json();
+            console.error('❌ 3D model upload failed:', errorData);
+            toast({
+              title: "Warning",
+              description: `Product created but 3D model upload failed: ${errorData.message}`,
+              variant: "destructive",
+            });
+          } else {
+            const modelData = await modelResponse.json();
+            console.log('✅ 3D model uploaded successfully:', modelData);
+            toast({
+              title: "3D Model Uploaded",
+              description: "3D model uploaded successfully.",
+            });
+          }
+        } catch (modelError) {
+          console.error('❌ 3D model upload error:', modelError);
+          toast({
+            title: "Warning",
+            description: "Product created but 3D model upload failed.",
+            variant: "destructive",
+          });
         }
       }
 
@@ -356,6 +509,29 @@ const ProductManagement = () => {
   const handle3DModelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "3D model files must be under 50MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['.glb', '.gltf', '.obj', '.fbx'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!allowedTypes.includes(fileExtension)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a .glb, .gltf, .obj, or .fbx file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setModel3DFile(file);
       setModel3DPreview(file.name);
     }
@@ -363,10 +539,39 @@ const ProductManagement = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles((prev) => [...prev, ...files]);
+    
+    // Validate each file
+    const validFiles: File[] = [];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: `${file.name} is too large. Images must be under 5MB.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File Type",
+          description: `${file.name} is not a valid image file.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+      
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
+    setImageFiles((prev) => [...prev, ...validFiles]);
 
     // Create previews
-    files.forEach((file) => {
+    validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreviews((prev) => [...prev, e.target?.result as string]);
@@ -401,7 +606,7 @@ const ProductManagement = () => {
       navigate('/dashboard');
       return;
     }
-  }, [user, navigate]);
+  }, [user, navigate, toast]);
 
   // Add this debugging section right after your state declarations
   useEffect(() => {
@@ -513,6 +718,21 @@ const ProductManagement = () => {
                       required
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="stock">Stock Quantity *</Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      min="0"
+                      value={formData.stock_quantity}
+                      onChange={(e) =>
+                        handleInputChange("stock_quantity", e.target.value)
+                      }
+                      placeholder="0"
+                      required
+                    />
+                  </div>
                 </div>
 
                 {/* Descriptions */}
@@ -530,72 +750,317 @@ const ProductManagement = () => {
                   />
                 </div>
 
-                {/* Specifications */}
+                {/* Metals Section */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Metals</h3>
+                  
+                  {/* Existing Metals */}
+                  {metals.length > 0 && (
+                    <div className="space-y-3 mb-6">
+                      {metals.map((metal) => (
+                        <div
+                          key={metal.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Badge variant="outline">{metal.type}</Badge>
+                            <span className="font-medium">{metal.purity}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {metal.weight}g
+                            </span>
+                            {metal.color && (
+                              <span className="text-sm text-muted-foreground">
+                                {metal.color}
+                              </span>
+                            )}
+                            {metal.percentage > 0 && (
+                              <span className="text-sm text-muted-foreground">
+                                {metal.percentage}%
+                              </span>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMetal(metal.id!)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add New Metal */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Add Metal</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Metal Type *</Label>
+                          <Input
+                            value={newMetal.type}
+                            onChange={(e) =>
+                              setNewMetal((prev) => ({
+                                ...prev,
+                                type: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., Gold, Silver, Platinum"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Purity *</Label>
+                          <Input
+                            value={newMetal.purity}
+                            onChange={(e) =>
+                              setNewMetal((prev) => ({
+                                ...prev,
+                                purity: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., 18k, 14k, 925"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Weight (grams) *</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={newMetal.weight}
+                            onChange={(e) =>
+                              setNewMetal((prev) => ({
+                                ...prev,
+                                weight: Number(e.target.value),
+                              }))
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Color</Label>
+                          <Input
+                            value={newMetal.color}
+                            onChange={(e) =>
+                              setNewMetal((prev) => ({
+                                ...prev,
+                                color: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., White, Yellow, Rose"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Percentage</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={newMetal.percentage}
+                            onChange={(e) =>
+                              setNewMetal((prev) => ({
+                                ...prev,
+                                percentage: Number(e.target.value),
+                              }))
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={addMetal} disabled={!newMetal.type.trim()}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Metal
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Gemstones Section */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Gemstones</h3>
+                  
+                  {/* Existing Gemstones */}
+                  {gemstones.length > 0 && (
+                    <div className="space-y-3 mb-6">
+                      {gemstones.map((gemstone) => (
+                        <div
+                          key={gemstone.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Badge variant="outline">{gemstone.type}</Badge>
+                            <span className="font-medium">{gemstone.carat}ct</span>
+                            <span className="text-sm text-muted-foreground">
+                              Count: {gemstone.count}
+                            </span>
+                            {gemstone.cut && (
+                              <span className="text-sm text-muted-foreground">
+                                {gemstone.cut}
+                              </span>
+                            )}
+                            {gemstone.color && (
+                              <span className="text-sm text-muted-foreground">
+                                Color: {gemstone.color}
+                              </span>
+                            )}
+                            {gemstone.clarity && (
+                              <span className="text-sm text-muted-foreground">
+                                {gemstone.clarity}
+                              </span>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeGemstone(gemstone.id!)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add New Gemstone */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Add Gemstone</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Gemstone Type *</Label>
+                          <Input
+                            value={newGemstone.type}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                type: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., Diamond, Ruby, Emerald"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Carat Weight *</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={newGemstone.carat}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                carat: Number(e.target.value),
+                              }))
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Count *</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={newGemstone.count}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                count: Number(e.target.value),
+                              }))
+                            }
+                            placeholder="1"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Cut</Label>
+                          <Input
+                            value={newGemstone.cut}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                cut: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., Round, Princess, Emerald"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Shape</Label>
+                          <Input
+                            value={newGemstone.shape}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                shape: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., Round, Oval, Pear"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Color</Label>
+                          <Input
+                            value={newGemstone.color}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                color: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., D, E, F for diamonds"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Clarity</Label>
+                          <Input
+                            value={newGemstone.clarity}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                clarity: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., FL, IF, VVS1"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Setting</Label>
+                          <Input
+                            value={newGemstone.setting}
+                            onChange={(e) =>
+                              setNewGemstone((prev) => ({
+                                ...prev,
+                                setting: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g., Prong, Bezel, Channel"
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={addGemstone} disabled={!newGemstone.type.trim()}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Gemstone
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Additional Specifications */}
                 <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold mb-4">
-                    Product Specifications
+                    Additional Specifications
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="material">Material</Label>
-                      <Input
-                        id="material"
-                        value={formData.material}
-                        onChange={(e) =>
-                          handleInputChange("material", e.target.value)
-                        }
-                        placeholder="e.g., 18k White Gold"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="weight">Weight</Label>
-                      <Input
-                        id="weight"
-                        value={formData.weight}
-                        onChange={(e) =>
-                          handleInputChange("weight", e.target.value)
-                        }
-                        placeholder="e.g., 1.5 carats"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cut">Cut</Label>
-                      <Input
-                        id="cut"
-                        value={formData.cut}
-                        onChange={(e) =>
-                          handleInputChange("cut", e.target.value)
-                        }
-                        placeholder="e.g., Brilliant"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="color">Color</Label>
-                      <Input
-                        id="color"
-                        value={formData.color}
-                        onChange={(e) =>
-                          handleInputChange("color", e.target.value)
-                        }
-                        placeholder="e.g., D (Colorless)"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="clarity">Clarity</Label>
-                      <Input
-                        id="clarity"
-                        value={formData.clarity}
-                        onChange={(e) =>
-                          handleInputChange("clarity", e.target.value)
-                        }
-                        placeholder="e.g., VVS1"
-                      />
-                    </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="size">Size</Label>
                       <Input
@@ -607,18 +1072,17 @@ const ProductManagement = () => {
                         placeholder="e.g., Adjustable"
                       />
                     </div>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    <Label htmlFor="certification">Certification</Label>
-                    <Input
-                      id="certification"
-                      value={formData.certification}
-                      onChange={(e) =>
-                        handleInputChange("certification", e.target.value)
-                      }
-                      placeholder="e.g., GIA Certified"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="certification">Certification</Label>
+                      <Input
+                        id="certification"
+                        value={formData.certification}
+                        onChange={(e) =>
+                          handleInputChange("certification", e.target.value)
+                        }
+                        placeholder="e.g., GIA Certified"
+                      />
+                    </div>
                   </div>
                 </div>
 

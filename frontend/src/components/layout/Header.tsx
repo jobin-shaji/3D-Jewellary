@@ -30,7 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, logout: authLogout } = useAuth();
   const { toast } = useToast();
 
   // Mock data - replace with actual state management
@@ -45,9 +45,7 @@ export const Header = () => {
 
   const logout = () => {
     console.log("Logging out...");
-    localStorage.removeItem("token");
-    // setUser(null); // Remove or handle this if setUser is not available
-    // setIsLoggedIn(false); // Remove this line as setIsLoggedIn is not available
+    authLogout(); // Use the auth context logout function to update React state
     navigate("/");
   };
 
@@ -128,8 +126,8 @@ export const Header = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
-            {/* Wishlist - Only show when logged in */}
-            {isLoggedIn && (
+            {/* Wishlist - Only show when logged in and not admin */}
+            {isLoggedIn && user?.role !== "admin" && (
               <Button variant="ghost" size="icon" asChild>
                 <Link to="/wishlist">
                   <Heart className="h-5 w-5" />
@@ -138,8 +136,8 @@ export const Header = () => {
               </Button>
             )}
 
-            {/* Cart - Only show when logged in */}
-            {isLoggedIn && (
+            {/* Cart - Only show when logged in and not admin */}
+            {isLoggedIn && user?.role !== "admin" && (
               <Button variant="ghost" size="icon" className="relative" asChild>
                 <Link to="/cart">
                   <ShoppingCart className="h-5 w-5" />
@@ -290,32 +288,37 @@ export const Header = () => {
                   {/* Mobile User Actions - Only show when logged in */}
                   {isLoggedIn && (
                     <div className="flex flex-col space-y-2 pt-4 border-t">
+                      {/* Wishlist and Cart - Only show for non-admin users */}
+                      {user?.role !== "admin" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            className="justify-start"
+                            asChild
+                          >
+                            <Link to="/wishlist">
+                              <Heart className="mr-2 h-4 w-4" />
+                              Wishlist
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="justify-start"
+                            asChild
+                          >
+                            <Link to="/cart">
+                              <ShoppingCart className="mr-2 h-4 w-4" />
+                              Cart {cartItemsCount > 0 && `(${cartItemsCount})`}
+                            </Link>
+                          </Button>
+                        </>
+                      )}
                       <Button
                         variant="outline"
                         className="justify-start"
                         asChild
                       >
-                        <Link to="/wishlist">
-                          <Heart className="mr-2 h-4 w-4" />
-                          Wishlist
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="justify-start"
-                        asChild
-                      >
-                        <Link to="/cart">
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Cart {cartItemsCount > 0 && `(${cartItemsCount})`}
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="justify-start"
-                        asChild
-                      >
-                        <Link to="/dashboard">
+                        <Link to={user?.role === "admin" ? "/admin" : "/dashboard"}>
                           <User className="mr-2 h-4 w-4" />
                           Dashboard
                         </Link>

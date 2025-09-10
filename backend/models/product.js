@@ -50,6 +50,68 @@ const productSchema = new mongoose.Schema({
     type: Object,
     default: {}
   },
+  metals: [{
+    type: {
+      type: String, // e.g., "Gold", "Silver", "Platinum"
+      required: true
+    },
+    purity: {
+      type: String, // e.g., "18k", "14k", "925"
+      required: true
+    },
+    weight: {
+      type: Number, // in grams
+      required: true,
+      min: 0
+    },
+    color: {
+      type: String, // e.g., "White", "Yellow", "Rose"
+      default: ''
+    },
+    percentage: {
+      type: Number, // percentage of total weight
+      min: 0,
+      max: 100,
+      default: 0
+    }
+  }],
+  gemstones: [{
+    type: {
+      type: String, // e.g., "Diamond", "Ruby", "Emerald"
+      required: true
+    },
+    cut: {
+      type: String, // e.g., "Round", "Princess", "Emerald"
+      default: ''
+    },
+    carat: {
+      type: Number, // carat weight
+      required: true,
+      min: 0
+    },
+    color: {
+      type: String, // e.g., "D", "E", "F" for diamonds
+      default: ''
+    },
+    clarity: {
+      type: String, // e.g., "FL", "IF", "VVS1"
+      default: ''
+    },
+    count: {
+      type: Number, // number of stones of this type
+      required: true,
+      min: 1,
+      default: 1
+    },
+    shape: {
+      type: String, // e.g., "Round", "Oval", "Pear"
+      default: ''
+    },
+    setting: {
+      type: String, // e.g., "Prong", "Bezel", "Channel"
+      default: ''
+    }
+  }],
   customizations: {
     type: Array,
     default: []
@@ -58,7 +120,6 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: ''
   }
-  // Removed: images array - using separate ProductImage collection
 }, {
   timestamps: true
 });

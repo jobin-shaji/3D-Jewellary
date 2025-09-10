@@ -367,21 +367,73 @@ app.post('/api/products', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
-    const { 
+    let { 
       name, 
       price, 
       category_id, 
-      description, 
+      description = '',
       is_active = true,
       specifications = {},
-      customizations = []
+      customizations = [],
+      metals = [],
+      gemstones = [],
+      stock_quantity = 0
     } = req.body;
+
+    // Parse possible string fields
+    price = Number(price);
+    stock_quantity = Number(stock_quantity);
+    // if your category_id is numeric in DB:
+    category_id = isNaN(Number(category_id)) ? category_id : Number(category_id);
+
+    // Parse JSON if front-end sent strings
+    if (typeof specifications === 'string') {
+      try { specifications = JSON.parse(specifications); } catch (e) { specifications = {}; }
+    }
+    if (typeof customizations === 'string') {
+      try { customizations = JSON.parse(customizations); } catch (e) { customizations = []; }
+    }
+    if (typeof metals === 'string') {
+      try { metals = JSON.parse(metals); } catch (e) { metals = []; }
+    }
+    if (typeof gemstones === 'string') {
+      try { gemstones = JSON.parse(gemstones); } catch (e) { gemstones = []; }
+    }
 
     // Validation
     if (!name || !price || !category_id) {
       return res.status(400).json({ message: 'Name, price, and category are required' });
     }
+    if (price <= 0) {
+      return res.status(400).json({ message: 'Price must be greater than 0' });
+    }
+    if (!Number.isFinite(stock_quantity) || stock_quantity < 0) {
+      return res.status(400).json({ message: 'stock_quantity must be a non-negative number' });
+    }
 
+    // Validate metals array
+    if (metals && Array.isArray(metals)) {
+      for (const metal of metals) {
+        if (!metal.type || !metal.purity || !metal.weight || metal.weight <= 0) {
+          return res.status(400).json({ 
+            message: 'Each metal must have type, purity, and weight > 0' 
+          });
+        }
+      }
+    }
+
+    // Validate gemstones array
+    if (gemstones && Array.isArray(gemstones)) {
+      for (const gemstone of gemstones) {
+        if (!gemstone.type || !gemstone.carat || gemstone.carat <= 0 || !gemstone.count || gemstone.count <= 0) {
+          return res.status(400).json({ 
+            message: 'Each gemstone must have type, carat > 0, and count > 0' 
+          });
+        }
+      }
+    }
+
+    // Let the Product schema generate its own string ID
     const product = new Product({
       name,
       price,
@@ -389,19 +441,27 @@ app.post('/api/products', authenticateToken, async (req, res) => {
       description,
       is_active,
       specifications,
-      customizations
+      customizations,
+      metals,
+      gemstones,
+      stock_quantity
     });
 
     await product.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Product created successfully',
       product
     });
 
   } catch (error) {
-    console.error('Create product error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Create product error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Request body:', req.body);
+    return res.status(500).json({ 
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 });
 

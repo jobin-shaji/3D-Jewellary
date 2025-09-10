@@ -31,6 +31,27 @@ export interface ProductCustomization {
   default_value?: string | number;
 }
 
+export interface Metal {
+  id?: string;
+  type: string; // e.g., "Gold", "Silver", "Platinum"
+  purity: string; // e.g., "18k", "14k", "925"
+  weight: number; // in grams
+  color?: string; // e.g., "White", "Yellow", "Rose"
+  percentage?: number; // percentage of total weight
+}
+
+export interface Gemstone {
+  id?: string;
+  type: string; // e.g., "Diamond", "Ruby", "Emerald"
+  cut?: string; // e.g., "Round", "Princess", "Emerald"
+  carat: number; // carat weight
+  color?: string; // e.g., "D", "E", "F" for diamonds
+  clarity?: string; // e.g., "FL", "IF", "VVS1"
+  count: number; // number of stones of this type
+  shape?: string; // e.g., "Round", "Oval", "Pear"
+  setting?: string; // e.g., "Prong", "Bezel", "Channel"
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -51,6 +72,8 @@ export interface Product {
   gemstone?: string;
   metal_type?: string;
   metal_purity?: string;
+  metals?: Metal[];
+  gemstones?: Gemstone[];
   is_active: boolean;
   // featured: boolean;
   model_3d_url?: string;
