@@ -1,21 +1,20 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User } from "@/types";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  isVerified: boolean;
-  createdAt: string;
-  totalOrders: number;
-  totalSpent: number;
-  loyaltyPoints: number;
-}
+// interface User {
+//   id: string;
+//   name: string;
+//   email: string;
+//   role: string;
+//   isVerified: boolean;
+//   createdAt: string;
+// }
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<any>;
+  register: (userData: { name: string; email: string; password: string }) => Promise<any>;
   googleLogin: (token: string) => Promise<any>;
   logout: () => void;
 }
@@ -28,9 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing token on app load
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    console.log('🔍 Auth Provider Init - Token check:', token ? 'Found' : 'Not found');
-    
+    const token = localStorage.getItem('token');    
     if (token) {
       // Verify token with backend
       fetch('http://localhost:3000/api/verify-token', {
@@ -38,23 +35,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Authorization': `Bearer ${token}`,
         },
       })
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          // Token invalid, remove it
-          console.log('❌ Token invalid, removing...');
-          localStorage.removeItem('token');
-          throw new Error('Invalid token');
+      .then(response =>{
+        if(response.ok){
+          return(response.json())
+        }else{
+          throw "verify token responce error"
         }
-      })
+      }) 
       .then(data => {
-        console.log('✅ Token verified, user:', data.user);
+        console.log(' Token verified, user:', data.user);
         setUser(data.user);
         setIsLoggedIn(true);
       })
       .catch(error => {
-        console.error('❌ Token verification failed:', error);
+        console.error('Token verification failed:', error);
         setUser(null);
         setIsLoggedIn(false);
         localStorage.removeItem('token');
@@ -64,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('🔄 Attempting login for:', email);
+      console.log('Attempting login for:', email);
       const response = await fetch('http://localhost:3000/api/login', {
         method: 'POST',
         headers: {
@@ -79,27 +73,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log('✅ Login successful, data received:', data);
+      console.log('Login successful, data received:', data);
       
       // Save token to localStorage
       localStorage.setItem('token', data.token);
-      console.log('💾 Token saved to localStorage:', data.token ? 'Yes' : 'No');
+      console.log('Token saved to localStorage:', data.token ? 'Yes' : 'No');
       
       // Update user state
       setUser(data.user);
       setIsLoggedIn(true);
-      console.log('👤 User state updated:', data.user);
+      console.log('User state updated:', data.user);
       
       return data;
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const register = async (userData: { name: string; email: string; password: string }) => {
+    try {
+      console.log('Attempting registration for:', userData.email);
+      const response = await fetch('http://localhost:3000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      const data = await response.json();
+      console.log('Registration successful, data received:', data);
+      
+      // Save token to localStorage
+      localStorage.setItem('token', data.token);
+      console.log('Token saved to localStorage:', data.token ? 'Yes' : 'No');
+      
+      // Update user state
+      setUser(data.user);
+      setIsLoggedIn(true);
+      console.log('User state updated:', data.user);
+      
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
       throw error;
     }
   };
 
   const googleLogin = async (token: string) => {
     try {
-      console.log('🔄 Attempting Google login...');
+      console.log('Attempting Google login...');
       const response = await fetch('http://localhost:3000/api/auth/google', {
         method: 'POST',
         headers: {
@@ -114,36 +143,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log('✅ Google login successful, data received:', data);
+      console.log('Google login successful, data received:', data);
       
       // Save token to localStorage
       localStorage.setItem('token', data.token);
-      console.log('💾 Token saved to localStorage:', data.token ? 'Yes' : 'No');
+      console.log('Token saved to localStorage:', data.token ? 'Yes' : 'No');
       
       // Update user state
       setUser(data.user);
       setIsLoggedIn(true);
-      console.log('👤 User state updated:', data.user);
+      console.log('User state updated:', data.user);
       
       return data;
     } catch (error) {
-      console.error('❌ Google login error:', error);
+      console.error('Google login error:', error);
       throw error;
     }
   };
 
   const logout = () => {
-    console.log('🔄 Logging out...');
+    console.log('Logging out...');
     localStorage.removeItem('token');
     setUser(null);
     setIsLoggedIn(false);
-    console.log('✅ Logged out successfully');
+    console.log('Logged out successfully');
   };
 
   const value = {
     user,
     isLoggedIn,
     login,
+    register,
     googleLogin,
     logout,
   };

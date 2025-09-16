@@ -24,7 +24,6 @@ import {
   Package,
 } from "lucide-react";
 import { useAuth } from "@/services/auth";
-
 import { useToast } from "@/hooks/use-toast";
 
 export const Header = () => {
@@ -45,7 +44,7 @@ export const Header = () => {
 
   const logout = () => {
     console.log("Logging out...");
-    authLogout(); // Use the auth context logout function to update React state
+    authLogout();
     navigate("/");
   };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+// import { Header } from "@/components/layout/Header";
+// import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -64,6 +64,14 @@ const Login = () => {
     }
   });
 
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user && user.id) {
+      console.log('User already logged in so not displaying login page redirecting to homepage...');
+      navigate("/");
+    }
+  }, [user, navigate]);
+
   // Initialize Google Auth when component mounts and Google script is loaded
   useEffect(() => {
     if (isLoaded && clientId) {
@@ -76,13 +84,13 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log('🔄 Login form submitted...');
+      console.log(' Login form submitted...');
       const response = await login(email, password);
-      console.log('✅ Login response:', response);
+      console.log(' Login response:', response);
       
       // Check if token was actually saved
       const savedToken = localStorage.getItem('token');
-      console.log('🔍 Token check after login:', savedToken ? 'SAVED' : 'NOT SAVED');
+      console.log(' Token check after login:', savedToken ? 'SAVED' : 'NOT SAVED');
       
       toast({
         title: "Login Successful!",
@@ -92,7 +100,7 @@ const Login = () => {
       navigate("/");
       
     } catch (error: any) {
-      console.error('❌ Login failed:', error);
+      console.error(' Login failed:', error);
       toast({
         title: "Login Failed",
         description: error.message || "Invalid email or password",
@@ -104,17 +112,11 @@ const Login = () => {
   };
 
   // Add loading fallback
-  if (!Header || !Footer) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Loading components...</div>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {/* <Header /> */}
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -215,7 +217,7 @@ const Login = () => {
           </CardFooter>
         </Card>
       </main>
-      <Footer />
+      {/* {/* <Footer /> */} 
     </div>
   );
 };

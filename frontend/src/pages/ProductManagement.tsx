@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+// import { Header } from "@/components/layout/Header";
+// import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -402,8 +402,8 @@ const ProductManagement = () => {
             imageFormData.append('images', file);
           });
 
-          console.log('🖼️ Uploading images for product:', productId);
-          console.log('📁 Number of images:', imageFiles.length);
+          console.log('Uploading images for product:', productId);
+          console.log('Number of images:', imageFiles.length);
 
           const imageResponse = await fetch(`http://localhost:3000/api/products/${productId}/images/bulk`, {
             method: 'POST',
@@ -624,7 +624,7 @@ const ProductManagement = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {/* <Header /> */}
       <main className="flex-1 container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -1430,7 +1430,7 @@ const ProductManagement = () => {
           </Card>
         </div>
       </main>
-      <Footer />
+      {/* {/* <Footer /> */} 
     </div>
   );
 };

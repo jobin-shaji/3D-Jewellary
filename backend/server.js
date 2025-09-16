@@ -5,14 +5,15 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
-const User = require('./models/user');
-const Product = require('./models/product');
-const ProductImage = require('./models/productImage');
-const Category = require('./models/category');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
+
+const User = require('./models/user');
+const Product = require('./models/product');
+const ProductImage = require('./models/productImage');
+const Category = require('./models/category');
 
 const app = express();
 
@@ -43,13 +44,17 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+//Hosting 
+const PORT = process.env.PORT || 3000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth-demo';
+
 // JWT Middleware to verify token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  console.log('Auth header:', authHeader);
-  console.log('Extracted token:', token ? 'Present' : 'Missing');
+  // console.log('Auth header:', authHeader);
+  // console.log('Extracted token:', token ? 'Present' : 'Missing');
 
   if (!token) {
     console.log('No token provided');
@@ -87,34 +92,32 @@ const generateToken = (user) => {
 // Helper function to verify Google token
 const verifyGoogleToken = async (token) => {
   try {
-    console.log('🔍 BACKEND: Verifying Google token with Google servers...');
+    console.log('BACKEND: Verifying Google token with Google servers...');
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
       audience: GOOGLE_CLIENT_ID,
     });
-    console.log('✅ BACKEND: Google token verified successfully by Google!');
+    console.log('BACKEND: Google token verified successfully by Google!');
 
     const payload = ticket.getPayload();
     return {
       email: payload.email,
       name: payload.name,
-      emailVerified: payload.email_verified
+      // emailVerified: payload.email_verified
     };
   } catch (error) {
-    console.error('❌ BACKEND: Google token verification FAILED:', error.message);
+    console.error('BACKEND: Google token verification FAILED:', error.message);
     throw new Error('Invalid Google token');
   }
 };
 
-const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth-demo';
 
+// Connect to MongoDB
 if (!MONGODB_URI || !PORT) {
   console.error('Missing required environment variables');
   process.exit(1);
 }
 
-// Connect to MongoDB
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
@@ -197,11 +200,7 @@ app.post('/api/register', async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
-        isVerified: newUser.isVerified,
         createdAt: newUser.createdAt,
-        totalOrders: newUser.totalOrders,
-        totalSpent: newUser.totalSpent,
-        loyaltyPoints: newUser.loyaltyPoints
       }
     });
   } catch (error) {
@@ -215,7 +214,7 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -235,11 +234,7 @@ app.post('/api/login', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        isVerified: user.isVerified,
         createdAt: user.createdAt,
-        totalOrders: user.totalOrders,
-        totalSpent: user.totalSpent,
-        loyaltyPoints: user.loyaltyPoints
       }
     });
 
@@ -271,17 +266,17 @@ app.post('/api/auth/google', async (req, res) => {
     if (user) {
       // User exists - login
       // Update verification status if needed
-      if (!user.isVerified && googleUser.emailVerified) {
-        user.isVerified = true;
-        await user.save();
-      }
+      // if (!user.isVerified && googleUser.emailVerified) {
+      //   user.isVerified = true;
+      //   await user.save();
+      // }
     } else {
       // User doesn't exist - register
       user = new User({
         name: googleUser.name,
         email: googleUser.email,
-        isVerified: googleUser.emailVerified,
         password: 'google-oauth-user' // Placeholder password for Google users
+        // isVerified: googleUser.emailVerified,
       });
 
       await user.save();
@@ -298,11 +293,7 @@ app.post('/api/auth/google', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        isVerified: user.isVerified,
         createdAt: user.createdAt,
-        totalOrders: user.totalOrders,
-        totalSpent: user.totalSpent,
-        loyaltyPoints: user.loyaltyPoints
       }
     });
 
@@ -312,42 +303,20 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// Logout endpoint (with JWT, logout is handled client-side by removing token)
-
 // Get current user endpoint (protected route)
-app.get('/api/user', authenticateToken, (req, res) => {
-  res.json({
-    user: {
-      id: req.user.id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      isVerified: req.user.isVerified,
-      createdAt: req.user.createdAt,
-      totalOrders: req.user.totalOrders,
-      totalSpent: req.user.totalSpent,
-      loyaltyPoints: req.user.loyaltyPoints
-    }
-  });
-});
+// app.get('/api/user', authenticateToken, (req, res) => {
+//   res.json({
+//     user: req.user
+//   });
+// });
 
 // Check auth status endpoint (protected route)
-app.get('/api/auth-status', authenticateToken, (req, res) => {
-  res.json({
-    isLoggedIn: true,
-    user: {
-      id: req.user.id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      isVerified: req.user.isVerified,
-      createdAt: req.user.createdAt,
-      totalOrders: req.user.totalOrders,
-      totalSpent: req.user.totalSpent,
-      loyaltyPoints: req.user.loyaltyPoints
-    }
-  });
-});
+// app.get('/api/auth-status', authenticateToken, (req, res) => {
+//   res.json({
+//     isLoggedIn: true,
+//     user: req.user
+//   });
+// });
 
 // Verify token endpoint (for checking if token is still valid)
 app.get('/api/verify-token', authenticateToken, (req, res) => {
@@ -383,8 +352,10 @@ app.post('/api/products', authenticateToken, async (req, res) => {
     // Parse possible string fields
     price = Number(price);
     stock_quantity = Number(stock_quantity);
+    
     // if your category_id is numeric in DB:
-    category_id = isNaN(Number(category_id)) ? category_id : Number(category_id);
+    // category_id = isNaN(Number(category_id)) ? category_id : Number(category_id);
+    category_id = Number(category_id);
 
     // Parse JSON if front-end sent strings
     if (typeof specifications === 'string') {
@@ -743,52 +714,23 @@ app.post('/api/categories', authenticateToken, async (req, res) => {
 // Get all products
 app.get('/api/products', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const category = req.query.category;
-    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
-    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
-    const featured = req.query.featured === 'true';
-    const sortBy = req.query.sortBy || 'created_at';
-    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
-
-    // Build filter object
-    const filter = { is_active: true };
+    // Hard limit of 50 products for academic project
+    const MAX_LIMIT = 50;
     
-    if (category) {
-      filter.category_id = parseInt(category);
-    }
-    
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      filter.price = {};
-      if (minPrice !== undefined) filter.price.$gte = minPrice;
-      if (maxPrice !== undefined) filter.price.$lte = maxPrice;
-    }
-    
-    if (featured) {
-      filter.featured = true;
-    }
-
-    // Execute query with pagination
-    const skip = (page - 1) * limit;
-    const sortObj = {};
-    sortObj[sortBy] = sortOrder;
-
-    const products = await Product.find(filter)
+    // Get all active products with limit
+    const products = await Product.find({ is_active: true })
       .populate('category')
-      .sort(sortObj)
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Product.countDocuments(filter);
+      .sort({ created_at: -1 })
+      .limit(MAX_LIMIT);
 
     res.json({
       products,
+      // Still return pagination info for frontend consistency
       pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+        page: 1,
+        limit: products.length,
+        total: products.length,
+        pages: 1
       }
     });
 
@@ -797,6 +739,63 @@ app.get('/api/products', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// app.get('/api/products', async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 12;
+//     const category = req.query.category;
+//     const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
+//     const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
+//     const featured = req.query.featured === 'true';
+//     const sortBy = req.query.sortBy || 'created_at';
+//     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+//     // Build filter object
+//     const filter = { is_active: true };
+    
+//     if (category) {
+//       filter.category_id = parseInt(category);
+//     }
+    
+//     if (minPrice !== undefined || maxPrice !== undefined) {
+//       filter.price = {};
+//       if (minPrice !== undefined) filter.price.$gte = minPrice;
+//       if (maxPrice !== undefined) filter.price.$lte = maxPrice;
+//     }
+    
+//     if (featured) {
+//       filter.featured = true;
+//     }
+
+//     // Execute query with pagination
+//     const skip = (page - 1) * limit;
+//     const sortObj = {};
+//     sortObj[sortBy] = sortOrder;
+
+//     const products = await Product.find(filter)
+//       .populate('category')
+//       .sort(sortObj)
+//       .skip(skip)
+//       .limit(limit);
+
+//     const total = await Product.countDocuments(filter);
+
+//     res.json({
+//       products,
+//       pagination: {
+//         page,
+//         limit,
+//         total,
+//         pages: Math.ceil(total / limit)
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Get products error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 
 // Update product (admin only)
 app.put('/api/products/:id', authenticateToken, async (req, res) => {
@@ -875,7 +874,127 @@ app.get('/api/products/:id/full', async (req, res) => {
       .populate('category');
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      // Return mock data for development/testing when product not found
+      const mockProduct = {
+        id: productId,
+        name: "Diamond Engagement Ring",
+        price: 2499,
+        category_id: 1,
+        category: {
+          id: 1,
+          name: "Rings",
+          description: "Engagement rings, wedding bands, and fashion rings"
+        },
+        description: "Exquisite diamond engagement ring crafted with precision and elegance. This stunning piece features a brilliant cut diamond set in premium white gold.",
+        stock_quantity: 15,
+        is_active: true,
+        featured: true,
+        model_3d_url: "", // No 3D model - will use fallback
+        specifications: {
+          "Material": "18k White Gold",
+          "Diamond Weight": "1.5 carats",
+          "Diamond Cut": "Brilliant",
+          "Diamond Color": "D (Colorless)",
+          "Diamond Clarity": "VVS1",
+          "Ring Size": "Adjustable",
+          "Certification": "GIA Certified"
+        },
+        metals: [
+          {
+            type: "Gold",
+            purity: "18k",
+            weight: 3.5,
+            color: "White",
+            percentage: 75
+          }
+        ],
+        gemstones: [
+          {
+            type: "Diamond",
+            cut: "Brilliant",
+            carat: 1.5,
+            color: "D",
+            clarity: "VVS1",
+            count: 1,
+            shape: "Round",
+            setting: "Prong"
+          },
+          {
+            type: "Diamond",
+            cut: "Brilliant",
+            carat: 0.05,
+            color: "F",
+            clarity: "VS1",
+            count: 12,
+            shape: "Round",
+            setting: "Channel"
+          }
+        ],
+        customizations: [
+          {
+            id: "ring_size",
+            name: "Ring Size",
+            type: "select",
+            options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"],
+            required: true,
+            default_value: "7"
+          },
+          {
+            id: "metal_type",
+            name: "Metal Type",
+            type: "select",
+            options: ["White Gold", "Yellow Gold", "Rose Gold", "Platinum"],
+            required: true,
+            default_value: "White Gold"
+          },
+          {
+            id: "engraving",
+            name: "Engraving",
+            type: "text",
+            required: false,
+            default_value: ""
+          }
+        ],
+        images: [
+          {
+            id: 1,
+            product_id: productId,
+            image_url: "/placeholder.svg",
+            alt_text: "Diamond Engagement Ring - Main View",
+            is_primary: true,
+            sort_order: 0
+          },
+          {
+            id: 2,
+            product_id: productId,
+            image_url: "/placeholder.svg",
+            alt_text: "Diamond Engagement Ring - Side View",
+            is_primary: false,
+            sort_order: 1
+          },
+          {
+            id: 3,
+            product_id: productId,
+            image_url: "/placeholder.svg",
+            alt_text: "Diamond Engagement Ring - Top View",
+            is_primary: false,
+            sort_order: 2
+          }
+        ],
+        primaryImage: {
+          id: 1,
+          product_id: productId,
+          image_url: "/placeholder.svg",
+          alt_text: "Diamond Engagement Ring - Main View",
+          is_primary: true,
+          sort_order: 0
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log(`🔧 Returning mock data for product ID: ${productId}`);
+      return res.json(mockProduct);
     }
 
     // Get images for this product

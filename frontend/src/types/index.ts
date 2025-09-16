@@ -1,13 +1,12 @@
-// export interface User {
-//   id: number;
-//   email: string;
-//   first_name: string;
-//   last_name: string;
-//   phone?: string;
-//   role: 'customer' | 'admin';
-//   created_at: string;
-//   updated_at: string;
-// }
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  role: string;
+  createdAt: string;
+  isVerified: boolean;
+}
 
 export interface Category {
   id: number;
@@ -57,10 +56,8 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
-  // compare_price?: number;
   category_id: number;
   category?: Category;
-  // sku?: string;
   stock_quantity: number;
   weight?: number;
   dimensions?: {
@@ -68,19 +65,19 @@ export interface Product {
     width: number;
     height: number;
   };
-  material?: string;
-  gemstone?: string;
-  metal_type?: string;
-  metal_purity?: string;
   metals?: Metal[];
   gemstones?: Gemstone[];
   is_active: boolean;
-  // featured: boolean;
   model_3d_url?: string;
   images: ProductImage[];
   customizations?: ProductCustomization[];
   created_at: string;
-  updated_at: string;
+  // material?: string;
+  // gemstone?: string;
+  // metal_type?: string;
+  // metal_purity?: string;
+  // featured: boolean;
+  // updated_at: string;
 }
 
 export interface ProductImage {

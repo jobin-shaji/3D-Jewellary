@@ -13,14 +13,14 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: 'user' },
-  isVerified: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
+  // isVerified: { type: Boolean, default: true },
   // Profile picture field (optional)
-  profilePicture: { type: String },
+  // profilePicture: { type: String },
   // Additional fields for user dashboard
-  totalOrders: { type: Number, default: 0 },
-  totalSpent: { type: Number, default: 0 },
-  loyaltyPoints: { type: Number, default: 0 }
+  // totalOrders: { type: Number, default: 0 },
+  // totalSpent: { type: Number, default: 0 },
+  // loyaltyPoints: { type: Number, default: 0 }
 }, {
   // This ensures createdAt and updatedAt are automatically managed
   timestamps: true
