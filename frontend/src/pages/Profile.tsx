@@ -1,5 +1,5 @@
-// import { Header } from "@/components/layout/Header";
-// import { Footer } from "@/components/layout/Footer";
+
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* <Header /> */}
+
 
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -198,7 +198,7 @@ const Profile = () => {
           </Tabs>
         </div>
       </main>
-      {/* <Footer /> */}
+
     </div>
   );
 };

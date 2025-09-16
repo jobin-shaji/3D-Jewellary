@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-// import { Header } from "@/components/layout/Header";
-// import { Footer } from "@/components/layout/Footer";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -152,7 +151,7 @@ const ProductDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
-        {/* <Header /> */}
+  
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -161,7 +160,7 @@ const ProductDetail = () => {
             </div>
           </div>
         </main>
-        {/* {/* <Footer /> */} 
+  
       </div>
     );
   }
@@ -170,7 +169,7 @@ const ProductDetail = () => {
   if (error || !product) {
     return (
       <div className="min-h-screen flex flex-col">
-        {/* <Header /> */}
+  
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="text-center min-h-[400px] flex items-center justify-center">
             <div>
@@ -182,14 +181,14 @@ const ProductDetail = () => {
             </div>
           </div>
         </main>
-        {/* {/* <Footer /> */} 
+  
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* <Header /> */}
+
       <main className="flex-1 container mx-auto px-4 py-8">
         <Button 
           variant="ghost" 
@@ -404,7 +403,7 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
-      {/* {/* <Footer /> */} 
+
     </div>
   );
 };

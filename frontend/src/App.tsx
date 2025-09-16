@@ -7,7 +7,7 @@ import { AuthProvider } from "@/services/auth";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
-import ProductManagement from "./pages/ProductManagement";
+import ProductManagement from "./pages/productManagement/ProductManagement";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderDetail from "./pages/OrderDetail";

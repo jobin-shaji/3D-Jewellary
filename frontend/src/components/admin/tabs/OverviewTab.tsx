@@ -47,9 +47,9 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
     }).format(price);
   };
 
@@ -121,7 +121,7 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
                   price={metalPrice.price}
                   change={metalPrice.change}
                   changePercent={metalPrice.change}
-                  currency="USD"
+                  currency="INR"
                 />
               ))
             )}

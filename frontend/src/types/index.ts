@@ -72,12 +72,6 @@ export interface Product {
   images: ProductImage[];
   customizations?: ProductCustomization[];
   created_at: string;
-  // material?: string;
-  // gemstone?: string;
-  // metal_type?: string;
-  // metal_purity?: string;
-  // featured: boolean;
-  // updated_at: string;
 }
 
 export interface ProductImage {

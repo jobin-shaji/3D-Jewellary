@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-// import { Header } from "@/components/layout/Header";
-// import { Footer } from "@/components/layout/Footer";
+
+
 import { Product3DViewer } from "@/components/product/Product3DViewer";
 import { 
   Star, 
@@ -50,7 +50,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* <Header /> */}
+
       
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-background via-background to-muted/50 py-20">

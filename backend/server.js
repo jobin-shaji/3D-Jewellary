@@ -156,14 +156,14 @@ const uploadImage = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
+// const uploadMultiple = multer({ 
+//   storage: imageStorage,
+//   limits: { fileSize: 5 * 1024 * 1024 }
+// });
+
 const uploadModel = multer({ 
   storage: modelStorage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for 3D models
-});
-
-const uploadMultiple = multer({ 
-  storage: imageStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // Register endpoint
@@ -437,94 +437,94 @@ app.post('/api/products', authenticateToken, async (req, res) => {
 });
 
 // Initialize default categories (run once)
-app.post('/api/setup/categories', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
+// app.post('/api/setup/categories', authenticateToken, async (req, res) => {
+//   try {
+//     if (req.user.role !== 'admin') {
+//       return res.status(403).json({ message: 'Admin access required' });
+//     }
 
-    const defaultCategories = [
-      { id: 1, name: 'Rings', description: 'Engagement rings, wedding bands, and fashion rings' },
-      { id: 2, name: 'Necklaces', description: 'Chains, pendants, and statement necklaces' },
-      { id: 3, name: 'Earrings', description: 'Studs, hoops, and drop earrings' },
-      { id: 4, name: 'Bracelets', description: 'Tennis bracelets, bangles, and charm bracelets' },
-      { id: 5, name: 'Watches', description: 'Luxury timepieces and smart watches' }
-    ];
+//     const defaultCategories = [
+//       { id: 1, name: 'Rings', description: 'Engagement rings, wedding bands, and fashion rings' },
+//       { id: 2, name: 'Necklaces', description: 'Chains, pendants, and statement necklaces' },
+//       { id: 3, name: 'Earrings', description: 'Studs, hoops, and drop earrings' },
+//       { id: 4, name: 'Bracelets', description: 'Tennis bracelets, bangles, and charm bracelets' },
+//       { id: 5, name: 'Watches', description: 'Luxury timepieces and smart watches' }
+//     ];
 
-    for (const categoryData of defaultCategories) {
-      const existingCategory = await Category.findOne({ id: categoryData.id });
-      if (!existingCategory) {
-        const category = new Category(categoryData);
-        await category.save();
-        console.log(`Created category: ${category.name}`);
-      }
-    }
+//     for (const categoryData of defaultCategories) {
+//       const existingCategory = await Category.findOne({ id: categoryData.id });
+//       if (!existingCategory) {
+//         const category = new Category(categoryData);
+//         await category.save();
+//         console.log(`Created category: ${category.name}`);
+//       }
+//     }
 
-    const allCategories = await Category.find();
-    console.log('All categories after setup:', allCategories);
+//     const allCategories = await Category.find();
+//     console.log('All categories after setup:', allCategories);
 
-    res.json({ 
-      message: 'Default categories created successfully',
-      categories: allCategories
-    });
-  } catch (error) {
-    console.error('Setup categories error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+//     res.json({ 
+//       message: 'Default categories created successfully',
+//       categories: allCategories
+//     });
+//   } catch (error) {
+//     console.error('Setup categories error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 
 // Single image upload for product
-app.post('/api/products/:id/images', authenticateToken, uploadImage.single('image'), async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
+// app.post('/api/products/:id/images', authenticateToken, uploadImage.single('image'), async (req, res) => {
+//   try {
+//     // Check if user is admin
+//     if (req.user.role !== 'admin') {
+//       return res.status(403).json({ message: 'Admin access required' });
+//     }
 
-    const productId = req.params.id;
-    const { alt_text, is_primary, sort_order } = req.body;
+//     const productId = req.params.id;
+//     const { alt_text, is_primary, sort_order } = req.body;
 
-    // Check if product exists
-    const product = await Product.findOne({ id: productId });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+//     // Check if product exists
+//     const product = await Product.findOne({ id: productId });
+//     if (!product) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'Image file is required' });
-    }
+//     if (!req.file) {
+//       return res.status(400).json({ message: 'Image file is required' });
+//     }
 
-    // If this is set as primary, unset other primary images for this product
-    if (is_primary === 'true') {
-      await ProductImage.updateMany(
-        { product_id: productId },
-        { is_primary: false }
-      );
-    }
+//     // If this is set as primary, unset other primary images for this product
+//     if (is_primary === 'true') {
+//       await ProductImage.updateMany(
+//         { product_id: productId },
+//         { is_primary: false }
+//       );
+//     }
 
-    const productImage = new ProductImage({
-      product_id: productId,
-      image_url: req.file.path, // Cloudinary URL
-      alt_text: alt_text || `${product.name} image`,
-      is_primary: is_primary === 'true',
-      sort_order: parseInt(sort_order) || 0
-    });
+//     const productImage = new ProductImage({
+//       product_id: productId,
+//       image_url: req.file.path, // Cloudinary URL
+//       alt_text: alt_text || `${product.name} image`,
+//       is_primary: is_primary === 'true',
+//       sort_order: parseInt(sort_order) || 0
+//     });
 
-    await productImage.save();
+//     await productImage.save();
 
-    res.status(201).json({
-      message: 'Product image uploaded successfully',
-      image: productImage
-    });
+//     res.status(201).json({
+//       message: 'Product image uploaded successfully',
+//       image: productImage
+//     });
 
-  } catch (error) {
-    console.error('Upload product image error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+//   } catch (error) {
+//     console.error('Upload product image error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 
 // Multiple images upload for product
-app.post('/api/products/:id/images/bulk', authenticateToken, uploadMultiple.array('images', 10), async (req, res) => {
+app.post('/api/products/:id/images', authenticateToken, uploadImage.array('images', 10), async (req, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
@@ -543,26 +543,26 @@ app.post('/api/products/:id/images/bulk', authenticateToken, uploadMultiple.arra
       return res.status(400).json({ message: 'At least one image file is required' });
     }
 
-    const uploadedImages = [];
-
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
       
-      const productImage = new ProductImage({
-        product_id: productId,
-        image_url: file.path, // Cloudinary URL
+      // Add image object to product's images array
+      const imageObject = {
+        image_url: file.path,
         alt_text: `${product.name} image ${i + 1}`,
-        is_primary: i === 0, // First image is primary
         sort_order: i
-      });
-
-      await productImage.save();
-      uploadedImages.push(productImage);
+        // is_primary: i === 0, // First image is primary
+      };
+      
+      product.images.push(imageObject);
     }
+
+    // Save the updated product with new image data
+    await product.save();
 
     res.status(201).json({
       message: 'Product images uploaded successfully',
-      images: uploadedImages
+      images: product.images
     });
 
   } catch (error) {
@@ -1141,4 +1141,3 @@ app.put('/api/products/:productId/images/:imageId/primary', authenticateToken, a
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-

@@ -13,7 +13,8 @@ export default function Layout({ children }) {
     <div className="app">
       <Header />
       <main>{children}</main>
-      {/* <Footer /> */}
+      <Footer />
+
     </div>
   );
 }

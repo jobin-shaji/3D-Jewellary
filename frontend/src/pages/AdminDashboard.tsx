@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { Header } from "@/components/layout/Header";
-// import { Footer } from "@/components/layout/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/services/auth";
 
@@ -64,7 +62,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* <Header /> */}
+
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex flex-col space-y-6">
@@ -115,7 +113,7 @@ const AdminDashboard = () => {
         </div>
       </main>
 
-      {/* {/* <Footer /> */} 
+
     </div>
   );
 };

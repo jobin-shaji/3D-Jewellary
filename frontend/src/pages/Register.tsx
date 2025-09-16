@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-// import { Header } from "@/components/layout/Header";
-// import { Footer } from "@/components/layout/Footer";
+
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -114,7 +114,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <div className="min-h-screen flex flex-col">
-            {/* <Header /> */}
+      
 
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md">
@@ -269,7 +269,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           </CardFooter>
         </Card>
       </main>
-      {/* <Footer /> */}
+
     </div>
   );
 };

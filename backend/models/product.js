@@ -5,27 +5,27 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    default: function() {
+    default: function () {
       return Date.now().toString() + Math.random().toString(36).substr(2, 9);
     }
   },
-  name: { 
-    type: String, 
+  name: {
+    type: String,
     required: true,
-    trim: true 
+    trim: true
   },
-  price: { 
-    type: Number, 
+  price: {
+    type: Number,
     required: true,
-    min: 0 
+    min: 0
   },
-  category_id: { 
-    type: Number, 
-    required: true 
+  category_id: {
+    type: Number,
+    required: true
   },
-  description: { 
-    type: String, 
-    required: true 
+  description: {
+    type: String,
+    required: true
   },
   sku: {
     type: String,
@@ -33,18 +33,18 @@ const productSchema = new mongoose.Schema({
     sparse: true,
     trim: true
   },
-  stock_quantity: { 
-    type: Number, 
+  stock_quantity: {
+    type: Number,
     default: 0,
-    min: 0 
+    min: 0
   },
-  is_active: { 
-    type: Boolean, 
-    default: true 
+  is_active: {
+    type: Boolean,
+    default: true
   },
-  featured: { 
-    type: Boolean, 
-    default: false 
+  featured: {
+    type: Boolean,
+    default: false
   },
   specifications: {
     type: Object,
@@ -116,6 +116,22 @@ const productSchema = new mongoose.Schema({
     type: Array,
     default: []
   },
+  images: [{
+    image_url: {
+      type: String,
+      required: true
+    },
+    alt_text: {
+      type: String,
+      default: ''
+    },
+    sort_order: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
+  
   model_3d_url: {
     type: String,
     default: ''
@@ -125,9 +141,9 @@ const productSchema = new mongoose.Schema({
 });
 
 // Add text index for search functionality
-productSchema.index({ 
-  name: 'text', 
-  description: 'text' 
+productSchema.index({
+  name: 'text',
+  description: 'text'
 });
 
 // Virtual for category population
