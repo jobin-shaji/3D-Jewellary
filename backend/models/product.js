@@ -27,12 +27,12 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  sku: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true
-  },
+  // sku: {
+  //   type: String,
+  //   unique: true,
+  //   sparse: true,
+  //   trim: true
+  // },
   stock_quantity: {
     type: Number,
     default: 0,
@@ -42,14 +42,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  featured: {
-    type: Boolean,
-    default: false
-  },
-  specifications: {
-    type: Object,
-    default: {}
-  },
+  // featured: {
+  //   type: Boolean,
+  //   default: false
+  // },
   metals: [{
     type: {
       type: String, // e.g., "Gold", "Silver", "Platinum"
@@ -68,12 +64,12 @@ const productSchema = new mongoose.Schema({
       type: String, // e.g., "White", "Yellow", "Rose"
       default: ''
     },
-    percentage: {
-      type: Number, // percentage of total weight
-      min: 0,
-      max: 100,
-      default: 0
-    }
+    // percentage: {
+    //   type: Number, // percentage of total weight
+    //   min: 0,
+    //   max: 100,
+    //   default: 0
+    // }
   }],
   gemstones: [{
     type: {
@@ -103,10 +99,10 @@ const productSchema = new mongoose.Schema({
       min: 1,
       default: 1
     },
-    shape: {
-      type: String, // e.g., "Round", "Oval", "Pear"
-      default: ''
-    },
+    // shape: {
+    //   type: String, // e.g., "Round", "Oval", "Pear"
+    //   default: ''
+    // },
     setting: {
       type: String, // e.g., "Prong", "Bezel", "Channel"
       default: ''
@@ -131,10 +127,23 @@ const productSchema = new mongoose.Schema({
       min: 0
     }
   }],
-  
   model_3d_url: {
     type: String,
     default: ''
+  },
+  certificates: {
+    type: [{
+      name: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      file_url: {
+        type: String,
+        required: true
+      }
+    }],
+    default: []
   }
 }, {
   timestamps: true

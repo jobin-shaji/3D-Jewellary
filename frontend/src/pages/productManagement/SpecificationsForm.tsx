@@ -41,13 +41,25 @@ export const SpecificationsForm: React.FC<SpecificationsFormProps> = ({
 
   const addCertification = () => {
     if (newCertification.name.trim() && newCertification.file) {
-      setCertifications(prev => [...prev, { ...newCertification }]);
+      const updatedCertifications = [...certifications, { ...newCertification }];
+      setCertifications(updatedCertifications);
       setNewCertification({ name: "", file: null, fileName: "" });
+      
+      // Notify parent component of the change
+      if (onCertificationsChange) {
+        onCertificationsChange(updatedCertifications);
+      }
     }
   };
 
   const removeCertification = (index: number) => {
-    setCertifications(prev => prev.filter((_, i) => i !== index));
+    const updatedCertifications = certifications.filter((_, i) => i !== index);
+    setCertifications(updatedCertifications);
+    
+    // Notify parent component of the change
+    if (onCertificationsChange) {
+      onCertificationsChange(updatedCertifications);
+    }
   };
 
   return (
@@ -76,7 +88,7 @@ export const SpecificationsForm: React.FC<SpecificationsFormProps> = ({
                 <Input
                   id="certificationFile"
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleFileUpload}
                   className="hidden"
                 />

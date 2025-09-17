@@ -1,11 +1,134 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Product,Metal, Gemstone, ProductCustomization } from "@/types";
+// import { ProductData } from "./types";
+
 interface FileUploadState {
     model3DFile: File | null;
     imageFiles: File[];
     model3DPreview: string;
     imagePreviews: string[];
 }
+
+// API Operations
+export const createProduct = async (Product: Product): Promise<any> => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    throw new Error('Authentication token not found. Please login again.');
+  }
+
+  const response = await fetch('http://localhost:3000/api/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(Product),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create product');
+  }
+
+  return response.json();
+};
+
+export const uploadProductImages = async (productId: number, imageFiles: File[]): Promise<any> => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    throw new Error('Authentication token not found.');
+  }
+
+  const imageFormData = new FormData();
+  imageFiles.forEach((file) => {
+    imageFormData.append('images', file);
+  });
+
+  const response = await fetch(`http://localhost:3000/api/products/${productId}/images`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: imageFormData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to upload images');
+  }
+
+  return response.json();
+};
+
+export const upload3DModel = async (productId: number, model3DFile: File): Promise<any> => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    throw new Error('Authentication token not found.');
+  }
+
+  const modelFormData = new FormData();
+  modelFormData.append('model', model3DFile);
+
+  const response = await fetch(`http://localhost:3000/api/products/${productId}/model`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: modelFormData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to upload 3D model');
+  }
+
+  return response.json();
+};
+
+export const uploadCertificates = async (productId: number, certificates: Array<{name: string, file: File}>): Promise<any> => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    throw new Error('Authentication token not found.');
+  }
+
+  const certificateFormData = new FormData();
+  
+  // Append certificate files and names in the expected format
+  certificates.forEach((cert, index) => {
+    certificateFormData.append('certificates', cert.file);
+    certificateFormData.append(`certificates[${index}][name]`, cert.name);
+  });
+
+  const response = await fetch(`http://localhost:3000/api/products/${productId}/certificates`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: certificateFormData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to upload certificates');
+  }
+
+  return response.json();
+};
+
+export const fetchCategories = async (): Promise<Array<{id: number; name: string; description?: string;createdAt?: string}>> => {
+  const response = await fetch('http://localhost:3000/api/categories');
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch categories');
+  }
+  
+  return response.json();
+};
 
 export const useFileUpload = () => {
   const { toast } = useToast();

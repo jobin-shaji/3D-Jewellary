@@ -71,6 +71,8 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+// Export the authenticateToken middleware for use in other routes
+module.exports = { authenticateToken };
 
 // Helper function to generate JWT token
 const generateToken = (user) => {
@@ -141,6 +143,16 @@ const imageStorage = new CloudinaryStorage({
   }
 });
 
+// Configure multer for certificate uploads
+const certificateStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'products/certificates',
+    allowed_formats: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
+    resource_type: 'auto'
+  }
+});
+
 // Configure multer for 3D model uploads
 const modelStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -154,6 +166,11 @@ const modelStorage = new CloudinaryStorage({
 const uploadImage = multer({ 
   storage: imageStorage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+const uploadCertificate = multer({ 
+  storage: certificateStorage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for certificates
 });
 
 // const uploadMultiple = multer({ 
@@ -303,21 +320,6 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// Get current user endpoint (protected route)
-// app.get('/api/user', authenticateToken, (req, res) => {
-//   res.json({
-//     user: req.user
-//   });
-// });
-
-// Check auth status endpoint (protected route)
-// app.get('/api/auth-status', authenticateToken, (req, res) => {
-//   res.json({
-//     isLoggedIn: true,
-//     user: req.user
-//   });
-// });
-
 // Verify token endpoint (for checking if token is still valid)
 app.get('/api/verify-token', authenticateToken, (req, res) => {
   res.json({
@@ -326,8 +328,6 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
   });
 });
 
-// Export the authenticateToken middleware for use in other routes
-module.exports = { authenticateToken };
 
 // Product creation endpoint (admin only)
 app.post('/api/products', authenticateToken, async (req, res) => {
@@ -342,7 +342,6 @@ app.post('/api/products', authenticateToken, async (req, res) => {
       category_id, 
       description = '',
       is_active = true,
-      specifications = {},
       customizations = [],
       metals = [],
       gemstones = [],
@@ -358,9 +357,7 @@ app.post('/api/products', authenticateToken, async (req, res) => {
     category_id = Number(category_id);
 
     // Parse JSON if front-end sent strings
-    if (typeof specifications === 'string') {
-      try { specifications = JSON.parse(specifications); } catch (e) { specifications = {}; }
-    }
+  
     if (typeof customizations === 'string') {
       try { customizations = JSON.parse(customizations); } catch (e) { customizations = []; }
     }
@@ -411,7 +408,6 @@ app.post('/api/products', authenticateToken, async (req, res) => {
       category_id,
       description,
       is_active,
-      specifications,
       customizations,
       metals,
       gemstones,
@@ -435,93 +431,6 @@ app.post('/api/products', authenticateToken, async (req, res) => {
     });
   }
 });
-
-// Initialize default categories (run once)
-// app.post('/api/setup/categories', authenticateToken, async (req, res) => {
-//   try {
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-
-//     const defaultCategories = [
-//       { id: 1, name: 'Rings', description: 'Engagement rings, wedding bands, and fashion rings' },
-//       { id: 2, name: 'Necklaces', description: 'Chains, pendants, and statement necklaces' },
-//       { id: 3, name: 'Earrings', description: 'Studs, hoops, and drop earrings' },
-//       { id: 4, name: 'Bracelets', description: 'Tennis bracelets, bangles, and charm bracelets' },
-//       { id: 5, name: 'Watches', description: 'Luxury timepieces and smart watches' }
-//     ];
-
-//     for (const categoryData of defaultCategories) {
-//       const existingCategory = await Category.findOne({ id: categoryData.id });
-//       if (!existingCategory) {
-//         const category = new Category(categoryData);
-//         await category.save();
-//         console.log(`Created category: ${category.name}`);
-//       }
-//     }
-
-//     const allCategories = await Category.find();
-//     console.log('All categories after setup:', allCategories);
-
-//     res.json({ 
-//       message: 'Default categories created successfully',
-//       categories: allCategories
-//     });
-//   } catch (error) {
-//     console.error('Setup categories error:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
-
-// Single image upload for product
-// app.post('/api/products/:id/images', authenticateToken, uploadImage.single('image'), async (req, res) => {
-//   try {
-//     // Check if user is admin
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-
-//     const productId = req.params.id;
-//     const { alt_text, is_primary, sort_order } = req.body;
-
-//     // Check if product exists
-//     const product = await Product.findOne({ id: productId });
-//     if (!product) {
-//       return res.status(404).json({ message: 'Product not found' });
-//     }
-
-//     if (!req.file) {
-//       return res.status(400).json({ message: 'Image file is required' });
-//     }
-
-//     // If this is set as primary, unset other primary images for this product
-//     if (is_primary === 'true') {
-//       await ProductImage.updateMany(
-//         { product_id: productId },
-//         { is_primary: false }
-//       );
-//     }
-
-//     const productImage = new ProductImage({
-//       product_id: productId,
-//       image_url: req.file.path, // Cloudinary URL
-//       alt_text: alt_text || `${product.name} image`,
-//       is_primary: is_primary === 'true',
-//       sort_order: parseInt(sort_order) || 0
-//     });
-
-//     await productImage.save();
-
-//     res.status(201).json({
-//       message: 'Product image uploaded successfully',
-//       image: productImage
-//     });
-
-//   } catch (error) {
-//     console.error('Upload product image error:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
 
 // Multiple images upload for product
 app.post('/api/products/:id/images', authenticateToken, uploadImage.array('images', 10), async (req, res) => {
@@ -603,6 +512,81 @@ app.post('/api/products/:id/model', authenticateToken, uploadModel.single('model
 
   } catch (error) {
     console.error('Upload 3D model error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Upload certificates for product
+app.post('/api/products/:id/certificates', authenticateToken, uploadCertificate.array('certificates', 10), async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+
+    // Check if product exists
+    const product = await Product.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'At least one certificate file is required' });
+    }
+
+    // Extract certificate names from request body
+    const certificateNames = [];
+    for (let i = 0; i < req.files.length; i++) {
+      const nameKey = `certificates[${i}][name]`;
+      if (req.body[nameKey]) {
+        certificateNames.push(req.body[nameKey]);
+      } else {
+        certificateNames.push(`Certificate ${i + 1}`);
+      }
+    }
+
+    // Add certificate objects to product's certificates array
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+      const certificateName = certificateNames[i];
+      
+      const certificateObject = {
+        name: certificateName,
+        file_url: file.path
+      };
+      
+      product.certificates.push(certificateObject);
+    }
+
+    // Save the updated product with new certificate data
+    await product.save();
+
+    res.status(201).json({
+      message: 'Product certificates uploaded successfully',
+      certificates: product.certificates
+    });
+
+  } catch (error) {
+    console.error('Upload certificates error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get product certificates
+app.get('/api/products/:id/certificates', async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Check if product exists
+    const product = await Product.findOne({ id: productId, is_active: true });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json(product.certificates || []);
+  } catch (error) {
+    console.error('Get product certificates error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1141,3 +1125,105 @@ app.put('/api/products/:productId/images/:imageId/primary', authenticateToken, a
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Get current user endpoint (protected route)
+// app.get('/api/user', authenticateToken, (req, res) => {
+//   res.json({
+//     user: req.user
+//   });
+// });
+
+// Check auth status endpoint (protected route)
+// app.get('/api/auth-status', authenticateToken, (req, res) => {
+//   res.json({
+//     isLoggedIn: true,
+//     user: req.user
+//   });
+// });
+
+// Initialize default categories (run once)
+// app.post('/api/setup/categories', authenticateToken, async (req, res) => {
+//   try {
+//     if (req.user.role !== 'admin') {
+//       return res.status(403).json({ message: 'Admin access required' });
+//     }
+
+//     const defaultCategories = [
+//       { id: 1, name: 'Rings', description: 'Engagement rings, wedding bands, and fashion rings' },
+//       { id: 2, name: 'Necklaces', description: 'Chains, pendants, and statement necklaces' },
+//       { id: 3, name: 'Earrings', description: 'Studs, hoops, and drop earrings' },
+//       { id: 4, name: 'Bracelets', description: 'Tennis bracelets, bangles, and charm bracelets' },
+//       { id: 5, name: 'Watches', description: 'Luxury timepieces and smart watches' }
+//     ];
+
+//     for (const categoryData of defaultCategories) {
+//       const existingCategory = await Category.findOne({ id: categoryData.id });
+//       if (!existingCategory) {
+//         const category = new Category(categoryData);
+//         await category.save();
+//         console.log(`Created category: ${category.name}`);
+//       }
+//     }
+
+//     const allCategories = await Category.find();
+//     console.log('All categories after setup:', allCategories);
+
+//     res.json({ 
+//       message: 'Default categories created successfully',
+//       categories: allCategories
+//     });
+//   } catch (error) {
+//     console.error('Setup categories error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// Single image upload for product
+// app.post('/api/products/:id/images', authenticateToken, uploadImage.single('image'), async (req, res) => {
+//   try {
+//     // Check if user is admin
+//     if (req.user.role !== 'admin') {
+//       return res.status(403).json({ message: 'Admin access required' });
+//     }
+
+//     const productId = req.params.id;
+//     const { alt_text, is_primary, sort_order } = req.body;
+
+//     // Check if product exists
+//     const product = await Product.findOne({ id: productId });
+//     if (!product) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     if (!req.file) {
+//       return res.status(400).json({ message: 'Image file is required' });
+//     }
+
+//     // If this is set as primary, unset other primary images for this product
+//     if (is_primary === 'true') {
+//       await ProductImage.updateMany(
+//         { product_id: productId },
+//         { is_primary: false }
+//       );
+//     }
+
+//     const productImage = new ProductImage({
+//       product_id: productId,
+//       image_url: req.file.path, // Cloudinary URL
+//       alt_text: alt_text || `${product.name} image`,
+//       is_primary: is_primary === 'true',
+//       sort_order: parseInt(sort_order) || 0
+//     });
+
+//     await productImage.save();
+
+//     res.status(201).json({
+//       message: 'Product image uploaded successfully',
+//       image: productImage
+//     });
+
+//   } catch (error) {
+//     console.error('Upload product image error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });

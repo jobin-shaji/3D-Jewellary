@@ -5,21 +5,18 @@ export interface User {
   phone: string;
   role: string;
   createdAt: string;
-  isVerified: boolean;
+  // isVerified: boolean;
 }
 
 export interface Category {
   id: number;
   name: string;
   description?: string;
-  image_url?: string;
-  parent_id?: number;
-  children?: Category[];
-  created_at: string;
+  createdAt?: string;
 }
 
 export interface ProductCustomization {
-  id: string;
+  id?: string;
   name: string;
   type: 'select' | 'range' | 'text';
   options?: string[];
@@ -32,109 +29,113 @@ export interface ProductCustomization {
 
 export interface Metal {
   id?: string;
-  type: string; // e.g., "Gold", "Silver", "Platinum"
-  purity: string; // e.g., "18k", "14k", "925"
-  weight: number; // in grams
-  color?: string; // e.g., "White", "Yellow", "Rose"
-  percentage?: number; // percentage of total weight
+  type: string; 
+  purity: string;
+  weight: number;
+  color?: string;
+  percentage?: number;
 }
 
 export interface Gemstone {
   id?: string;
-  type: string; // e.g., "Diamond", "Ruby", "Emerald"
-  cut?: string; // e.g., "Round", "Princess", "Emerald"
-  carat: number; // carat weight
-  color?: string; // e.g., "D", "E", "F" for diamonds
-  clarity?: string; // e.g., "FL", "IF", "VVS1"
-  count: number; // number of stones of this type
-  shape?: string; // e.g., "Round", "Oval", "Pear"
-  setting?: string; // e.g., "Prong", "Bezel", "Channel"
+  type: string; 
+  cut?: string;
+  carat: number; 
+  color?: string;
+  clarity?: string; 
+  count: number;
+  shape?: string;
+  setting?: string;
+}
+
+export interface Certificate {
+  name: string;
+  file_url: string;
+}
+
+export interface ProductImage {
+  id?: string;
+  image_url: string;
+  alt_text?: string;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface Product {
-  id: number;
+  id?: number;
   name: string;
   description?: string;
   price: number;
   category_id: number;
   category?: Category;
   stock_quantity: number;
-  weight?: number;
-  dimensions?: {
-    length: number;
-    width: number;
-    height: number;
-  };
   metals?: Metal[];
   gemstones?: Gemstone[];
-  is_active: boolean;
-  model_3d_url?: string;
-  images: ProductImage[];
   customizations?: ProductCustomization[];
-  created_at: string;
+  images?: ProductImage[];
+  model_3d_url?: string;
+  certificates?: Certificate[];
+  is_active: boolean;
+  created_at?: string;
+  // weight?: number;
+  // dimensions?: {
+  //   length: number;
+  //   width: number;
+  //   height: number;
+  // };
 }
 
-export interface ProductImage {
-  id: number;
-  product_id: number;
-  image_url: string;
-  alt_text?: string;
-  is_primary: boolean;
-  sort_order: number;
-  created_at: string;
-}
+// export interface CartItem {
+//   id: number;
+//   cart_id: number;
+//   product_id: number;
+//   product: Product;
+//   quantity: number;
+//   price: number;
+//   created_at: string;
+// }
 
-export interface CartItem {
-  id: number;
-  cart_id: number;
-  product_id: number;
-  product: Product;
-  quantity: number;
-  price: number;
-  created_at: string;
-}
+// export interface Cart {
+//   id: number;
+//   user_id?: number;
+//   session_id?: string;
+//   items: CartItem[];
+//   total_amount: number;
+//   total_items: number;
+//   created_at: string;
+//   updated_at: string;
+// }
 
-export interface Cart {
-  id: number;
-  user_id?: number;
-  session_id?: string;
-  items: CartItem[];
-  total_amount: number;
-  total_items: number;
-  created_at: string;
-  updated_at: string;
-}
+// export interface Address {
+//   id: number;
+//   user_id: number;
+//   type: 'shipping' | 'billing';
+//   first_name: string;
+//   last_name: string;
+//   company?: string;
+//   address_line_1: string;
+//   address_line_2?: string;
+//   city: string;
+//   state: string;
+//   postal_code: string;
+//   country: string;
+//   phone?: string;
+//   is_default: boolean;
+//   created_at: string;
+// }
 
-export interface Address {
-  id: number;
-  user_id: number;
-  type: 'shipping' | 'billing';
-  first_name: string;
-  last_name: string;
-  company?: string;
-  address_line_1: string;
-  address_line_2?: string;
-  city: string;
-  state: string;
-  postal_code: string;
-  country: string;
-  phone?: string;
-  is_default: boolean;
-  created_at: string;
-}
-
-export interface OrderItem {
-  id: number;
-  order_id: number;
-  product_id: number;
-  product: Product;
-  quantity: number;
-  price: number;
-  product_name: string;
-  product_sku?: string;
-  customizations?: Record<string, string | number>;
-  created_at: string;
-}
+// export interface OrderItem {
+//   id: number;
+//   order_id: number;
+//   product_id: number;
+//   product: Product;
+//   quantity: number;
+//   price: number;
+//   product_name: string;
+//   product_sku?: string;
+//   customizations?: Record<string, string | number>;
+//   created_at: string;
+// }
 
 // export interface Order {
 //   id: number;

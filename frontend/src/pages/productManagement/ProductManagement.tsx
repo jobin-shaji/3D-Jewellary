@@ -4,32 +4,52 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ProductCustomization, Metal, Gemstone } from "@/types";
+import { ProductCustomization, Metal, Gemstone ,Category,Product} from "@/types";
 import { useAuth } from "@/services/auth";
+import { type Certification } from "./SpecificationsForm";
 
 // Import our new components individually for better tree shaking
-import { BasicInfoForm, type ProductFormData, type Category } from "./BasicInfoForm";
+import { BasicInfoForm, type ProductFormData } from "./BasicInfoForm";
 import { SpecificationsForm } from "./SpecificationsForm";
 import { MetalsManagement } from "./MetalsManagement";
 import { GemstonesManagement } from "./GemstonesManagement";
 import { FileUploadSection, type FileUploadState } from "./FileUploadSection";
 import { ProductCustomizations, type NewCustomization } from "./ProductCustomizations";
-import { useFileUpload } from "./hooks";
+import { validateAllFields } from "./validationUtils";
 import { 
-  validateProductForm,
-  createProductData,
+  useFileUpload,
   createProduct,
   uploadProductImages,
   upload3DModel,
+  uploadCertificates,
   fetchCategories
-} from "./utils";
-import type { ProductManagementProps } from "./types";
+} from "./hooks";
+
+// Validation and utility functions
+const createProductData = (
+  formData: ProductFormData,
+  metals: Metal[],
+  gemstones: Gemstone[],
+  customizations: ProductCustomization[]
+): Product => {
+  return {
+    name: formData.name,
+    price: Number(formData.price),
+    category_id: Number(formData.category_id),
+    description: formData.description,
+    is_active: formData.inStock,
+    stock_quantity: Number(formData.stock_quantity || 0),
+    metals: metals.map(({ id, ...metal }) => metal), // Remove frontend-only id
+    gemstones: gemstones.map(({ id, ...gemstone }) => gemstone), // Remove frontend-only id
+    customizations: customizations,
+  };
+};
 
 const ProductManagement = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoggedIn } = useAuth();
+  const { user } = useAuth();
   const isEdit = !!id;
 
   // Mock product data for editing
@@ -38,32 +58,22 @@ const ProductManagement = () => {
         id: Number(id),
         name: "Diamond Engagement Ring",
         price: 2499,
+        category_id:"123",
         category: "rings",
         description:
           "Exquisite diamond engagement ring crafted with precision and elegance This breathtaking diamond engagement ring represents the perfect symbol of eternal love.",
         inStock: true,
         stock_quantity: 10, // added
-        specifications: {
-          Material: "18k White Gold",
-          "Diamond Weight": "1.5 carats",
-          "Diamond Cut": "Brilliant",
-          "Diamond Color": "D (Colorless)",
-          "Diamond Clarity": "VVS1",
-          "Ring Size": "Adjustable",
-          Certification: "GIA Certified",
-        },
       }
     : null;
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: existingProduct?.name || "",
     price: existingProduct?.price || "",
-    category: existingProduct?.category || "",
+    category_id: existingProduct?.category_id || "",
     description: existingProduct?.description || "",
     inStock: existingProduct?.inStock ?? true,
     stock_quantity: existingProduct?.stock_quantity?.toString?.() || "0",
-    size: existingProduct?.specifications?.["Ring Size"] || "",
-    certification: existingProduct?.specifications?.Certification || "",
   });
 
   const [customizations, setCustomizations] = useState<ProductCustomization[]>([]);
@@ -88,6 +98,7 @@ const ProductManagement = () => {
   // State for metals and gemstones
   const [metals, setMetals] = useState<Metal[]>([]);
   const [gemstones, setGemstones] = useState<Gemstone[]>([]);
+  const [certificates, setCertifications] = useState<Certification[]>([]);
   const [newMetal, setNewMetal] = useState<Metal>({
     type: '',
     purity: '',
@@ -120,12 +131,12 @@ const ProductManagement = () => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        console.log('🔄 Fetching categories...');
+        console.log('Fetching categories...');
         const data = await fetchCategories();
-        console.log('📦 Categories data received:', data);
+        console.log('Categories data received:', data);
         setCategories(data);
       } catch (error) {
-        console.error('❌ Failed to fetch categories:', error);
+        console.error('Failed to fetch categories:', error);
       }
     };
 
@@ -139,7 +150,7 @@ const ProductManagement = () => {
 
     try {
       // Validate required fields using our utility function
-      const validationError = validateProductForm(formData);
+      const validationError = validateAllFields(formData);
       if (validationError) {
         toast({
           title: "Validation Error",
@@ -150,12 +161,12 @@ const ProductManagement = () => {
       }
 
       // Create product data using our utility function
-      const productData = createProductData(formData, metals, gemstones, customizations);
+      const Product = createProductData(formData, metals, gemstones, customizations);
 
-      console.log('Creating product with data:', productData);
+      console.log('Creating product with data:', Product);
 
       // Create the product using our utility function
-      const createdProduct = await createProduct(productData);
+      const createdProduct = await createProduct(Product);
       const productId = createdProduct.product.id;
 
       // Upload images if any using our utility function
@@ -198,9 +209,33 @@ const ProductManagement = () => {
         }
       }
 
+      // Upload certificates if any
+      if (certificates.length > 0) {
+        try {
+          console.log('📄 Uploading certificates for product:', productId);
+          const certificatesData = certificates.map(cert => ({
+            name: cert.name,
+            file: cert.file!
+          }));
+          const uploadedCertificates = await uploadCertificates(productId, certificatesData);
+          console.log('✅ Certificates uploaded successfully:', uploadedCertificates);
+          toast({
+            title: "Certificates Uploaded",
+            description: `${certificates.length} certificate(s) uploaded successfully.`,
+          });
+        } catch (certificateError) {
+          console.error('❌ Certificate upload error:', certificateError);
+          toast({
+            title: "Warning",
+            description: "Product created but certificate upload failed.",
+            variant: "destructive",
+          });
+        }
+      }
+
       toast({
         title: "Product Created",
-        description: `${productData.name} has been created successfully.`,
+        description: `${Product.name} has been created successfully.`,
       });
 
       navigate("/admin");
@@ -290,7 +325,9 @@ const ProductManagement = () => {
                 />
 
                 {/* Certifications */}
-                <SpecificationsForm />
+                <SpecificationsForm 
+                  onCertificationsChange={setCertifications}
+                />
 
                 {/* File Uploads */}
                 <FileUploadSection

@@ -9,26 +9,22 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { validateField } from "./validationUtils";
+
+import {Category} from "@/types"
 
 // Local types for BasicInfoForm
 export interface ProductFormData {
   name: string;
   price: string | number;
-  category: string;
+  category_id: string;
   description: string;
   inStock: boolean;
   stock_quantity: string;
-  size: string;
-  certification: string;
 }
 
-export interface Category {
-  id: number;
-  name: string;
-  description?: string;
-}
 
-export interface FormSectionProps {
+type FormSectionProps={
   formData: ProductFormData;
   onInputChange: (field: string, value: string | number | boolean) => void;
   categories?: Category[];
@@ -40,6 +36,7 @@ export const BasicInfoForm: React.FC<FormSectionProps> = ({
   onInputChange,
   categories = []
 }) => {
+
   return (
     <div className="space-y-6">
       {/* Basic Information */}
@@ -52,6 +49,7 @@ export const BasicInfoForm: React.FC<FormSectionProps> = ({
               id="name"
               value={formData.name}
               onChange={(e) => onInputChange("name", e.target.value)}
+              onBlur={(e) => validateField('name', e.target.value)}
               placeholder="Enter product name"
               required
             />
@@ -60,8 +58,11 @@ export const BasicInfoForm: React.FC<FormSectionProps> = ({
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
             <Select
-              value={formData.category}
-              onValueChange={(value) => onInputChange("category", value)}
+              value={formData.category_id}
+              onValueChange={(value) => onInputChange("category_id", value)}
+              onOpenChange={(open) => {
+                if (!open) validateField('category_id', formData.category_id);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
@@ -96,6 +97,7 @@ export const BasicInfoForm: React.FC<FormSectionProps> = ({
               type="number"
               value={formData.price}
               onChange={(e) => onInputChange("price", Number(e.target.value))}
+              onBlur={(e) => validateField('price', e.target.value)}
               placeholder="0.00"
               required
             />
@@ -109,6 +111,7 @@ export const BasicInfoForm: React.FC<FormSectionProps> = ({
               min="0"
               value={formData.stock_quantity}
               onChange={(e) => onInputChange("stock_quantity", e.target.value)}
+              onBlur={(e) => validateField('stock_quantity', e.target.value)}
               placeholder="0"
               required
             />
@@ -122,6 +125,7 @@ export const BasicInfoForm: React.FC<FormSectionProps> = ({
           id="description"
           value={formData.description}
           onChange={(e) => onInputChange("description", e.target.value)}
+          onBlur={(e) => validateField('description', e.target.value)}
           placeholder="Brief description of the product"
           rows={3}
           required
