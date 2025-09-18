@@ -1,58 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Loader2 } from "lucide-react";
 import { Product3DViewer } from "@/components/product/Product3DViewer";
+import { Product } from "@/types";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const category = searchParams.get("category");
   const search = searchParams.get("search");
-  const [wishlistedItems, setWishlistedItems] = useState<number[]>([]);
+  const [wishlistedItems, setWishlistedItems] = useState<string[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock products data
-  const products = [
-    {
-      id: 1,
-      name: "Diamond Engagement Ring",
-      price: 2499,
-      category: "rings",
-      image: "/placeholder.svg",
-      description: "Beautiful diamond engagement ring"
-    },
-    {
-      id: 2,
-      name: "Gold Necklace",
-      price: 899,
-      category: "necklaces",
-      image: "/placeholder.svg",
-      description: "Elegant gold necklace"
-    },
-    {
-      id: 3,
-      name: "Pearl Earrings",
-      price: 299,
-      category: "earrings",
-      image: "/placeholder.svg",
-      description: "Classic pearl earrings"
-    },
-    {
-      id: 4,
-      name: "Silver Bracelet",
-      price: 199,
-      category: "bracelets",
-      image: "/placeholder.svg",
-      description: "Modern silver bracelet"
-    }
-  ];
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch('http://localhost:3000/api/products');
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        
+        const data = await response.json();
+        setProducts(data.products || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch products');
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const filteredProducts = products.filter(product => {
-    if (category && product.category !== category) return false;
+    if (category && product.category?.name.toLowerCase() !== category.toLowerCase()) return false;
     if (search && !product.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -63,7 +54,7 @@ const Products = () => {
     return "All Products";
   };
 
-  const handleWishlistToggle = (productId: number) => {
+  const handleWishlistToggle = (productId: string) => {
     setWishlistedItems(prev => 
       prev.includes(productId) 
         ? prev.filter(id => id !== productId)
@@ -71,9 +62,44 @@ const Products = () => {
     );
   };
 
-  const handleProductClick = (productId: number) => {
-    navigate(`/product/${productId}`);
+  const handleProductClick = (productId: string) => {
+    navigate(`/products/${productId}`);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading products...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="text-center min-h-[400px] flex items-center justify-center">
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Error Loading Products</h2>
+              <p className="text-muted-foreground mb-6">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -89,11 +115,24 @@ const Products = () => {
                   className="relative overflow-hidden rounded-t-lg cursor-pointer"
                   onClick={() => handleProductClick(product.id)}
                 >
-                  <Product3DViewer
-                    modelUrl=""
-                    productName={product.name}
-                    className="h-64"
-                  />
+                  {/* Display primary image or 3D model */}
+                  {product.primaryImage ? (
+                    <img
+                      src={product.primaryImage.image_url}
+                      alt={product.primaryImage.alt_text || product.name}
+                      className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                  ) : product.model_3d_url ? (
+                    <Product3DViewer
+                      modelUrl={product.model_3d_url}
+                      productName={product.name}
+                      className="h-64"
+                    />
+                  ) : (
+                    <div className="w-full h-64 bg-muted flex items-center justify-center">
+                      <p className="text-muted-foreground">No image available</p>
+                    </div>
+                  )}
                   <Button
                     size="icon"
                     variant={wishlistedItems.includes(product.id) ? "default" : "ghost"}
@@ -111,14 +150,21 @@ const Products = () => {
                 <CardTitle className="text-lg mb-2">{product.name}</CardTitle>
                 <p className="text-muted-foreground text-sm mb-2">{product.description}</p>
                 <Badge variant="secondary" className="mb-2">
-                  {product.category}
+                  {product.category?.name || 'No Category'}
                 </Badge>
                 <p className="text-2xl font-bold text-primary">₹{product.price}</p>
+                {product.stock_quantity <= 0 && (
+                  <Badge variant="destructive" className="mt-2">Out of Stock</Badge>
+                )}
               </CardContent>
               <CardFooter className="p-4 pt-0">
-                <Button className="w-full" onClick={(e) => e.stopPropagation()}>
+                <Button 
+                  className="w-full" 
+                  disabled={product.stock_quantity <= 0}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Add to Cart
+                  {product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
                 </Button>
               </CardFooter>
             </Card>

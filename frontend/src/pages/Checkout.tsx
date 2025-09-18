@@ -381,7 +381,6 @@ const Checkout = () => {
           </div>
         </div>
       </main>
-      {/* {/* <Footer /> */} */}
     </div>
   );
 };

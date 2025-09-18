@@ -12,7 +12,6 @@ require('dotenv').config();
 
 const User = require('./models/user');
 const Product = require('./models/product');
-const ProductImage = require('./models/productImage');
 const Category = require('./models/category');
 
 const app = express();
@@ -452,21 +451,21 @@ app.post('/api/products/:id/images', authenticateToken, uploadImage.array('image
       return res.status(400).json({ message: 'At least one image file is required' });
     }
 
+    // Add images to product's images array
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
       
-      // Add image object to product's images array
       const imageObject = {
-        image_url: file.path,
-        alt_text: `${product.name} image ${i + 1}`,
-        sort_order: i
-        // is_primary: i === 0, // First image is primary
+        image_url: file.path, // Cloudinary URL
+        alt_text: `${product.name} image ${product.images.length + i + 1}`,
+        is_primary: product.images.length === 0 && i === 0, // First image of first upload is primary
+        sort_order: product.images.length + i
       };
       
       product.images.push(imageObject);
     }
 
-    // Save the updated product with new image data
+    // Save the updated product
     await product.save();
 
     res.status(201).json({
@@ -574,45 +573,6 @@ app.post('/api/products/:id/certificates', authenticateToken, uploadCertificate.
   }
 });
 
-// Get product certificates
-app.get('/api/products/:id/certificates', async (req, res) => {
-  try {
-    const productId = req.params.id;
-
-    // Check if product exists
-    const product = await Product.findOne({ id: productId, is_active: true });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-    res.json(product.certificates || []);
-  } catch (error) {
-    console.error('Get product certificates error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get product images
-app.get('/api/products/:id/images', async (req, res) => {
-  try {
-    const productId = req.params.id;
-
-    // Check if product exists
-    const product = await Product.findOne({ id: productId, is_active: true });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    const images = await ProductImage.find({ product_id: productId })
-      .sort({ sort_order: 1, created_at: 1 });
-
-    res.json(images);
-
-  } catch (error) {
-    console.error('Get product images error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // Get all categories
 app.get('/api/categories', async (req, res) => {
   try {
@@ -695,21 +655,27 @@ app.post('/api/categories', authenticateToken, async (req, res) => {
   }
 });
 
-// Get all products
+// Get all products with primary images
 app.get('/api/products', async (req, res) => {
   try {
-    // Hard limit of 50 products for academic project
-    const MAX_LIMIT = 50;
-    
-    // Get all active products with limit
+    // Get all active products with limit for performance
     const products = await Product.find({ is_active: true })
       .populate('category')
-      .sort({ created_at: -1 })
-      .limit(MAX_LIMIT);
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    // Add primary image for each product
+    const productsWithImages = products.map(product => {
+      const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0];
+      
+      return {
+        ...product.toObject(),
+        primaryImage: primaryImage
+      };
+    });
 
     res.json({
-      products,
-      // Still return pagination info for frontend consistency
+      products: productsWithImages,
       pagination: {
         page: 1,
         limit: products.length,
@@ -724,130 +690,6 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// app.get('/api/products', async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 12;
-//     const category = req.query.category;
-//     const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
-//     const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
-//     const featured = req.query.featured === 'true';
-//     const sortBy = req.query.sortBy || 'created_at';
-//     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
-
-//     // Build filter object
-//     const filter = { is_active: true };
-    
-//     if (category) {
-//       filter.category_id = parseInt(category);
-//     }
-    
-//     if (minPrice !== undefined || maxPrice !== undefined) {
-//       filter.price = {};
-//       if (minPrice !== undefined) filter.price.$gte = minPrice;
-//       if (maxPrice !== undefined) filter.price.$lte = maxPrice;
-//     }
-    
-//     if (featured) {
-//       filter.featured = true;
-//     }
-
-//     // Execute query with pagination
-//     const skip = (page - 1) * limit;
-//     const sortObj = {};
-//     sortObj[sortBy] = sortOrder;
-
-//     const products = await Product.find(filter)
-//       .populate('category')
-//       .sort(sortObj)
-//       .skip(skip)
-//       .limit(limit);
-
-//     const total = await Product.countDocuments(filter);
-
-//     res.json({
-//       products,
-//       pagination: {
-//         page,
-//         limit,
-//         total,
-//         pages: Math.ceil(total / limit)
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Get products error:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
-
-// Update product (admin only)
-app.put('/api/products/:id', authenticateToken, async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
-    const productId = req.params.id;
-    const updateData = req.body;
-
-    const product = await Product.findOneAndUpdate(
-      { id: productId },
-      { ...updateData, updated_at: new Date() },
-      { new: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    res.json({
-      message: 'Product updated successfully',
-      product
-    });
-
-  } catch (error) {
-    console.error('Update product error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Delete product (admin only) - soft delete
-app.delete('/api/products/:id', authenticateToken, async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
-    const productId = req.params.id;
-
-    // Soft delete - set is_active to false instead of actually deleting
-    const product = await Product.findOneAndUpdate(
-      { id: productId },
-      { is_active: false, updated_at: new Date() },
-      { new: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-      
-    }
-
-    // Also delete associated images (optional - you might want to keep them)
-    await ProductImage.deleteMany({ product_id: productId });
-
-    res.json({
-      message: 'Product deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Delete product error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // Get product with images populated
 app.get('/api/products/:id/full', async (req, res) => {
   try {
@@ -858,139 +700,14 @@ app.get('/api/products/:id/full', async (req, res) => {
       .populate('category');
 
     if (!product) {
-      // Return mock data for development/testing when product not found
-      const mockProduct = {
-        id: productId,
-        name: "Diamond Engagement Ring",
-        price: 2499,
-        category_id: 1,
-        category: {
-          id: 1,
-          name: "Rings",
-          description: "Engagement rings, wedding bands, and fashion rings"
-        },
-        description: "Exquisite diamond engagement ring crafted with precision and elegance. This stunning piece features a brilliant cut diamond set in premium white gold.",
-        stock_quantity: 15,
-        is_active: true,
-        featured: true,
-        model_3d_url: "", // No 3D model - will use fallback
-        specifications: {
-          "Material": "18k White Gold",
-          "Diamond Weight": "1.5 carats",
-          "Diamond Cut": "Brilliant",
-          "Diamond Color": "D (Colorless)",
-          "Diamond Clarity": "VVS1",
-          "Ring Size": "Adjustable",
-          "Certification": "GIA Certified"
-        },
-        metals: [
-          {
-            type: "Gold",
-            purity: "18k",
-            weight: 3.5,
-            color: "White",
-            percentage: 75
-          }
-        ],
-        gemstones: [
-          {
-            type: "Diamond",
-            cut: "Brilliant",
-            carat: 1.5,
-            color: "D",
-            clarity: "VVS1",
-            count: 1,
-            shape: "Round",
-            setting: "Prong"
-          },
-          {
-            type: "Diamond",
-            cut: "Brilliant",
-            carat: 0.05,
-            color: "F",
-            clarity: "VS1",
-            count: 12,
-            shape: "Round",
-            setting: "Channel"
-          }
-        ],
-        customizations: [
-          {
-            id: "ring_size",
-            name: "Ring Size",
-            type: "select",
-            options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"],
-            required: true,
-            default_value: "7"
-          },
-          {
-            id: "metal_type",
-            name: "Metal Type",
-            type: "select",
-            options: ["White Gold", "Yellow Gold", "Rose Gold", "Platinum"],
-            required: true,
-            default_value: "White Gold"
-          },
-          {
-            id: "engraving",
-            name: "Engraving",
-            type: "text",
-            required: false,
-            default_value: ""
-          }
-        ],
-        images: [
-          {
-            id: 1,
-            product_id: productId,
-            image_url: "/placeholder.svg",
-            alt_text: "Diamond Engagement Ring - Main View",
-            is_primary: true,
-            sort_order: 0
-          },
-          {
-            id: 2,
-            product_id: productId,
-            image_url: "/placeholder.svg",
-            alt_text: "Diamond Engagement Ring - Side View",
-            is_primary: false,
-            sort_order: 1
-          },
-          {
-            id: 3,
-            product_id: productId,
-            image_url: "/placeholder.svg",
-            alt_text: "Diamond Engagement Ring - Top View",
-            is_primary: false,
-            sort_order: 2
-          }
-        ],
-        primaryImage: {
-          id: 1,
-          product_id: productId,
-          image_url: "/placeholder.svg",
-          alt_text: "Diamond Engagement Ring - Main View",
-          is_primary: true,
-          sort_order: 0
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      console.log(`🔧 Returning mock data for product ID: ${productId}`);
-      return res.json(mockProduct);
+      return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Get images for this product
-    const images = await ProductImage.find({ product_id: productId })
-      .sort({ sort_order: 1, createdAt: 1 });
-
-    // Get primary image
-    const primaryImage = images.find(img => img.is_primary) || images[0];
+    // Get primary image (first image or one marked as primary)
+    const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0];
 
     res.json({
       ...product.toObject(),
-      images: images,
       primaryImage: primaryImage
     });
 
@@ -1000,230 +717,6 @@ app.get('/api/products/:id/full', async (req, res) => {
   }
 });
 
-// Get all products with their primary images (for listing pages)
-app.get('/api/products/with-primary-images', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
-
-    // Get products
-    const products = await Product.find({ is_active: true })
-      .populate('category')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Get primary images for all products
-    const productsWithImages = await Promise.all(
-      products.map(async (product) => {
-        const primaryImage = await ProductImage.findOne({ 
-          product_id: product.id, 
-          is_primary: true 
-        });
-        
-        return {
-          ...product.toObject(),
-          primaryImage: primaryImage
-        };
-      })
-    );
-
-    const total = await Product.countDocuments({ is_active: true });
-
-    res.json({
-      products: productsWithImages,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-
-  } catch (error) {
-    console.error('Get products with primary images error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Delete product image
-app.delete('/api/products/:productId/images/:imageId', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
-    const { productId, imageId } = req.params;
-
-    // Find and delete the image
-    const deletedImage = await ProductImage.findOneAndDelete({ 
-      id: imageId, 
-      product_id: productId 
-    });
-
-    if (!deletedImage) {
-      return res.status(404).json({ message: 'Image not found' });
-    }
-
-    // If this was the primary image, make the first remaining image primary
-    if (deletedImage.is_primary) {
-      const firstImage = await ProductImage.findOne({ product_id: productId })
-        .sort({ sort_order: 1 });
-      
-      if (firstImage) {
-        firstImage.is_primary = true;
-        await firstImage.save();
-      }
-    }
-
-    res.json({ message: 'Image deleted successfully' });
-
-  } catch (error) {
-    console.error('Delete product image error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Set primary image
-app.put('/api/products/:productId/images/:imageId/primary', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
-    const { productId, imageId } = req.params;
-
-    // Unset all primary images for this product
-    await ProductImage.updateMany(
-      { product_id: productId },
-      { is_primary: false }
-    );
-
-    // Set the specified image as primary
-    const updatedImage = await ProductImage.findOneAndUpdate(
-      { id: imageId, product_id: productId },
-      { is_primary: true },
-      { new: true }
-    );
-
-    if (!updatedImage) {
-      return res.status(404).json({ message: 'Image not found' });
-    }
-
-    res.json({ 
-      message: 'Primary image updated successfully',
-      image: updatedImage
-    });
-
-  } catch (error) {
-    console.error('Set primary image error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-// Get current user endpoint (protected route)
-// app.get('/api/user', authenticateToken, (req, res) => {
-//   res.json({
-//     user: req.user
-//   });
-// });
-
-// Check auth status endpoint (protected route)
-// app.get('/api/auth-status', authenticateToken, (req, res) => {
-//   res.json({
-//     isLoggedIn: true,
-//     user: req.user
-//   });
-// });
-
-// Initialize default categories (run once)
-// app.post('/api/setup/categories', authenticateToken, async (req, res) => {
-//   try {
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-
-//     const defaultCategories = [
-//       { id: 1, name: 'Rings', description: 'Engagement rings, wedding bands, and fashion rings' },
-//       { id: 2, name: 'Necklaces', description: 'Chains, pendants, and statement necklaces' },
-//       { id: 3, name: 'Earrings', description: 'Studs, hoops, and drop earrings' },
-//       { id: 4, name: 'Bracelets', description: 'Tennis bracelets, bangles, and charm bracelets' },
-//       { id: 5, name: 'Watches', description: 'Luxury timepieces and smart watches' }
-//     ];
-
-//     for (const categoryData of defaultCategories) {
-//       const existingCategory = await Category.findOne({ id: categoryData.id });
-//       if (!existingCategory) {
-//         const category = new Category(categoryData);
-//         await category.save();
-//         console.log(`Created category: ${category.name}`);
-//       }
-//     }
-
-//     const allCategories = await Category.find();
-//     console.log('All categories after setup:', allCategories);
-
-//     res.json({ 
-//       message: 'Default categories created successfully',
-//       categories: allCategories
-//     });
-//   } catch (error) {
-//     console.error('Setup categories error:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
-
-// Single image upload for product
-// app.post('/api/products/:id/images', authenticateToken, uploadImage.single('image'), async (req, res) => {
-//   try {
-//     // Check if user is admin
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-
-//     const productId = req.params.id;
-//     const { alt_text, is_primary, sort_order } = req.body;
-
-//     // Check if product exists
-//     const product = await Product.findOne({ id: productId });
-//     if (!product) {
-//       return res.status(404).json({ message: 'Product not found' });
-//     }
-
-//     if (!req.file) {
-//       return res.status(400).json({ message: 'Image file is required' });
-//     }
-
-//     // If this is set as primary, unset other primary images for this product
-//     if (is_primary === 'true') {
-//       await ProductImage.updateMany(
-//         { product_id: productId },
-//         { is_primary: false }
-//       );
-//     }
-
-//     const productImage = new ProductImage({
-//       product_id: productId,
-//       image_url: req.file.path, // Cloudinary URL
-//       alt_text: alt_text || `${product.name} image`,
-//       is_primary: is_primary === 'true',
-//       sort_order: parseInt(sort_order) || 0
-//     });
-
-//     await productImage.save();
-
-//     res.status(201).json({
-//       message: 'Product image uploaded successfully',
-//       image: productImage
-//     });
-
-//   } catch (error) {
-//     console.error('Upload product image error:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });

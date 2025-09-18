@@ -7,6 +7,7 @@ import { AuthProvider } from "@/services/auth";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
+// import ProductDetail from "./pages/productDetails_old.tsx";
 import ProductManagement from "./pages/productManagement/ProductManagement";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -34,7 +35,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/products" element={<Products />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/products/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/orders/:orderId" element={<OrderDetail />} />
@@ -50,15 +51,7 @@ const App = () => (
                 element={<ProductManagement />}
               />
               <Route
-                path="/admin/products/create"
-                element={<ProductManagement />}
-              />
-              <Route
                 path="/admin/products/edit/:id"
-                element={<ProductManagement />}
-              />
-              <Route
-                path="/admin/products/:id/edit"
                 element={<ProductManagement />}
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -304,7 +304,6 @@ const OrderDetail = () => {
           </div>
         </div>
       </main>
-      {/* {/* <Footer /> */} */}
     </div>
   );
 };

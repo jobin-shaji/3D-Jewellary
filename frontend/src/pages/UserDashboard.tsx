@@ -47,9 +47,9 @@ const UserDashboard = () => {
     email: authUser.email,
     avatar: "/placeholder.svg",
     memberSince,
-    totalOrders: authUser.totalOrders || 0,
-    totalSpent: authUser.totalSpent || 0,
-    loyaltyPoints: authUser.loyaltyPoints || 0
+    totalOrders:  110,
+    totalSpent:  110,
+    loyaltyPoints: 110
   };
 
   const recentOrders = [
@@ -132,7 +132,7 @@ const UserDashboard = () => {
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="h-8 w-8 text-primary" />
                   <div>
-                    <p className="text-2xl font-bold">₹{user.totalSpent.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">${user.totalSpent.toLocaleString()}</p>
                     <p className="text-sm text-muted-foreground">Total Spent</p>
                   </div>
                 </div>
@@ -194,7 +194,7 @@ const UserDashboard = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">₹{order.total.toLocaleString()}</p>
+                        <p className="font-medium">${order.total.toLocaleString()}</p>
                         <Badge className={getStatusColor(order.status)}>
                           {order.status}
                         </Badge>

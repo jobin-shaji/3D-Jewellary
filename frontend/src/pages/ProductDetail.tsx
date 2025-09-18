@@ -1,10 +1,22 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Heart, ShoppingCart, ArrowLeft, Star, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Heart, 
+  ShoppingCart, 
+  ArrowLeft, 
+  Star, 
+  Loader2, 
+  ZoomIn, 
+  Share2,
+  ChevronRight,
+  Home,
+  Box
+} from "lucide-react";
 import { Product3DViewer } from "@/components/product/Product3DViewer";
 import ProductCustomization from "@/components/product/ProductCustomization";
 import { useState, useEffect } from "react";
@@ -20,6 +32,9 @@ const ProductDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedCustomizations, setSelectedCustomizations] = useState<Record<string, string | number>>({});
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [viewMode, setViewMode] = useState<'3d' | 'image'>('3d'); // Track current view mode
 
   // Fetch product data from backend
   useEffect(() => {
@@ -75,63 +90,14 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id, toast]);
 
-  // Mock product data for fallback (keeping as reference)
-  const mockProduct = {
-    id: Number(id),
-    name: "Diamond Engagement Ring",
-    price: 2499,
-    originalPrice: 2999,
-    category: "rings",
-    image: "/placeholder.svg",
-    model3d: "", // No 3D model - will use fallback
-    description: "Exquisite diamond engagement ring crafted with precision and elegance. This stunning piece features a brilliant cut diamond set in premium white gold.",
-    fullDescription: "This breathtaking diamond engagement ring represents the perfect symbol of eternal love. Meticulously crafted by our master jewelers, it features a stunning 1.5-carat brilliant cut diamond as the centerpiece, surrounded by smaller diamonds that enhance its radiance. The band is made from the finest 18k white gold, ensuring both durability and timeless beauty.",
-    specifications: {
-      "Material": "18k White Gold",
-      "Diamond Weight": "1.5 carats",
-      "Diamond Cut": "Brilliant",
-      "Diamond Color": "D (Colorless)",
-      "Diamond Clarity": "VVS1",
-      "Ring Size": "Adjustable",
-      "Certification": "GIA Certified"
-    },
-    customizations: [
-      {
-        id: "ring_size",
-        name: "Ring Size",
-        type: "select" as const,
-        options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"],
-        required: true,
-        default_value: "7"
-      },
-      {
-        id: "metal_type",
-        name: "Metal Type",
-        type: "select" as const,
-        options: ["White Gold", "Yellow Gold", "Rose Gold", "Platinum"],
-        required: true,
-        default_value: "White Gold"
-      },
-      {
-        id: "engraving",
-        name: "Engraving",
-        type: "text" as const,
-        required: false
-      }
-    ],
-    inStock: true,
-    rating: 4.8,
-    reviews: 124
-  };
-
   const handleAddToCart = () => {
     if (!product) return;
     
     // Add to cart logic with customizations
-    console.log("Added to cart:", product.id, "with customizations:", selectedCustomizations);
+    console.log("Added to cart:", product.id, "with customizations:", selectedCustomizations, "quantity:", quantity);
     toast({
       title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
+      description: `${quantity} x ${product.name} has been added to your cart.`,
     });
     // navigate("/checkout"); // Uncomment if you want to redirect to checkout
   };
@@ -145,6 +111,23 @@ const ProductDetail = () => {
       title: isWishlisted ? "Removed from Wishlist" : "Added to Wishlist",
       description: `${product.name} has been ${isWishlisted ? 'removed from' : 'added to'} your wishlist.`,
     });
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: product?.name,
+        text: product?.description,
+        url: window.location.href,
+      });
+    } else {
+      // Fallback to copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link Copied",
+        description: "Product link copied to clipboard.",
+      });
+    }
   };
 
   // Loading state
@@ -190,6 +173,27 @@ const ProductDetail = () => {
     <div className="min-h-screen flex flex-col">
 
       <main className="flex-1 container mx-auto px-4 py-8">
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-6">
+          <Link to="/" className="hover:text-foreground">
+            <Home className="h-4 w-4" />
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link to="/products" className="hover:text-foreground">
+            Products
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          {product.category && (
+            <>
+              <Link to={`/products?category=${product.category.name.toLowerCase()}`} className="hover:text-foreground">
+                {product.category.name}
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+            </>
+          )}
+          <span className="text-foreground font-medium">{product.name}</span>
+        </nav>
+
         <Button 
           variant="ghost" 
           onClick={() => navigate(-1)}
@@ -201,30 +205,181 @@ const ProductDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images and 3D Viewer */}
-          <div className="space-y-4">
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <Product3DViewer 
-                  modelUrl={product.model_3d_url}
-                  productName={product.name}
-                  className="h-96 lg:h-[500px]"
-                />
-              </CardContent>
-            </Card>
-            
-            {product.images && product.images.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {product.images.slice(0, 4).map((image, index) => (
-                  <Card key={image.id} className="cursor-pointer hover:ring-2 hover:ring-primary">
-                    <CardContent className="p-2">
-                      <img
-                        src={image.image_url}
-                        alt={image.alt_text || `${product.name} view ${index + 1}`}
-                        className="w-full h-20 object-cover rounded"
+          <div className="space-y-6">
+            {/* Dynamic Layout based on customization availability */}
+            {product.customizations && product.customizations.length > 0 ? (
+              // Layout with customizations: Thumbnails below the main viewer
+              <>
+                {/* Main Display Area */}
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0">
+                    {viewMode === '3d' ? (
+                      // 3D Viewer Display
+                      <Product3DViewer 
+                        modelUrl={product.model_3d_url}
+                        productName={product.name}
+                        className="h-96 lg:h-[500px]"
                       />
-                    </CardContent>
-                  </Card>
-                ))}
+                    ) : (
+                      // Image Display with Zoom
+                      product.images && product.images.length > 0 && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div className="relative group cursor-pointer">
+                              <img
+                                src={product.images[selectedImageIndex]?.image_url}
+                                alt={product.images[selectedImageIndex]?.alt_text || product.name}
+                                className="w-full h-96 lg:h-[500px] object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                              </div>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl">
+                            <img
+                              src={product.images[selectedImageIndex]?.image_url}
+                              alt={product.images[selectedImageIndex]?.alt_text || product.name}
+                              className="w-full h-auto"
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      )
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* Thumbnail Navigation - Below the main viewer */}
+                <div className="w-full border-t pt-4">
+                  <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-2">
+                    {/* 3D Model Thumbnail */}
+                    {product.model_3d_url && (
+                      <div className="flex-shrink-0">
+                        <Card 
+                          className={`cursor-pointer hover:ring-2 hover:ring-primary transition-all border-2 ${
+                            viewMode === '3d' ? 'ring-2 ring-primary bg-primary/5 border-primary' : 'border-transparent'
+                          }`}
+                          onClick={() => setViewMode('3d')}
+                        >
+                          <CardContent className="p-3 flex items-center justify-center w-20 h-20 bg-muted/30">
+                            <Box className="h-6 w-6 text-primary" />
+                          </CardContent>
+                        </Card>
+                        <p className="text-xs text-center mt-1 text-muted-foreground">3D Model</p>
+                      </div>
+                    )}
+                    
+                    {/* Image Thumbnails */}
+                    {product.images && product.images.map((image, index) => (
+                      <div key={image.id} className="flex-shrink-0">
+                        <Card 
+                          className={`cursor-pointer hover:ring-2 hover:ring-primary transition-all border-2 ${
+                            viewMode === 'image' && selectedImageIndex === index ? 'ring-2 ring-primary bg-primary/5 border-primary' : 'border-transparent'
+                          }`}
+                          onClick={() => {
+                            setViewMode('image');
+                            setSelectedImageIndex(index);
+                          }}
+                        >
+                          <CardContent className="p-1 w-20 h-20 flex items-center justify-center">
+                            <img
+                              src={image.image_url}
+                              alt={image.alt_text || `${product.name} view ${index + 1}`}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          </CardContent>
+                        </Card>
+                        <p className="text-xs text-center mt-1 text-muted-foreground">Image {index + 1}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              // Layout without customizations: Thumbnails to the left of the main viewer
+              <div className="flex gap-4">
+                {/* Thumbnail Navigation - Left side */}
+                <div className="flex flex-col gap-3 flex-shrink-0">
+                  {/* 3D Model Thumbnail */}
+                  {product.model_3d_url && (
+                    <div className="flex-shrink-0">
+                      <Card 
+                        className={`cursor-pointer hover:ring-2 hover:ring-primary transition-all border-2 ${
+                          viewMode === '3d' ? 'ring-2 ring-primary bg-primary/5 border-primary' : 'border-transparent'
+                        }`}
+                        onClick={() => setViewMode('3d')}
+                      >
+                        <CardContent className="p-3 flex items-center justify-center w-20 h-20 bg-muted/30">
+                          <Box className="h-6 w-6 text-primary" />
+                        </CardContent>
+                      </Card>
+                      <p className="text-xs text-center mt-1 text-muted-foreground">3D Model</p>
+                    </div>
+                  )}
+                  
+                  {/* Image Thumbnails */}
+                  {product.images && product.images.map((image, index) => (
+                    <div key={image.id} className="flex-shrink-0">
+                      <Card 
+                        className={`cursor-pointer hover:ring-2 hover:ring-primary transition-all border-2 ${
+                          viewMode === 'image' && selectedImageIndex === index ? 'ring-2 ring-primary bg-primary/5 border-primary' : 'border-transparent'
+                        }`}
+                        onClick={() => {
+                          setViewMode('image');
+                          setSelectedImageIndex(index);
+                        }}
+                      >
+                        <CardContent className="p-1 w-20 h-20 flex items-center justify-center">
+                          <img
+                            src={image.image_url}
+                            alt={image.alt_text || `${product.name} view ${index + 1}`}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        </CardContent>
+                      </Card>
+                      <p className="text-xs text-center mt-1 text-muted-foreground">Image {index + 1}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Main Display Area */}
+                <Card className="overflow-hidden flex-1">
+                  <CardContent className="p-0">
+                    {viewMode === '3d' ? (
+                      // 3D Viewer Display
+                      <Product3DViewer 
+                        modelUrl={product.model_3d_url}
+                        productName={product.name}
+                        className="h-96 lg:h-[500px]"
+                      />
+                    ) : (
+                      // Image Display with Zoom
+                      product.images && product.images.length > 0 && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div className="relative group cursor-pointer">
+                              <img
+                                src={product.images[selectedImageIndex]?.image_url}
+                                alt={product.images[selectedImageIndex]?.alt_text || product.name}
+                                className="w-full h-96 lg:h-[500px] object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                              </div>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl">
+                            <img
+                              src={product.images[selectedImageIndex]?.image_url}
+                              alt={product.images[selectedImageIndex]?.alt_text || product.name}
+                              className="w-full h-auto"
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      )
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>
@@ -242,11 +397,40 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-3xl font-bold text-primary">${product.price}</span>
+              <span className="text-3xl font-bold text-primary">₹{product.price}</span>
               <Badge variant={product.stock_quantity > 0 ? "secondary" : "destructive"}>
-                {product.stock_quantity > 0 ? "In Stock" : "Out of Stock"}
+                {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : "Out of Stock"}
               </Badge>
             </div>
+
+            {/* Quantity Selector */}
+            {product.stock_quantity > 0 && (
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Quantity:</label>
+                <div className="flex items-center border rounded-md">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    -
+                  </Button>
+                  <span className="px-4 py-2 min-w-[60px] text-center">{quantity}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                    disabled={quantity >= product.stock_quantity}
+                  >
+                    +
+                  </Button>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  ({product.stock_quantity} available)
+                </span>
+              </div>
+            )}
 
             <div className="flex gap-4">
               <Button 
@@ -264,9 +448,14 @@ const ProductDetail = () => {
               >
                 <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
               </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleShare}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
             </div>
-
-            <Separator />
 
             {/* Product Customizations */}
             {product.customizations && product.customizations.length > 0 && (
@@ -278,127 +467,155 @@ const ProductDetail = () => {
                 />
               </>
             )}
+          </div>
+        </div>
 
-            <Separator />
-
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Specifications</h3>
-              <div className="space-y-4">
-                
-                {/* Metal Information */}
-                {product.metals && product.metals.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">Metal Details</h4>
-                    <div className="space-y-2">
-                      {product.metals.map((metal, index) => (
-                        <div key={index} className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="text-sm">
-                            <span className="font-medium">Type:</span> {metal.type}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Purity:</span> {metal.purity}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Weight:</span> {metal.weight}g
-                          </div>
-                          {metal.color && (
-                            <div className="text-sm">
-                              <span className="font-medium">Color:</span> {metal.color}
-                            </div>
-                          )}
-                          {metal.percentage && (
-                            <div className="text-sm">
-                              <span className="font-medium">Percentage:</span> {metal.percentage}%
-                            </div>
-                          )}
+        {/* Product Specifications - Full Width Section */}
+        <div className="mt-12">
+          <h3 className="text-2xl font-bold mb-8">Product Specifications</h3>
+          <div className="max-w-4xl mx-auto space-y-8">
+            
+            {/* Metal Information */}
+            {product.metals && product.metals.length > 0 && (
+              <div>
+                <h4 className="text-xl font-semibold mb-4">Metal Details</h4>
+                <div className="space-y-4">
+                  {product.metals.map((metal, index) => (
+                    <div key={index} className="border-b border-primary/20 pb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
+                        <div>
+                          <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Type</span>
+                          <p className="font-semibold text-foreground">{metal.type}</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Gemstone Information */}
-                {product.gemstones && product.gemstones.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">Gemstone Details</h4>
-                    <div className="space-y-2">
-                      {product.gemstones.map((gemstone, index) => (
-                        <div key={index} className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="text-sm">
-                            <span className="font-medium">Type:</span> {gemstone.type}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Carat:</span> {gemstone.carat}ct
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Count:</span> {gemstone.count}
-                          </div>
-                          {gemstone.cut && (
-                            <div className="text-sm">
-                              <span className="font-medium">Cut:</span> {gemstone.cut}
-                            </div>
-                          )}
-                          {gemstone.color && (
-                            <div className="text-sm">
-                              <span className="font-medium">Color:</span> {gemstone.color}
-                            </div>
-                          )}
-                          {gemstone.clarity && (
-                            <div className="text-sm">
-                              <span className="font-medium">Clarity:</span> {gemstone.clarity}
-                            </div>
-                          )}
-                          {gemstone.shape && (
-                            <div className="text-sm">
-                              <span className="font-medium">Shape:</span> {gemstone.shape}
-                            </div>
-                          )}
-                          {gemstone.setting && (
-                            <div className="text-sm">
-                              <span className="font-medium">Setting:</span> {gemstone.setting}
-                            </div>
-                          )}
+                        <div>
+                          <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Purity</span>
+                          <p className="font-semibold text-foreground">{metal.purity}</p>
                         </div>
-                      ))}
+                        <div>
+                          <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Weight</span>
+                          <p className="font-semibold text-foreground">{metal.weight}g</p>
+                        </div>
+                        {metal.color && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Color</span>
+                            <p className="font-semibold text-foreground">{metal.color}</p>
+                          </div>
+                        )}
+                        {metal.percentage && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Percentage</span>
+                            <p className="font-semibold text-foreground">{metal.percentage}%</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {/* General Specifications */}
-                <div>
-                  <h4 className="font-medium mb-2">General Information</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between py-2 border-b border-border/50">
-                      <span className="font-medium">Category:</span>
-                      <span className="text-muted-foreground">{product.category?.name || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border/50">
-                      <span className="font-medium">Availability:</span>
-                      <span className="text-muted-foreground">{product.stock_quantity > 0 ? 'Available' : 'Currently Unavailable'}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border/50">
-                      <span className="font-medium">Warranty:</span>
-                      <span className="text-muted-foreground">Lifetime Warranty</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border/50">
-                      <span className="font-medium">Free Shipping:</span>
-                      <span className="text-muted-foreground">Yes</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Care Instructions */}
-                <div>
-                  <h4 className="font-medium mb-2">Care Instructions</h4>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>• Store in a soft cloth pouch or jewelry box</p>
-                    <p>• Clean gently with a soft brush and mild soap</p>
-                    <p>• Avoid exposure to harsh chemicals</p>
-                    <p>• Remove before swimming or exercising</p>
-                    <p>• Professional cleaning recommended annually</p>
-                  </div>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {/* Gemstone Information */}
+            {product.gemstones && product.gemstones.length > 0 && (
+              <div>
+                <h4 className="text-xl font-semibold mb-4">Gemstone Details</h4>
+                <div className="space-y-4">
+                  {product.gemstones.map((gemstone, index) => (
+                    <div key={index} className="border-b border-primary/20 pb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h5 className="text-lg font-semibold text-primary">
+                          {gemstone.type} × {gemstone.count}
+                        </h5>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
+                        <div>
+                          <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Carat</span>
+                          <p className="font-semibold text-foreground">{gemstone.carat}ct</p>
+                        </div>
+                        {gemstone.cut && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Cut</span>
+                            <p className="font-semibold text-foreground">{gemstone.cut}</p>
+                          </div>
+                        )}
+                        {gemstone.color && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Color</span>
+                            <p className="font-semibold text-foreground">{gemstone.color}</p>
+                          </div>
+                        )}
+                        {gemstone.clarity && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Clarity</span>
+                            <p className="font-semibold text-foreground">{gemstone.clarity}</p>
+                          </div>
+                        )}
+                        {gemstone.shape && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Shape</span>
+                            <p className="font-semibold text-foreground">{gemstone.shape}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* General Specifications */}
+            <div>
+              <h4 className="text-xl font-semibold mb-4">General Information</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-muted-foreground">Category</span>
+                  <span className="font-medium">{product.category?.name || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-muted-foreground">Availability</span>
+                  <Badge variant={product.stock_quantity > 0 ? "secondary" : "destructive"}>
+                    {product.stock_quantity > 0 ? 'Available' : 'Currently Unavailable'}
+                  </Badge>
+                </div>
+                {product.certificates && product.certificates.length > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="font-medium text-muted-foreground">Certificates</span>
+                    <span className="font-medium text-right">
+                      {product.certificates.map(cert => cert.name).join(', ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Care Instructions */}
+            <div>
+              <h4 className="text-xl font-semibold mb-4">Care Instructions</h4>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-2 text-sm">
+                    <p className="flex items-start space-x-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Store in a soft cloth pouch or jewelry box</span>
+                    </p>
+                    <p className="flex items-start space-x-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Clean gently with a soft brush and mild soap</span>
+                    </p>
+                    <p className="flex items-start space-x-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Avoid exposure to harsh chemicals</span>
+                    </p>
+                    <p className="flex items-start space-x-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Remove before swimming or exercising</span>
+                    </p>
+                    <p className="flex items-start space-x-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Professional cleaning recommended annually</span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

@@ -62,7 +62,7 @@ export interface ProductImage {
 }
 
 export interface Product {
-  id?: number;
+  id?: string;
   name: string;
   description?: string;
   price: number;
@@ -73,6 +73,7 @@ export interface Product {
   gemstones?: Gemstone[];
   customizations?: ProductCustomization[];
   images?: ProductImage[];
+  primaryImage?: ProductImage;
   model_3d_url?: string;
   certificates?: Certificate[];
   is_active: boolean;

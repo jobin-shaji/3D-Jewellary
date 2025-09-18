@@ -22,18 +22,26 @@ import {
   LogOut,
   Settings,
   Package,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { useAuth } from "@/services/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useMetalPrices } from "@/hooks/admin/useMetalPrices";
 
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { user, isLoggedIn, logout: authLogout } = useAuth();
   const { toast } = useToast();
+  const { metalPrices, loading: metalLoading } = useMetalPrices();
 
   // Mock data - replace with actual state management
   const cartItemsCount = 3;
+
+  // Get gold and silver prices
+  const goldPrice = metalPrices.find(metal => metal.symbol === 'AU');
+  const silverPrice = metalPrices.find(metal => metal.symbol === 'AG');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +110,76 @@ export const Header = () => {
               Bracelets
             </Link>
           </nav>
+
+          {/* Metal Prices - Compact (Medium screens) */}
+          <div className="hidden lg:flex xl:hidden items-center space-x-2 px-2" title="Live Metal Prices">
+            {metalLoading ? (
+              <div className="flex space-x-2">
+                <div className="w-16 h-5 bg-muted animate-pulse rounded"></div>
+                <div className="w-16 h-5 bg-muted animate-pulse rounded"></div>
+              </div>
+            ) : (
+              <>
+                {goldPrice && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-50 rounded border border-yellow-200" title={`24K Gold: ₹${goldPrice.price.toFixed(2)} (${goldPrice.change > 0 ? '+' : ''}${goldPrice.change.toFixed(1)}%)`}>
+                    <span className="text-xs font-bold text-yellow-900">24K Gold</span>
+                    <span className="text-xs font-bold text-yellow-900">₹{goldPrice.price.toFixed(0)}</span>
+                  </div>
+                )}
+                {silverPrice && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 rounded border border-gray-200" title={`Silver: ₹${silverPrice.price.toFixed(2)} (${silverPrice.change > 0 ? '+' : ''}${silverPrice.change.toFixed(1)}%)`}>
+                    <span className="text-xs font-bold text-gray-900">Silver</span>
+                    <span className="text-xs font-bold text-gray-900">₹{silverPrice.price.toFixed(2)}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Metal Prices - Full (Large screens) */}
+          <div className="hidden xl:flex items-center space-x-4 px-4" title="Live Metal Prices">
+            {metalLoading ? (
+              <div className="flex space-x-3">
+                <div className="w-24 h-6 bg-muted animate-pulse rounded"></div>
+                <div className="w-24 h-6 bg-muted animate-pulse rounded"></div>
+              </div>
+            ) : (
+              <>
+                {goldPrice && (
+                  <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200" title={`24K Gold: ₹${goldPrice.price.toFixed(2)} per ounce`}>
+                    <span className="text-xs font-medium text-yellow-800">24K Gold</span>
+                    <span className="text-sm font-bold text-yellow-900">
+                      ₹{goldPrice.price.toFixed(0)}
+                    </span>
+                    {goldPrice.change >= 0 ? (
+                      <TrendingUp className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 text-red-600" />
+                    )}
+                    <span className={`text-xs font-medium ${goldPrice.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {goldPrice.change > 0 ? '+' : ''}{goldPrice.change.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+                {silverPrice && (
+                  <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200" title={`Silver: ₹₹{silverPrice.price.toFixed(2)} per ounce`}>
+                    <span className="text-xs font-medium text-gray-700">Silver</span>
+                    <span className="text-sm font-bold text-gray-900">
+                      ₹{silverPrice.price.toFixed(2)}
+                    </span>
+                    {silverPrice.change >= 0 ? (
+                      <TrendingUp className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 text-red-600" />
+                    )}
+                    <span className={`text-xs font-medium ${silverPrice.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {silverPrice.change > 0 ? '+' : ''}{silverPrice.change.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Search Bar */}
           <form
@@ -240,6 +318,55 @@ export const Header = () => {
               </SheetTrigger>
               <SheetContent side="right" className="w-80">
                 <div className="flex flex-col space-y-4 mt-4">
+                  {/* Metal Prices - Mobile */}
+                  <div className="border-b pb-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Live Metal Prices</h3>
+                    {metalLoading ? (
+                      <div className="flex space-x-2">
+                        <div className="w-full h-8 bg-muted animate-pulse rounded"></div>
+                      </div>
+                    ) : (
+                      <div className="flex space-x-2">
+                        {goldPrice && (
+                          <div className="flex-1 flex items-center justify-between p-2 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded border border-yellow-200">
+                            <div>
+                              <span className="text-xs font-medium text-yellow-800">24K Gold</span>
+                              <div className="text-sm font-bold text-yellow-900">₹{goldPrice.price.toFixed(0)}</div>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              {goldPrice.change >= 0 ? (
+                                <TrendingUp className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-red-600" />
+                              )}
+                              <span className={`text-xs font-medium ${goldPrice.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {goldPrice.change > 0 ? '+' : ''}{goldPrice.change.toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {silverPrice && (
+                          <div className="flex-1 flex items-center justify-between p-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded border border-gray-200">
+                            <div>
+                              <span className="text-xs font-medium text-gray-700">Silver</span>
+                              <div className="text-sm font-bold text-gray-900">₹{silverPrice.price.toFixed(2)}</div>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              {silverPrice.change >= 0 ? (
+                                <TrendingUp className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-red-600" />
+                              )}
+                              <span className={`text-xs font-medium ${silverPrice.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {silverPrice.change > 0 ? '+' : ''}{silverPrice.change.toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Mobile Search */}
                   <form onSubmit={handleSearch} className="flex space-x-2">
                     <Input

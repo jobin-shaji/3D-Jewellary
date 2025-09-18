@@ -23,7 +23,7 @@ export const MetalPriceCard = ({ metal, price, change, changePercent }: MetalPri
   };
 
   const formatMetalPrice = (price: number) => {
-    return `$${price.toFixed(2)}/oz`;
+    return `₹${price.toFixed(2)}/oz`;
   };
 
   return (

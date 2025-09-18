@@ -152,7 +152,6 @@ const Orders = () => {
           </div>
         )}
       </main>
-      {/* {/* <Footer /> */} */}
     </div>
   );
 };

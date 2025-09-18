@@ -121,6 +121,10 @@ const productSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
+    is_primary:{
+      type: Boolean,
+      default:false
+    },
     sort_order: {
       type: Number,
       required: true,
