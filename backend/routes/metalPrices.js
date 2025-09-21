@@ -7,6 +7,51 @@ let priceCache = {};
 let lastFetch = 0;
 const CACHE_DURATION = 50 * 60 * 1000; // 50 minutes
 
+// Mock metal prices as reliable fallback
+const getMockMetalPrices = () => {
+  const baseDate = new Date();
+  const randomVariation = () => (Math.random() - 0.5) * 4; // Random change between -2% and +2%
+  
+  return [
+    {
+      name: 'Gold',
+      symbol: 'AU',
+      price: 2340.15 + (Math.random() * 20 - 10), // Base price with small random variation
+      change: randomVariation(),
+      ticker: 'GC=F',
+      lastUpdated: baseDate.toISOString(),
+      source: 'mock'
+    },
+    {
+      name: 'Silver',
+      symbol: 'AG',
+      price: 24.85 + (Math.random() * 2 - 1),
+      change: randomVariation(),
+      ticker: 'SI=F',
+      lastUpdated: baseDate.toISOString(),
+      source: 'mock'
+    },
+    {
+      name: 'Platinum',
+      symbol: 'PT',
+      price: 950.20 + (Math.random() * 20 - 10),
+      change: randomVariation(),
+      ticker: 'PL=F',
+      lastUpdated: baseDate.toISOString(),
+      source: 'mock'
+    },
+    {
+      name: 'Palladium',
+      symbol: 'PD',
+      price: 1020.45 + (Math.random() * 30 - 15),
+      change: randomVariation(),
+      ticker: 'PA=F',
+      lastUpdated: baseDate.toISOString(),
+      source: 'mock'
+    }
+  ];
+};
+
 /**
  * Get real-time metal prices
  */
@@ -24,7 +69,7 @@ router.get('/prices', async (req, res) => {
       });
     }
 
-    // Fetch fresh data
+    // Try to fetch real data from Yahoo Finance
     const symbols = {
       'GC=F': { name: 'Gold', symbol: 'AU' },        // Gold futures
       'SI=F': { name: 'Silver', symbol: 'AG' },      // Silver futures
@@ -32,38 +77,49 @@ router.get('/prices', async (req, res) => {
       'PA=F': { name: 'Palladium', symbol: 'PD' }    // Palladium futures
     };
 
-    const promises = Object.entries(symbols).map(async ([ticker, info]) => {
-      try {
-        const quote = await yahooFinance.quote(ticker);
-        const price = quote.regularMarketPrice || quote.previousClose || 0;
-        const previousClose = quote.previousClose || price;
-        const change = previousClose ? ((price - previousClose) / previousClose) * 100 : 0;
+    let metalPrices = [];
+    let useYahooFinance = true;
 
-        return {
-          name: info.name,
-          symbol: info.symbol,
-          price: price,
-          change: change,
-          ticker: ticker,
-          lastUpdated: new Date().toISOString()
-        };
-      } catch (error) {
-        console.error(`Error fetching ${info.name} price:`, error);
-        // Return mock data on error
-        return {
-          name: info.name,
-          symbol: info.symbol,
-          price: info.name === 'Gold' ? 1140.05 : info.name === 'Silver' ? 24.85 : 1000,
-          change: Math.random() * 4 - 2, // Random change between -2% and +2%
-          ticker: ticker,
-          lastUpdated: new Date().toISOString(),
-          error: 'Failed to fetch real data, using fallback'
-        };
-      }
-    });
+    try {
+      console.log('Attempting to fetch real metal prices from Yahoo Finance...');
+      
+      const promises = Object.entries(symbols).map(async ([ticker, info]) => {
+        try {
+          const quote = await yahooFinance.quote(ticker);
+          const price = quote.regularMarketPrice || quote.previousClose || 0;
+          const previousClose = quote.previousClose || price;
+          const change = previousClose ? ((price - previousClose) / previousClose) * 100 : 0;
 
-    const metalPrices = await Promise.all(promises);
-    
+          return {
+            name: info.name,
+            symbol: info.symbol,
+            price: price,
+            change: change,
+            ticker: ticker,
+            lastUpdated: new Date().toISOString(),
+            source: 'yahoo-finance'
+          };
+        } catch (error) {
+          console.error(`Error fetching ${info.name} price from Yahoo Finance:`, error.message);
+          throw error; // Re-throw to trigger fallback for entire request
+        }
+      });
+
+      metalPrices = await Promise.all(promises);
+      console.log('Successfully fetched real metal prices');
+      
+    } catch (error) {
+      console.error('Yahoo Finance API failed, using mock data:', error.message);
+      useYahooFinance = false;
+      metalPrices = getMockMetalPrices();
+    }
+
+    // If Yahoo Finance failed entirely, use mock data
+    if (!useYahooFinance || metalPrices.length === 0) {
+      console.log('Using mock metal prices as fallback');
+      metalPrices = getMockMetalPrices();
+    }
+
     // Update cache
     priceCache = {};
     metalPrices.forEach(price => {
@@ -75,15 +131,23 @@ router.get('/prices', async (req, res) => {
       success: true,
       data: metalPrices,
       cached: false,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      dataSource: useYahooFinance ? 'yahoo-finance' : 'mock'
     });
 
   } catch (error) {
-    console.error('Error fetching metal prices:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch metal prices',
-      message: error.message
+    console.error('Error in metal prices endpoint, falling back to mock data:', error);
+    
+    // Final fallback - always return mock data if everything fails
+    const mockPrices = getMockMetalPrices();
+    
+    res.json({
+      success: true,
+      data: mockPrices,
+      cached: false,
+      lastUpdated: new Date().toISOString(),
+      dataSource: 'mock-fallback',
+      error: 'Primary data source failed, using mock data'
     });
   }
 });
@@ -105,17 +169,34 @@ router.get('/prices/:symbol', async (req, res) => {
       });
     }
 
-    // If not in cache, fetch all prices and return the requested one
-    const allPricesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/metal-prices/prices`);
-    const allPrices = await allPricesResponse.json();
+    // If not in cache, try to fetch all prices
+    try {
+      const allPricesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/metal-prices/prices`);
+      const allPrices = await allPricesResponse.json();
+      
+      const requestedPrice = allPrices.data.find(price => price.symbol === symbolUpper);
+      
+      if (requestedPrice) {
+        return res.json({
+          success: true,
+          data: requestedPrice,
+          cached: false
+        });
+      }
+    } catch (fetchError) {
+      console.error('Error fetching all prices, using mock data for single metal:', fetchError.message);
+    }
+
+    // Fallback to mock data for the specific metal
+    const mockPrices = getMockMetalPrices();
+    const mockPrice = mockPrices.find(price => price.symbol === symbolUpper);
     
-    const requestedPrice = allPrices.data.find(price => price.symbol === symbolUpper);
-    
-    if (requestedPrice) {
+    if (mockPrice) {
       res.json({
         success: true,
-        data: requestedPrice,
-        cached: false
+        data: mockPrice,
+        cached: false,
+        dataSource: 'mock-fallback'
       });
     } else {
       res.status(404).json({
@@ -126,11 +207,34 @@ router.get('/prices/:symbol', async (req, res) => {
 
   } catch (error) {
     console.error(`Error fetching price for ${req.params.symbol}:`, error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch metal price',
-      message: error.message
-    });
+    
+    // Final fallback - try to return mock data
+    try {
+      const mockPrices = getMockMetalPrices();
+      const mockPrice = mockPrices.find(price => price.symbol === req.params.symbol.toUpperCase());
+      
+      if (mockPrice) {
+        res.json({
+          success: true,
+          data: mockPrice,
+          cached: false,
+          dataSource: 'mock-emergency-fallback',
+          error: 'Primary data source failed, using mock data'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to fetch metal price and no fallback available',
+          message: error.message
+        });
+      }
+    } catch (fallbackError) {
+      res.status(500).json({
+        success: false,
+        error: 'Complete system failure',
+        message: error.message
+      });
+    }
   }
 });
 

@@ -5,7 +5,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/c
 import { Badge } from "@/shared/components/ui/badge";
 import { Heart, ShoppingCart, Loader2 } from "lucide-react";
 import { Product3DViewer } from "@/features/products/components/Product3DViewer";
-import { Product } from "@/shared/types";
 import { useProducts } from "@/features/products/hooks/useProducts";
 
 const Products = () => {

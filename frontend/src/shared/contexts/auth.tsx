@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('token');    
     if (token) {
       // Verify token with backend
-      fetch('http://localhost:3000/api/verify-token', {
+      fetch('http://localhost:3000/api/auth/verify-token', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       console.log('Attempting login for:', email);
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (userData: { name: string; email: string; password: string }) => {
     try {
       console.log('Attempting registration for:', userData.email);
-      const response = await fetch('http://localhost:3000/api/register', {
+      const response = await fetch('http://localhost:3000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

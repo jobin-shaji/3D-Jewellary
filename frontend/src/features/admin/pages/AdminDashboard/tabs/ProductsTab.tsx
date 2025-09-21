@@ -4,19 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, Edit, Trash2, Eye, Package, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Package, Loader2 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
+import { useProductVisibility } from "@/hooks/admin/useProductVisibility";
 import { Product } from "@/shared/types";
 
 interface ProductsTabProps {
   products: Product[];
   loading: boolean;
   onProductDelete: () => void;
+  onProductUpdate?: (productId: string, updates: Partial<Product>) => void; // Updated callback for individual product updates
 }
 
-export const ProductsTab = ({ products, loading, onProductDelete }: ProductsTabProps) => {
+export const ProductsTab = ({ products, loading, onProductDelete, onProductUpdate }: ProductsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { toggleProductVisibility, isProductLoading } = useProductVisibility();
   const [deleteAttempts, setDeleteAttempts] = useState<{[key: string]: number}>({});
 
   const deleteProduct = async (productId: string, productName: string) => {
@@ -67,6 +70,14 @@ export const ProductsTab = ({ products, loading, onProductDelete }: ProductsTabP
         description: "Failed to delete product. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleToggleVisibility = async (productId: string, productName: string, currentStatus: boolean) => {
+    const result = await toggleProductVisibility(productId, productName, currentStatus);
+    if (result.success && onProductUpdate) {
+      // Update individual product instead of refreshing entire list
+      onProductUpdate(productId, { is_active: result.newStatus });
     }
   };
 
@@ -134,7 +145,11 @@ export const ProductsTab = ({ products, loading, onProductDelete }: ProductsTabP
               </TableHeader>
               <TableBody>
                 {products.map((product) => (
-                  <TableRow key={product.id}>
+                  <TableRow 
+                    key={product.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/products/${product.id}`)}
+                  >
                     <TableCell className="font-medium">
                       <div className="flex items-center space-x-3">
                         {product.images && product.images.length > 0 ? (
@@ -179,14 +194,22 @@ export const ProductsTab = ({ products, loading, onProductDelete }: ProductsTabP
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => navigate(`/products/${product.id}`)}
-                          title="View Product"
+                          onClick={() => handleToggleVisibility(product.id.toString(), product.name, product.is_active)}
+                          title={product.is_active ? "Hide product from store" : "Show product in store"}
+                          disabled={isProductLoading(product.id.toString())}
+                          className={`${!product.is_active ? 'text-muted-foreground' : ''}`}
                         >
-                          <Eye className="h-4 w-4" />
+                          {isProductLoading(product.id.toString()) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : product.is_active ? (
+                            <Eye className="h-4 w-4" />
+                          ) : (
+                            <EyeOff className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button 
                           variant="ghost" 

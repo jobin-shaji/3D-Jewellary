@@ -33,19 +33,17 @@ export interface Metal {
   purity: string;
   weight: number;
   color?: string;
-  percentage?: number;
 }
 
 export interface Gemstone {
   id?: string;
   type: string; 
-  cut?: string;
   carat: number; 
   color?: string;
   clarity?: string; 
   count: number;
   shape?: string;
-  setting?: string;
+  price: number; // Price per carat or total price
 }
 
 export interface Certificate {

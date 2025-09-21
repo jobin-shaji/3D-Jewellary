@@ -25,10 +25,10 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
   const { toast } = useToast();
 
   const addGemstone = () => {
-    if (!newGemstone.type.trim() || newGemstone.carat <= 0 || newGemstone.count <= 0) {
+    if (!newGemstone.type.trim() || newGemstone.carat <= 0 || newGemstone.count <= 0 || (newGemstone.price !== undefined && newGemstone.price < 0)) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required gemstone fields (type, carat > 0, count > 0).",
+        description: "Please fill in all required gemstone fields (type, carat > 0, count > 0). Price must be 0 or greater if provided.",
         variant: "destructive",
       });
       return;
@@ -42,13 +42,12 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
     setGemstones([...gemstones, gemstone]);
     setNewGemstone({
       type: '',
-      cut: '',
       carat: 0,
       color: '',
       clarity: '',
       count: 1,
       shape: '',
-      setting: ''
+      price: undefined
     });
   };
 
@@ -74,9 +73,9 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
                 <span className="text-sm text-muted-foreground">
                   Count: {gemstone.count}
                 </span>
-                {gemstone.cut && (
+                {gemstone.price !== undefined && (
                   <span className="text-sm text-muted-foreground">
-                    {gemstone.cut}
+                    Price: ${gemstone.price}
                   </span>
                 )}
                 {gemstone.color && (
@@ -87,6 +86,11 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
                 {gemstone.clarity && (
                   <span className="text-sm text-muted-foreground">
                     {gemstone.clarity}
+                  </span>
+                )}
+                {gemstone.shape && (
+                  <span className="text-sm text-muted-foreground">
+                    Shape: {gemstone.shape}
                   </span>
                 )}
               </div>
@@ -156,16 +160,19 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Cut</Label>
+              <Label>Price</Label>
               <Input
-                value={newGemstone.cut}
+                type="number"
+                step="0.01"
+                min="0"
+                value={newGemstone.price ?? ''}
                 onChange={(e) =>
                   setNewGemstone((prev) => ({
                     ...prev,
-                    cut: e.target.value,
+                    price: e.target.value ? parseFloat(e.target.value) : undefined,
                   }))
                 }
-                placeholder="e.g., Round, Princess, Emerald"
+                placeholder="Price per carat or total price (optional)"
               />
             </div>
             <div className="space-y-2">
@@ -207,19 +214,6 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
                   }))
                 }
                 placeholder="e.g., FL, IF, VVS1"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Setting</Label>
-              <Input
-                value={newGemstone.setting}
-                onChange={(e) =>
-                  setNewGemstone((prev) => ({
-                    ...prev,
-                    setting: e.target.value,
-                  }))
-                }
-                placeholder="e.g., Prong, Bezel, Channel"
               />
             </div>
           </div>

@@ -63,22 +63,12 @@ const productSchema = new mongoose.Schema({
     color: {
       type: String, // e.g., "White", "Yellow", "Rose"
       default: ''
-    },
-    // percentage: {
-    //   type: Number, // percentage of total weight
-    //   min: 0,
-    //   max: 100,
-    //   default: 0
-    // }
+    }
   }],
   gemstones: [{
     type: {
       type: String, // e.g., "Diamond", "Ruby", "Emerald"
       required: true
-    },
-    cut: {
-      type: String, // e.g., "Round", "Princess", "Emerald"
-      default: ''
     },
     carat: {
       type: Number, // carat weight
@@ -99,13 +89,14 @@ const productSchema = new mongoose.Schema({
       min: 1,
       default: 1
     },
-    // shape: {
-    //   type: String, // e.g., "Round", "Oval", "Pear"
-    //   default: ''
-    // },
-    setting: {
-      type: String, // e.g., "Prong", "Bezel", "Channel"
+    shape: {
+      type: String, // e.g., "Round", "Oval", "Pear"
       default: ''
+    },
+    price: {
+      type: Number, // price per carat or total price
+      required: true,
+      min: 0
     }
   }],
   customizations: {

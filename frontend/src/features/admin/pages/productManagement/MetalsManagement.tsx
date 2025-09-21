@@ -44,8 +44,7 @@ export const MetalsManagement: React.FC<MetalsManagementProps> = ({
       type: '',
       purity: '',
       weight: 0,
-      color: '',
-      percentage: 0
+      color: ''
     });
   };
 
@@ -74,11 +73,6 @@ export const MetalsManagement: React.FC<MetalsManagementProps> = ({
                 {metal.color && (
                   <span className="text-sm text-muted-foreground">
                     {metal.color}
-                  </span>
-                )}
-                {metal.percentage > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    {metal.percentage}%
                   </span>
                 )}
               </div>
@@ -156,22 +150,6 @@ export const MetalsManagement: React.FC<MetalsManagementProps> = ({
                   }))
                 }
                 placeholder="e.g., White, Yellow, Rose"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Percentage</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={newMetal.percentage}
-                onChange={(e) =>
-                  setNewMetal((prev) => ({
-                    ...prev,
-                    percentage: Number(e.target.value),
-                  }))
-                }
-                placeholder="0"
               />
             </div>
           </div>

@@ -103,18 +103,16 @@ const ProductManagement = () => {
     type: '',
     purity: '',
     weight: 0,
-    color: '',
-    percentage: 0
+    color: ''
   });
   const [newGemstone, setNewGemstone] = useState<Gemstone>({
     type: '',
-    cut: '',
     carat: 0,
     color: '',
     clarity: '',
     count: 1,
     shape: '',
-    setting: ''
+    price: 0
   });
 
   const handleInputChange = (

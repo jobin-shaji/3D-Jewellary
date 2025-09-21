@@ -31,12 +31,6 @@ export const ProductSpecifications = ({ product }: { product: Product }) => {
                       <p className="font-semibold text-foreground">{metal.color}</p>
                     </div>
                   )}
-                  {metal.percentage && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Percentage</span>
-                      <p className="font-semibold text-foreground">{metal.percentage}%</p>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -61,12 +55,6 @@ export const ProductSpecifications = ({ product }: { product: Product }) => {
                     <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Carat</span>
                     <p className="font-semibold text-foreground">{gemstone.carat}ct</p>
                   </div>
-                  {gemstone.cut && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Cut</span>
-                      <p className="font-semibold text-foreground">{gemstone.cut}</p>
-                    </div>
-                  )}
                   {gemstone.color && (
                     <div>
                       <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Color</span>
