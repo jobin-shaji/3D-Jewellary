@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useAuth } from "@/shared/contexts/auth";
 import { useAdminDashboard } from "@/features/admin/hooks/useAdminDashboard";
-import { useMetalPrices } from "@/features/admin/hooks/useMetalPrices";
+import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
 import { useProducts } from "@/features/products/hooks/useProducts";
 
 // Import new tab components

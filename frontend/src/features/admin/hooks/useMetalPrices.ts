@@ -18,21 +18,33 @@ export const useMetalPrices = () => {
         setLoading(true);
         setError(null);
         
-        // TODO: Replace with actual API call to metal prices service
-        // For now, using mock data
+        // Call backend API for real-time metal prices
+        const response = await fetch('http://localhost:3000/api/metal-prices/prices');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          setMetalPrices(result.data);
+        } else {
+          throw new Error(result.error || 'Failed to fetch metal prices');
+        }
+        
+      } catch (err) {
+        console.error('Error fetching metal prices:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch metal prices');
+        
+        // Fallback to mock data on error
         const mockData: MetalPrice[] = [
           { name: "Gold", symbol: "AU", price: 2050.25, change: 1.2 },
           { name: "Silver", symbol: "AG", price: 24.85, change: -0.5 },
           { name: "Platinum", symbol: "PT", price: 995.50, change: 0.8 },
           { name: "Palladium", symbol: "PD", price: 1275.30, change: 2.1 }
         ];
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
         setMetalPrices(mockData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch metal prices');
       } finally {
         setLoading(false);
       }

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/shared/contexts/auth";
 import { useToast } from "@/shared/hooks/use-toast";
-import { useMetalPrices } from "@/features/admin/hooks/useMetalPrices";
+import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
 
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");

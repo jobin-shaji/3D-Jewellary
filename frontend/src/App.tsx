@@ -7,7 +7,6 @@ import { AuthProvider } from "@/shared/contexts/auth";
 import Index from "@/shared/pages/Index";
 import Products from "@/features/products/pages/Products";
 import ProductDetail from "@/features/products/pages/productDetail/ProductDetail";
-// import ProductDetail from "./pages/productDetails_old.tsx";
 import ProductManagement from "@/features/admin/pages/productManagement/ProductManagement";
 import Cart from "@/features/user/pages/Cart";
 import Checkout from "@/features/user/pages/Checkout";
