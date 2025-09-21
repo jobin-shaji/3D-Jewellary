@@ -25,9 +25,9 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import { useAuth } from "@/services/auth";
+import { useAuth } from "@/contexts/auth";
 import { useToast } from "@/hooks/use-toast";
-import { useMetalPrices } from "@/hooks/admin/useMetalPrices";
+import { useMetalPrices } from "@/hooks/useMetalPrices";
 
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,7 +78,7 @@ export const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
+          <nav className="hidden lg:flex items-center space-x-6 flex-1 justify-center ml-8">
             <Link
               to="/products"
               className="text-foreground hover:text-primary transition-colors font-medium"

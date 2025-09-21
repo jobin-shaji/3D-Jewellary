@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Package, Heart, User, CreditCard, MapPin, Bell, ShoppingBag, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/services/auth";
+import { useAuth } from "@/contexts/auth";
 import { useEffect } from "react";
 
 const UserDashboard = () => {

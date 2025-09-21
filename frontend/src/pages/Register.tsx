@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/services/auth";
+import { useAuth } from "@/contexts/auth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 const Register = () => {

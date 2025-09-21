@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProductCustomization, Metal, Gemstone ,Category,Product} from "@/types";
-import { useAuth } from "@/services/auth";
+import { useAuth } from "@/contexts/auth";
 import { type Certification } from "./SpecificationsForm";
 
 // Import our new components individually for better tree shaking

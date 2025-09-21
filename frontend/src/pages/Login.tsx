@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/services/auth";
+import { useAuth } from "@/contexts/auth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 const Login = () => {

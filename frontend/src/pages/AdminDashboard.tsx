@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/services/auth";
+import { useAuth } from "@/contexts/auth";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { useMetalPrices } from "@/hooks/useMetalPrices";
+import { useProducts } from "@/hooks/useProducts";
 
 // Import new tab components
 import { 
@@ -12,12 +15,6 @@ import {
   AnalyticsTab 
 } from "@/components/admin/tabs";
 
-// Import custom hooks
-import { 
-  useAdminDashboard, 
-  useMetalPrices, 
-  useProducts 
-} from "@/hooks/admin";
 
 const AdminDashboard = () => {
   const { user, isLoggedIn } = useAuth();

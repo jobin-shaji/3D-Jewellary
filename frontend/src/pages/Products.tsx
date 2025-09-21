@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, ShoppingCart, Loader2 } from "lucide-react";
 import { Product3DViewer } from "@/components/product/Product3DViewer";
 import { Product } from "@/types";
+import { useProducts } from "@/hooks/useProducts";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -13,34 +14,9 @@ const Products = () => {
   const category = searchParams.get("category");
   const search = searchParams.get("search");
   const [wishlistedItems, setWishlistedItems] = useState<string[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch products from API
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch('http://localhost:3000/api/products');
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
-        }
-        
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch products');
-        console.error('Error fetching products:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  
+  // Use the centralized products hook instead of duplicate logic
+  const { products, loading, error } = useProducts();
 
   const filteredProducts = products.filter(product => {
     if (category && product.category?.name.toLowerCase() !== category.toLowerCase()) return false;
