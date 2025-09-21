@@ -3,7 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Package, Users, ShoppingCart, DollarSign, Eye, RefreshCw, Loader2 } from "lucide-react";
-import { StatsCard, MetalPriceCard } from "../../pages/AdminDashboard/shared";
+import { StatsCard } from "../shared/StatsCard";
+import { MetalPriceCard } from "../shared/MetalPriceCard";
 
 interface MetalPrice {
   name: string;
