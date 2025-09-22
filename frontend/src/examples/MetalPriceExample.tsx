@@ -124,8 +124,8 @@ export const MetalPriceExample: React.FC = () => {
                     <span className="font-medium">${price.pricePerGram.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Per Ounce:</span>
-                    <span className="font-medium">${price.pricePerOunce.toFixed(2)}</span>
+                    <span>Per Gram:</span>
+                    <span className="font-medium">₹{price.pricePerGram.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Change:</span>

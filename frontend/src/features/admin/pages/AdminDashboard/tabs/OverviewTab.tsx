@@ -5,18 +5,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Package, Users, ShoppingCart, DollarSign, Eye, RefreshCw, Loader2 } from "lucide-react";
 import { StatsCard } from "../shared/StatsCard";
 import { MetalPriceCard } from "../shared/MetalPriceCard";
-
-interface MetalPrice {
-  name: string;
-  type: string;
-  purity: string;
-  purityPercentage: number;
-  pricePerGram: number;
-  pricePerOunce: number;
-  change: number;
-  lastUpdated: string;
-  source: string;
-}
+import { type MetalPrice } from "@/shared/hooks/useMetalPrices";
 
 interface Order {
   id: string;
@@ -124,10 +113,10 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
                 <MetalPriceCard 
                   key={`${metalPrice.type}-${metalPrice.purity}`} 
                   metal={metalPrice.name}
-                  price={metalPrice.pricePerOunce}
+                  price={metalPrice.pricePerGram}
                   change={metalPrice.change}
                   changePercent={metalPrice.change}
-                  currency="INR"
+                  currency="INR/g"
                 />
               ))
             )}

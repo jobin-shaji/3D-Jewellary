@@ -1,24 +1,23 @@
 import { useState, useEffect } from 'react';
 
-interface MetalPrice {
+export interface MetalPrice {
   name: string;
   type: string;
   purity: string;
   purityPercentage: number;
   pricePerGram: number;
-  pricePerOunce: number;
   change: number;
   lastUpdated: string;
   source: string;
   error?: string;
 }
 
-interface MetalPriceFilters {
+export interface MetalPriceFilters {
   type?: string;
   purity?: string;
 }
 
-interface AvailableMetalOption {
+export interface AvailableMetalOption {
   type: string;
   purities: string[];
 }
@@ -73,8 +72,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
           type: "Gold",
           purity: "24k",
           purityPercentage: 99.9,
-          pricePerGram: 65.50, 
-          pricePerOunce: 2035.25,
+          pricePerGram: 7425.50, 
           change: (Math.random() - 0.5) * 2,
           lastUpdated: new Date().toISOString(),
           source: "fallback",
@@ -85,8 +83,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
           type: "Silver",
           purity: "Sterling",
           purityPercentage: 92.5,
-          pricePerGram: 0.72, 
-          pricePerOunce: 22.43,
+          pricePerGram: 78.42, 
           change: (Math.random() - 0.5) * 2,
           lastUpdated: new Date().toISOString(),
           source: "fallback",
@@ -97,8 +94,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
           type: "Platinum",
           purity: "950",
           purityPercentage: 95.0,
-          pricePerGram: 30.85, 
-          pricePerOunce: 959.12,
+          pricePerGram: 3055.85, 
           change: (Math.random() - 0.5) * 2,
           lastUpdated: new Date().toISOString(),
           source: "fallback",

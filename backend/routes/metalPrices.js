@@ -18,8 +18,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Gold',
         purity: '24k',
         purityPercentage: 99.9,
-        pricePerGram: 5425.50 + (Math.random() * 100 - 50), // INR per gram
-        pricePerOunce: 168650.25 + (Math.random() * 1000 - 500), // INR per ounce
+        pricePerGram: 7425.50 + (Math.random() * 100 - 50), // INR per gram
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -29,8 +28,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Gold',
         purity: '22k',
         purityPercentage: 91.7,
-        pricePerGram: 4950.85 + (Math.random() * 100 - 50),
-        pricePerOunce: 154015.15 + (Math.random() * 1000 - 500),
+        pricePerGram: 6750.85 + (Math.random() * 100 - 50),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -40,8 +38,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Gold',
         purity: '18k',
         purityPercentage: 75.0,
-        pricePerGram: 4065.12 + (Math.random() * 100 - 50),
-        pricePerOunce: 126444.44 + (Math.random() * 1000 - 500),
+        pricePerGram: 5565.12 + (Math.random() * 100 - 50),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -51,8 +48,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Gold',
         purity: '14k',
         purityPercentage: 58.3,
-        pricePerGram: 3165.20 + (Math.random() * 100 - 50),
-        pricePerOunce: 98455.55 + (Math.random() * 1000 - 500),
+        pricePerGram: 4365.20 + (Math.random() * 100 - 50),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -62,8 +58,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Gold',
         purity: '10k',
         purityPercentage: 41.7,
-        pricePerGram: 2260.30 + (Math.random() * 50 - 25),
-        pricePerOunce: 70273.73 + (Math.random() * 500 - 250),
+        pricePerGram: 3160.30 + (Math.random() * 50 - 25),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -75,8 +70,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Silver',
         purity: 'Fine',
         purityPercentage: 99.9,
-        pricePerGram: 64.78 + (Math.random() * 3 - 1.5),
-        pricePerOunce: 2015.25 + (Math.random() * 50 - 25),
+        pricePerGram: 84.78 + (Math.random() * 3 - 1.5),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -86,8 +80,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Silver',
         purity: 'Sterling',
         purityPercentage: 92.5,
-        pricePerGram: 59.72 + (Math.random() * 3 - 1.5),
-        pricePerOunce: 1858.43 + (Math.random() * 50 - 25),
+        pricePerGram: 78.42 + (Math.random() * 3 - 1.5),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -97,8 +90,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Silver',
         purity: 'Coin',
         purityPercentage: 90.0,
-        pricePerGram: 58.00 + (Math.random() * 3 - 1.5),
-        pricePerOunce: 1804.83 + (Math.random() * 50 - 25),
+        pricePerGram: 76.20 + (Math.random() * 3 - 1.5),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -108,8 +100,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Silver',
         purity: 'Britannia',
         purityPercentage: 95.8,
-        pricePerGram: 62.25 + (Math.random() * 3 - 1.5),
-        pricePerOunce: 1935.24 + (Math.random() * 50 - 25),
+        pricePerGram: 81.05 + (Math.random() * 3 - 1.5),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -121,8 +112,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Platinum',
         purity: '950',
         purityPercentage: 95.0,
-        pricePerGram: 2555.85 + (Math.random() * 100 - 50),
-        pricePerOunce: 79500.12 + (Math.random() * 1000 - 500),
+        pricePerGram: 3055.85 + (Math.random() * 100 - 50),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -132,8 +122,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Platinum',
         purity: '900',
         purityPercentage: 90.0,
-        pricePerGram: 2427.30 + (Math.random() * 100 - 50),
-        pricePerOunce: 75505.97 + (Math.random() * 1000 - 500),
+        pricePerGram: 2907.30 + (Math.random() * 100 - 50),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'
@@ -143,8 +132,7 @@ const getComprehensiveMetalPrices = () => {
         type: 'Platinum',
         purity: '850',
         purityPercentage: 85.0,
-        pricePerGram: 2296.72 + (Math.random() * 100 - 50),
-        pricePerOunce: 71448.83 + (Math.random() * 1000 - 500),
+        pricePerGram: 2746.72 + (Math.random() * 100 - 50),
         change: randomVariation(),
         lastUpdated: baseDate.toISOString(),
         source: 'mock'

@@ -38,6 +38,7 @@ const ProductDetail = () => {
   const [selectedCustomizations, setSelectedCustomizations] = useState<Record<string, string | number>>({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'3d' | 'image'>('3d'); // Track current view mode
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -122,6 +123,10 @@ const ProductDetail = () => {
         description: "Product link copied to clipboard.",
       });
     }
+  };
+
+  const handlePriceCalculated = (totalPrice: number) => {
+    setCalculatedPrice(totalPrice);
   };
 
   // Loading state
@@ -391,7 +396,11 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-3xl font-bold text-primary">₹{product.price}</span>
+              <div className="flex flex-col">
+                <span className="text-3xl font-bold text-primary">
+                  ₹{(calculatedPrice !== null ? calculatedPrice : "loading...").toLocaleString()}
+                </span>
+              </div>
               <Badge variant={product.stock_quantity > 0 ? "secondary" : "destructive"}>
                 {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : "Out of Stock"}
               </Badge>
@@ -491,7 +500,7 @@ const ProductDetail = () => {
             
             {/* Price Summary - Right Side */}
             <div className="xl:col-span-1">
-              <PriceSummary />
+              <PriceSummary product={product} onPriceCalculated={handlePriceCalculated} />
             </div>
           </div>
         </div>
