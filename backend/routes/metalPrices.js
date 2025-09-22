@@ -16,7 +16,7 @@ const getMockMetalPrices = () => {
     {
       name: 'Gold',
       symbol: 'AU',
-      price: 2340.15 + (Math.random() * 20 - 10), // Base price with small random variation
+      price: 11340.15 + (Math.random() * 20 - 10), // Base price with small random variation
       change: randomVariation(),
       ticker: 'GC=F',
       lastUpdated: baseDate.toISOString(),
@@ -81,7 +81,7 @@ router.get('/prices', async (req, res) => {
     let useYahooFinance = true;
 
     try {
-      console.log('Attempting to fetch real metal prices from Yahoo Finance...');
+      // console.log('Attempting to fetch real metal prices from Yahoo Finance...');
       
       const promises = Object.entries(symbols).map(async ([ticker, info]) => {
         try {
@@ -100,13 +100,13 @@ router.get('/prices', async (req, res) => {
             source: 'yahoo-finance'
           };
         } catch (error) {
-          console.error(`Error fetching ${info.name} price from Yahoo Finance:`, error.message);
+          // console.error(`Error fetching ${info.name} price from Yahoo Finance:`, error.message);
           throw error; // Re-throw to trigger fallback for entire request
         }
       });
 
       metalPrices = await Promise.all(promises);
-      console.log('Successfully fetched real metal prices');
+      // console.log('Successfully fetched real metal prices');
       
     } catch (error) {
       console.error('Yahoo Finance API failed, using mock data:', error.message);
@@ -116,7 +116,7 @@ router.get('/prices', async (req, res) => {
 
     // If Yahoo Finance failed entirely, use mock data
     if (!useYahooFinance || metalPrices.length === 0) {
-      console.log('Using mock metal prices as fallback');
+      // console.log('Using mock metal prices as fallback');
       metalPrices = getMockMetalPrices();
     }
 
@@ -136,7 +136,7 @@ router.get('/prices', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in metal prices endpoint, falling back to mock data:', error);
+    // console.error('Error in metal prices endpoint, falling back to mock data:', error);
     
     // Final fallback - always return mock data if everything fails
     const mockPrices = getMockMetalPrices();
@@ -184,7 +184,7 @@ router.get('/prices/:symbol', async (req, res) => {
         });
       }
     } catch (fetchError) {
-      console.error('Error fetching all prices, using mock data for single metal:', fetchError.message);
+      // console.error('Error fetching all prices, using mock data for single metal:', fetchError.message);
     }
 
     // Fallback to mock data for the specific metal
@@ -206,7 +206,7 @@ router.get('/prices/:symbol', async (req, res) => {
     }
 
   } catch (error) {
-    console.error(`Error fetching price for ${req.params.symbol}:`, error);
+    // console.error(`Error fetching price for ${req.params.symbol}:`, error);
     
     // Final fallback - try to return mock data
     try {

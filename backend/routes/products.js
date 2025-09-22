@@ -41,8 +41,9 @@ const modelStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'products/models',
-    allowed_formats: ['glb', 'gltf', 'obj', 'fbx'],
-    resource_type: 'raw'
+    resource_type: 'raw',
+    // Remove allowed_formats to allow any format for now
+    // allowed_formats: ['glb', 'gltf', 'obj', 'fbx'],
   }
 });
 
@@ -58,27 +59,33 @@ const uploadCertificate = multer({
 
 const uploadModel = multer({ 
   storage: modelStorage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for 3D models
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit to match Cloudinary free plan
+  fileFilter: (req, file, cb) => {
+    console.log('File filter - Original name:', file.originalname);
+    console.log('File filter - Mimetype:', file.mimetype);
+    console.log('File filter - Size:', file.size || 'Size not available at this stage');
+    
+    // Check file extension
+    const allowedExtensions = ['.glb', '.gltf', '.obj', '.fbx'];
+    const fileExtension = file.originalname.toLowerCase().split('.').pop();
+    
+    if (allowedExtensions.includes(`.${fileExtension}`)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type. Allowed formats: ${allowedExtensions.join(', ')}`), false);
+    }
+  }
 });
 
 /**
  * @route   GET /api/products
  * @desc    Get all products with primary images
- * @access  Public (filtered to active only unless admin)
+ * @access  Public
  */
 router.get('/', async (req, res) => {
   try {
-    // Check if request includes admin flag and user is authenticated as admin
-    const showAll = req.query.include_inactive === 'true';
-    let query = {};
-    
-    // If not requesting all products, filter to active only
-    if (!showAll) {
-      query.is_active = true;
-    }
-
-    // Get products based on query
-    const products = await Product.find(query)
+    // Get all active products with limit for performance
+    const products = await Product.find({ is_active: true })
       .populate('category')
       .sort({ createdAt: -1 })
       .limit(50);
@@ -110,6 +117,50 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * @route   GET /api/products
+ * @desc    Get all products with primary images
+ * @access  admin
+ */
+router.get('/all',authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    // Get all active products with limit for performance
+    const products = await Product.find()
+      .populate('category')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    // Add primary image for each product
+    const productsWithImages = products.map(product => {
+      const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0];
+      
+      return {
+        ...product.toObject(),
+        primaryImage: primaryImage
+      };
+    });
+
+    res.json({
+      products: productsWithImages,
+      pagination: {
+        page: 1,
+        limit: products.length,
+        total: products.length,
+        pages: 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Get products error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+/**
  * @route   GET /api/products/:id/full
  * @desc    Get product with images populated
  * @access  Public
@@ -139,6 +190,42 @@ router.get('/:id/full', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+
+/**
+ * @route   GET /api/products/:id/full/all
+ * @desc    Get product with images populated
+ * @access  admin
+ */
+
+
+router.get('/:id/full/all', async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Get product
+    const product = await Product.findOne({ id: productId})
+      .populate('category');
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Get primary image (first image or one marked as primary)
+    const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0];
+
+    res.json({
+      ...product.toObject(),
+      primaryImage: primaryImage
+    });
+
+  } catch (error) {
+    console.error('Get product full error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 /**
  * @route   POST /api/products
@@ -303,10 +390,41 @@ router.post('/:id/images', authenticateToken, uploadImage.array('images', 10), a
  * @desc    Upload 3D model for a product (admin only)
  * @access  Private (Admin)
  */
-router.post('/:id/model', authenticateToken, uploadModel.single('model'), async (req, res) => {
+router.post('/:id/model', authenticateToken, (req, res, next) => {
+  uploadModel.single('model')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ 
+            message: 'File too large. Maximum size is 10MB due to Cloudinary free plan limits. Please compress your 3D model or upgrade the Cloudinary plan.' 
+          });
+        }
+        return res.status(400).json({ message: err.message });
+      }
+      // Handle Cloudinary-specific errors
+      if (err.message && err.message.includes('File size too large')) {
+        return res.status(400).json({ 
+          message: 'File too large. Maximum size is 10MB due to Cloudinary free plan limits. Please compress your 3D model or consider upgrading the Cloudinary plan.' 
+        });
+      }
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
+    console.log('3D Model upload request received for product:', req.params.id);
+    console.log('File details:', req.file ? {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'No file received');
+
     // Check if user is admin
     if (req.user.role !== 'admin') {
+      console.log('Unauthorized: User is not admin');
       return res.status(403).json({ message: 'Admin access required' });
     }
 
@@ -315,16 +433,22 @@ router.post('/:id/model', authenticateToken, uploadModel.single('model'), async 
     // Check if product exists
     const product = await Product.findOne({ id: productId });
     if (!product) {
+      console.log('Product not found:', productId);
       return res.status(404).json({ message: 'Product not found' });
     }
 
     if (!req.file) {
+      console.log('No 3D model file received');
       return res.status(400).json({ message: '3D model file is required' });
     }
+
+    console.log('Cloudinary file path:', req.file.path);
 
     // Update product with 3D model URL
     product.model_3d_url = req.file.path; // Cloudinary URL
     await product.save();
+
+    console.log('3D model uploaded successfully for product:', productId);
 
     res.status(201).json({
       message: '3D model uploaded successfully',
@@ -334,7 +458,11 @@ router.post('/:id/model', authenticateToken, uploadModel.single('model'), async 
 
   } catch (error) {
     console.error('Upload 3D model error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 });
 

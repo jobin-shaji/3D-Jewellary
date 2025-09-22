@@ -24,14 +24,13 @@ import { ProductSpecifications } from "./ProductSpecifications";
 import { useState, useEffect } from "react";
 import { Product } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
+import { useProducts } from "@/features/products/hooks/useProducts";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { singleProduct: product, singleProductLoading: loading, singleProductError: error, fetchProduct } = useProducts();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedCustomizations, setSelectedCustomizations] = useState<Record<string, string | number>>({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -40,31 +39,19 @@ const ProductDetail = () => {
 
   // Fetch product data from backend
   useEffect(() => {
-    const fetchProduct = async () => {
+    const loadProduct = async () => {
       if (!id) {
-        setError('Product ID not found');
-        setLoading(false);
+        toast({
+          title: "Error",
+          description: "Product ID not found",
+          variant: "destructive",
+        });
         return;
       }
 
       try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(`http://localhost:3000/api/products/${id}/full`);
+        const productData = await fetchProduct(id);
         
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Product not found');
-          } else {
-            throw new Error('Failed to fetch product details');
-          }
-          return;
-        }
-
-        const productData = await response.json();
-        setProduct(productData);
-
         // Set default customizations if available
         if (productData.customizations) {
           const defaults: Record<string, string | number> = {};
@@ -77,20 +64,16 @@ const ProductDetail = () => {
         }
 
       } catch (err) {
-        console.error('Error fetching product:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load product');
         toast({
           title: "Error",
           description: "Failed to load product details. Please try again.",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchProduct();
-  }, [id, toast]);
+    loadProduct();
+  }, [id, fetchProduct, toast]);
 
   const handleAddToCart = () => {
     if (!product) return;

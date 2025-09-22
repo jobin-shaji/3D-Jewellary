@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/shared/hooks/use-toast";
-import { Product,Metal, Gemstone, ProductCustomization } from "@/shared/types";
+import { Product} from "@/shared/types";
 // import { ProductData } from "./types";
 
 interface FileUploadState {
@@ -126,8 +126,94 @@ export const fetchCategories = async (): Promise<Array<{id: number; name: string
   if (!response.ok) {
     throw new Error('Failed to fetch categories');
   }
-  
+
   return response.json();
+};
+
+// Wrapper functions with error handling and toast notifications
+export const useProductSubmission = () => {
+  const { toast } = useToast();
+
+  const uploadImagesWithToast = async (productId: number, imageFiles: File[]) => {
+    if (imageFiles.length === 0) return null;
+
+    try {
+      console.log('Uploading images for product:', productId);
+      const imageData = await uploadProductImages(productId, imageFiles);
+      console.log('✅ Images uploaded successfully:', imageData);
+      
+      toast({
+        title: "Images Uploaded",
+        description: `${imageData.images.length} images uploaded successfully.`,
+      });
+      
+      return imageData;
+    } catch (imageError) {
+      console.error('❌ Image upload error:', imageError);
+      toast({
+        title: "Warning", 
+        description: "Product created but image upload failed.",
+        variant: "destructive",
+      });
+      throw imageError;
+    }
+  };
+
+  const upload3DModelWithToast = async (productId: number, model3DFile: File) => {
+    if (!model3DFile) return null;
+
+    try {
+      console.log('📦 Uploading 3D model for product:', productId);
+      const modelData = await upload3DModel(productId, model3DFile);
+      console.log('✅ 3D model uploaded successfully:', modelData);
+      
+      toast({
+        title: "3D Model Uploaded",
+        description: "3D model uploaded successfully.",
+      });
+      
+      return modelData;
+    } catch (modelError) {
+      console.error('❌ 3D model upload error:', modelError);
+      toast({
+        title: "Warning",
+        description: "Product created but 3D model upload failed.",
+        variant: "destructive",
+      });
+      throw modelError;
+    }
+  };
+
+  const uploadCertificatesWithToast = async (productId: number, certificates: Array<{name: string, file: File}>) => {
+    if (certificates.length === 0) return null;
+
+    try {
+      console.log('📄 Uploading certificates for product:', productId);
+      const uploadedCertificates = await uploadCertificates(productId, certificates);
+      console.log('✅ Certificates uploaded successfully:', uploadedCertificates);
+      
+      toast({
+        title: "Certificates Uploaded",
+        description: `${certificates.length} certificate(s) uploaded successfully.`,
+      });
+      
+      return uploadedCertificates;
+    } catch (certificateError) {
+      console.error('❌ Certificate upload error:', certificateError);
+      toast({
+        title: "Warning",
+        description: "Product created but certificate upload failed.",
+        variant: "destructive",
+      });
+      throw certificateError;
+    }
+  };
+
+  return {
+    uploadImagesWithToast,
+    upload3DModelWithToast,
+    uploadCertificatesWithToast,
+  };
 };
 
 export const useFileUpload = () => {

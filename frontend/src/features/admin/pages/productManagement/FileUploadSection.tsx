@@ -33,12 +33,12 @@ export const FileUploadSection: React.FC<FileUploadProps> = ({
   const handle3DModelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (50MB limit)
-      const maxSize = 50 * 1024 * 1024; // 50MB
+      // Validate file size (10MB limit due to Cloudinary free plan)
+      const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
         toast({
           title: "File Too Large",
-          description: "3D model files must be under 50MB.",
+          description: "3D model files must be under 10MB due to Cloudinary free plan limits. Please compress your model.",
           variant: "destructive",
         });
         return;
@@ -102,6 +102,9 @@ export const FileUploadSection: React.FC<FileUploadProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-2">
           <Label htmlFor="model3d">3D Model File</Label>
+          <p className="text-sm text-muted-foreground">
+            Supported formats: .glb, .gltf, .obj, .fbx (max 10MB)
+          </p>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Input
@@ -140,6 +143,9 @@ export const FileUploadSection: React.FC<FileUploadProps> = ({
         {/* Product Images Upload */}
         <div className="space-y-2">
           <Label htmlFor="images">Product Images</Label>
+          <p className="text-sm text-muted-foreground">
+            Supported formats: .jpeg, .png, .webp (max 5MB)
+          </p>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Input

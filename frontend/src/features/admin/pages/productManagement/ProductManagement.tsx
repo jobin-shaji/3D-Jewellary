@@ -7,6 +7,7 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { ProductCustomization, Metal, Gemstone ,Category,Product} from "@/shared/types";
 import { useAuth } from "@/shared/contexts/auth";
 import { type Certification } from "./SpecificationsForm";
+import { useFetchProducts } from "@/features/admin/hooks/useFetchProducts";
 
 // Import our new components individually for better tree shaking
 import { BasicInfoForm, type ProductFormData } from "./BasicInfoForm";
@@ -19,10 +20,8 @@ import { validateAllFields } from "./validationUtils";
 import { 
   useFileUpload,
   createProduct,
-  uploadProductImages,
-  upload3DModel,
-  uploadCertificates,
-  fetchCategories
+  fetchCategories,
+  useProductSubmission
 } from "./hooks";
 
 // Validation and utility functions
@@ -50,30 +49,18 @@ const ProductManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { singleProduct, singleProductLoading, singleProductError, fetchProduct } = useFetchProducts();
+  const { uploadImagesWithToast, upload3DModelWithToast, uploadCertificatesWithToast } = useProductSubmission();
   const isEdit = !!id;
 
-  // Mock product data for editing
-  const existingProduct = isEdit
-    ? {
-        id: Number(id),
-        name: "Diamond Engagement Ring",
-        price: 2499,
-        category_id:"123",
-        category: "rings",
-        description:
-          "Exquisite diamond engagement ring crafted with precision and elegance This breathtaking diamond engagement ring represents the perfect symbol of eternal love.",
-        inStock: true,
-        stock_quantity: 10, // added
-      }
-    : null;
-
+  // Initialize form data with empty values
   const [formData, setFormData] = useState<ProductFormData>({
-    name: existingProduct?.name || "",
-    price: existingProduct?.price || "",
-    category_id: existingProduct?.category_id || "",
-    description: existingProduct?.description || "",
-    inStock: existingProduct?.inStock ?? true,
-    stock_quantity: existingProduct?.stock_quantity?.toString?.() || "0",
+    name: "",
+    price: "",
+    category_id: "",
+    description: "",
+    inStock: true,
+    stock_quantity: "0",
   });
 
   const [customizations, setCustomizations] = useState<ProductCustomization[]>([]);
@@ -141,6 +128,60 @@ const ProductManagement = () => {
     loadCategories();
   }, []);
 
+  // Fetch product data when in edit mode
+  useEffect(() => {
+    const loadProductForEdit = async () => {
+      if (!isEdit || !id) return;
+      
+      try {
+        console.log('Fetching product for edit:', id);
+        const productData = await fetchProduct(id);
+        console.log('Product data received:', productData);
+        
+        // Populate form with product data
+        setFormData({
+          name: productData.name || "",
+          price: productData.price?.toString() || "",
+          category_id: productData.category_id?.toString() || "",
+          description: productData.description || "",
+          inStock: productData.is_active ?? true,
+          stock_quantity: productData.stock_quantity?.toString() || "0",
+        });
+
+        // Populate metals if available
+        if (productData.metals && productData.metals.length > 0) {
+          setMetals(productData.metals.map((metal: any, index: number) => ({
+            ...metal,
+            id: index // Add frontend ID for key prop
+          })));
+        }
+
+        // Populate gemstones if available
+        if (productData.gemstones && productData.gemstones.length > 0) {
+          setGemstones(productData.gemstones.map((gemstone: any, index: number) => ({
+            ...gemstone,
+            id: index // Add frontend ID for key prop
+          })));
+        }
+
+        // Populate customizations if available
+        if (productData.customizations && productData.customizations.length > 0) {
+          setCustomizations(productData.customizations);
+        }
+
+      } catch (error) {
+        console.error('Failed to fetch product for edit:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load product data. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadProductForEdit();
+  }, []);
+
   // Replace the handleSubmit function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,75 +206,21 @@ const ProductManagement = () => {
 
       // Create the product using our utility function
       const createdProduct = await createProduct(Product);
-      const productId = createdProduct.product.id;
+      const product = createdProduct.product;
 
-      // Upload images if any using our utility function
-      if (fileState.imageFiles.length > 0) {
-        try {
-          console.log('Uploading images for product:', productId);
-          const imageData = await uploadProductImages(productId, fileState.imageFiles);
-          console.log('✅ Images uploaded successfully:', imageData);
-          toast({
-            title: "Images Uploaded",
-            description: `${imageData.images.length} images uploaded successfully.`,
-          });
-        } catch (imageError) {
-          console.error('❌ Image upload error:', imageError);
-          toast({
-            title: "Warning",
-            description: "Product created but image upload failed.",
-            variant: "destructive",
-          });
-        }
-      }
+      // Upload files with error handling
+      await uploadImagesWithToast(product.id, fileState.imageFiles);
+      await upload3DModelWithToast(product.id, fileState.model3DFile!);
 
-      // Upload 3D model if any using our utility function
-      if (fileState.model3DFile) {
-        try {
-          console.log('📦 Uploading 3D model for product:', productId);
-          const modelData = await upload3DModel(productId, fileState.model3DFile);
-          console.log('✅ 3D model uploaded successfully:', modelData);
-          toast({
-            title: "3D Model Uploaded",
-            description: "3D model uploaded successfully.",
-          });
-        } catch (modelError) {
-          console.error('❌ 3D model upload error:', modelError);
-          toast({
-            title: "Warning",
-            description: "Product created but 3D model upload failed.",
-            variant: "destructive",
-          });
-        }
-      }
-
-      // Upload certificates if any
-      if (certificates.length > 0) {
-        try {
-          console.log('📄 Uploading certificates for product:', productId);
-          const certificatesData = certificates.map(cert => ({
-            name: cert.name,
-            file: cert.file!
-          }));
-          const uploadedCertificates = await uploadCertificates(productId, certificatesData);
-          console.log('✅ Certificates uploaded successfully:', uploadedCertificates);
-          toast({
-            title: "Certificates Uploaded",
-            description: `${certificates.length} certificate(s) uploaded successfully.`,
-          });
-        } catch (certificateError) {
-          console.error('❌ Certificate upload error:', certificateError);
-          toast({
-            title: "Warning",
-            description: "Product created but certificate upload failed.",
-            variant: "destructive",
-          });
-        }
-      }
+      const certificatesData = certificates.map(cert => ({
+        name: cert.name,
+        file: cert.file!
+      }));
+      await uploadCertificatesWithToast(product.id, certificatesData);
 
       toast({
         title: "Product Created",
-        description: `${Product.name} has been created successfully.`,
+        description: `${product.name} has been created successfully.`,
       });
 
       navigate("/admin");
@@ -289,6 +276,20 @@ const ProductManagement = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Show loading state when fetching product data for edit */}
+              {isEdit && singleProductLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span>Loading product data...</span>
+                </div>
+              ) : singleProductError ? (
+                <div className="text-center py-8">
+                  <p className="text-red-600 mb-4">{singleProductError}</p>
+                  <Button onClick={() => navigate("/admin")} variant="outline">
+                    Back to Admin Dashboard
+                  </Button>
+                </div>
+              ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* Basic Information & Pricing */}
@@ -353,6 +354,7 @@ const ProductManagement = () => {
                   </Button>
                 </div>
               </form>
+              )}
             </CardContent>
           </Card>
         </div>

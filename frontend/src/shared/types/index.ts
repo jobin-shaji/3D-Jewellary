@@ -76,12 +76,6 @@ export interface Product {
   certificates?: Certificate[];
   is_active: boolean;
   created_at?: string;
-  // weight?: number;
-  // dimensions?: {
-  //   length: number;
-  //   width: number;
-  //   height: number;
-  // };
 }
 
 // export interface CartItem {

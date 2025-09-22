@@ -6,78 +6,26 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Plus, Edit, Trash2, Eye, EyeOff, Package, Loader2 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
-import { useProductVisibility } from "@/hooks/admin/useProductVisibility";
+import { useProductVisibility } from "@/shared/hooks/useProductVisibility";
+import { useDeleteProduct } from "@/features/admin/hooks/useDeleteProduct";
 import { Product } from "@/shared/types";
 
 interface ProductsTabProps {
   products: Product[];
   loading: boolean;
-  onProductDelete: () => void;
-  onProductUpdate?: (productId: string, updates: Partial<Product>) => void; // Updated callback for individual product updates
+  fetchProducts: () => void;
 }
 
-export const ProductsTab = ({ products, loading, onProductDelete, onProductUpdate }: ProductsTabProps) => {
+export const ProductsTab = ({ products, loading, fetchProducts}: ProductsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { toggleProductVisibility, isProductLoading } = useProductVisibility();
-  const [deleteAttempts, setDeleteAttempts] = useState<{[key: string]: number}>({});
-
-  const deleteProduct = async (productId: string, productName: string) => {
-    const attempts = deleteAttempts[productId] || 0;
-    
-    if (attempts === 0) {
-      setDeleteAttempts(prev => ({ ...prev, [productId]: 1 }));
-      
-      toast({
-        title: "Confirm Delete",
-        description: `Double click delete to permanently delete ${productName}`,
-        variant: "destructive",
-        duration: 3000,
-      });
-
-      setTimeout(() => {
-        setDeleteAttempts(prev => ({ ...prev, [productId]: 0 }));
-      }, 3000);
-      
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete product');
-      }
-
-      toast({
-        title: "Success",
-        description: "Product deleted successfully.",
-      });
-
-      setDeleteAttempts(prev => ({ ...prev, [productId]: 0 }));
-      onProductDelete();
-      
-    } catch (error) {
-      console.error('❌ Error deleting product:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete product. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  const { deleteProduct, deleteAttempts } = useDeleteProduct();
 
   const handleToggleVisibility = async (productId: string, productName: string, currentStatus: boolean) => {
     const result = await toggleProductVisibility(productId, productName, currentStatus);
-    if (result.success && onProductUpdate) {
-      // Update individual product instead of refreshing entire list
-      onProductUpdate(productId, { is_active: result.newStatus });
+    if (result.success) {
+      fetchProducts(); // Refresh the products list
     }
   };
 
@@ -222,7 +170,7 @@ export const ProductsTab = ({ products, loading, onProductDelete, onProductUpdat
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => deleteProduct(product.id.toString(), product.name)}
+                          onClick={() => deleteProduct(product.id.toString(), product.name, () => fetchProducts())}
                           title={deleteAttempts[product.id] ? "Click again to confirm delete" : "Delete Product"}
                           className={`${deleteAttempts[product.id] ? 'bg-red-100 text-red-700' : 'text-destructive hover:text-destructive'}`}
                         >

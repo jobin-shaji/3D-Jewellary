@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { useAuth } from "@/shared/contexts/auth";
 import { useAdminDashboard } from "@/features/admin/hooks/useAdminDashboard";
 import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
-import { useAdminProducts } from "@/hooks/admin/useAdminProducts";
+import { useFetchProducts } from "@/features/admin/hooks/useFetchProducts";
 
 // Import new tab components
 import { 
@@ -44,9 +44,8 @@ const AdminDashboard = () => {
     products, 
     loading: productsLoading, 
     error: productsError,
-    fetchProducts,
-    updateProduct
-  } = useAdminProducts();
+    fetchProducts 
+  } = useFetchProducts();
 
   useEffect(() => {
     if (!isLoggedIn || user?.role !== 'admin') {
@@ -92,8 +91,7 @@ const AdminDashboard = () => {
               <ProductsTab 
                 products={products}
                 loading={productsLoading}
-                onProductDelete={fetchProducts}
-                onProductUpdate={updateProduct}
+                fetchProducts={fetchProducts}
               />
             </TabsContent>
 
