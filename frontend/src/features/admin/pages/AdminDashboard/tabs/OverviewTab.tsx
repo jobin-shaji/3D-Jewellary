@@ -8,9 +8,14 @@ import { MetalPriceCard } from "../shared/MetalPriceCard";
 
 interface MetalPrice {
   name: string;
-  symbol: string;
-  price: number;
+  type: string;
+  purity: string;
+  purityPercentage: number;
+  pricePerGram: number;
+  pricePerOunce: number;
   change: number;
+  lastUpdated: string;
+  source: string;
 }
 
 interface Order {
@@ -117,9 +122,9 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
             ) : (
               metalPrices.map((metalPrice) => (
                 <MetalPriceCard 
-                  key={metalPrice.symbol} 
+                  key={`${metalPrice.type}-${metalPrice.purity}`} 
                   metal={metalPrice.name}
-                  price={metalPrice.price}
+                  price={metalPrice.pricePerOunce}
                   change={metalPrice.change}
                   changePercent={metalPrice.change}
                   currency="INR"

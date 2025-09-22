@@ -15,7 +15,8 @@ import {
   Share2,
   ChevronRight,
   Home,
-  Box
+  Box,
+  Edit
 } from "lucide-react";
 import { Product3DViewer } from "@/features/products/components/Product3DViewer";
 import ProductCustomization from "@/features/products/pages/productDetail/ProductCustomization";
@@ -25,17 +26,24 @@ import { useState, useEffect } from "react";
 import { Product } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useProducts } from "@/features/products/hooks/useProducts";
+import { useAuth } from "@/shared/contexts/auth";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { singleProduct: product, singleProductLoading: loading, singleProductError: error, fetchProduct } = useProducts();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedCustomizations, setSelectedCustomizations] = useState<Record<string, string | number>>({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(1);
   const [viewMode, setViewMode] = useState<'3d' | 'image'>('3d'); // Track current view mode
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+  
+  // Only initialize quantity state for non-admin users
+  const [quantity, setQuantity] = useState(1);
 
   // Fetch product data from backend
   useEffect(() => {
@@ -75,8 +83,9 @@ const ProductDetail = () => {
     loadProduct();
   }, [id, fetchProduct, toast]);
 
+  // Add to Cart functionality - Only for non-admin users
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product || isAdmin) return;
     
     // Add to cart logic with customizations
     console.log("Added to cart:", product.id, "with customizations:", selectedCustomizations, "quantity:", quantity);
@@ -388,8 +397,8 @@ const ProductDetail = () => {
               </Badge>
             </div>
 
-            {/* Quantity Selector */}
-            {product.stock_quantity > 0 && (
+            {/* Quantity Selector - Hidden for Admins */}
+            {!isAdmin && product.stock_quantity > 0 && (
               <div className="flex items-center gap-4">
                 <label className="text-sm font-medium">Quantity:</label>
                 <div className="flex items-center border rounded-md">
@@ -418,14 +427,32 @@ const ProductDetail = () => {
             )}
 
             <div className="flex gap-4">
-              <Button 
-                className="flex-1" 
-                onClick={handleAddToCart}
-                disabled={product.stock_quantity === 0}
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                {product.stock_quantity > 0 ? "Add to Cart" : "Out of Stock"}
-              </Button>
+              {/* Add to Cart Button - Hidden for Admins */}
+              {!isAdmin && (
+                <Button 
+                  className="flex-1" 
+                  onClick={handleAddToCart}
+                  disabled={product.stock_quantity === 0}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  {product.stock_quantity > 0 ? "Add to Cart" : "Out of Stock"}
+                </Button>
+              )}
+
+              {/* Admin-specific content */}
+              {isAdmin && (
+                <Button 
+                  onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Product
+                </Button>
+              )}
+
+              {/* Wishlist and Share buttons - Available for all users */}
               <Button
                 variant={isWishlisted ? "default" : "outline"}
                 size="icon"

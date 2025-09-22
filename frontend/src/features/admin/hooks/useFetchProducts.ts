@@ -47,7 +47,7 @@ export const useFetchProducts = () => {
         setSingleProduct(null);
         const token = localStorage.getItem('token');
 
-        const response = await fetch(`http://localhost:3000/api/products/${id}/full/all`);
+        const response = await fetch(`http://localhost:3000/api/products/${id}/full`);
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Product not found');

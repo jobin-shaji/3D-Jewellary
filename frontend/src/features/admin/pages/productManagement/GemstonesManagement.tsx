@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Badge } from "@/shared/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { Gemstone } from "@/shared/types";
@@ -23,6 +24,41 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
   setNewGemstone
 }) => {
   const { toast } = useToast();
+
+  // Gemstone type options - Most common types used in jewelry
+  const gemstoneTypes = [
+    { value: "Diamond", label: "Diamond" },
+    { value: "Ruby", label: "Ruby" },
+    { value: "Emerald", label: "Emerald" },
+    { value: "Sapphire", label: "Sapphire" },
+    { value: "Pearl", label: "Pearl" },
+    { value: "Amethyst", label: "Amethyst" },
+    { value: "Garnet", label: "Garnet" },
+    { value: "Topaz", label: "Topaz" },
+    { value: "Opal", label: "Opal" },
+  ];
+
+  // Gemstone shape options
+  const gemstoneShapes = [
+    { value: "Round", label: "Round" },
+    { value: "Oval", label: "Oval" },
+    { value: "Pear", label: "Pear" },
+    { value: "Marquise", label: "Marquise" },
+    { value: "Emerald", label: "Emerald Cut" },
+    { value: "Princess", label: "Princess" },
+    { value: "Cushion", label: "Cushion" },
+    { value: "Asscher", label: "Asscher" },
+    { value: "Radiant", label: "Radiant" },
+    { value: "Heart", label: "Heart" },
+    { value: "Baguette", label: "Baguette" },
+    { value: "Trillion", label: "Trillion" },
+    { value: "Square", label: "Square" },
+    { value: "Rectangle", label: "Rectangle" },
+    { value: "Cabochon", label: "Cabochon" },
+    { value: "Briolette", label: "Briolette" },
+    { value: "Freeform", label: "Freeform" },
+    { value: "Other", label: "Other" }
+  ];
 
   const addGemstone = () => {
     if (!newGemstone.type.trim() || newGemstone.carat <= 0 || newGemstone.count <= 0 || (newGemstone.price !== undefined && newGemstone.price < 0)) {
@@ -115,16 +151,26 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Gemstone Type *</Label>
-              <Input
+              <Select
                 value={newGemstone.type}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setNewGemstone((prev) => ({
                     ...prev,
-                    type: e.target.value,
+                    type: value,
                   }))
                 }
-                placeholder="e.g., Diamond, Ruby, Emerald"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gemstone type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {gemstoneTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Carat Weight *</Label>
@@ -177,16 +223,26 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
             </div>
             <div className="space-y-2">
               <Label>Shape</Label>
-              <Input
+              <Select
                 value={newGemstone.shape}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setNewGemstone((prev) => ({
                     ...prev,
-                    shape: e.target.value,
+                    shape: value,
                   }))
                 }
-                placeholder="e.g., Round, Oval, Pear"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gemstone shape" />
+                </SelectTrigger>
+                <SelectContent>
+                  {gemstoneShapes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

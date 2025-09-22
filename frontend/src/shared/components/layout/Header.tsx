@@ -39,14 +39,18 @@ export const Header = () => {
   // Mock data - replace with actual state management
   const cartItemsCount = 3;
 
-  // Get gold and silver prices
-  const goldPrice = metalPrices.find(metal => metal.symbol === 'AU');
-  const silverPrice = metalPrices.find(metal => metal.symbol === 'AG');
+  // Get gold and silver prices - using new interface
+  const goldPrice = metalPrices.find(metal => metal.type === 'Gold' && metal.purity === '24k');
+  const silverPrice = metalPrices.find(metal => metal.type === 'Silver' && metal.purity === 'Sterling');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      // Navigate with search query if there's input
       navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      // Navigate to products page without search query (show all products)
+      navigate('/products');
     }
   };
 
@@ -121,15 +125,15 @@ export const Header = () => {
             ) : (
               <>
                 {goldPrice && (
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-50 rounded border border-yellow-200" title={`24K Gold: ₹${goldPrice.price.toFixed(2)} (${goldPrice.change > 0 ? '+' : ''}${goldPrice.change.toFixed(1)}%)`}>
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-50 rounded border border-yellow-200" title={`24K Gold: ₹${goldPrice.pricePerOunce.toFixed(2)} (${goldPrice.change > 0 ? '+' : ''}${goldPrice.change.toFixed(1)}%)`}>
                     <span className="text-xs font-bold text-yellow-900">24K Gold</span>
-                    <span className="text-xs font-bold text-yellow-900">₹{goldPrice.price.toFixed(0)}</span>
+                    <span className="text-xs font-bold text-yellow-900">₹{goldPrice.pricePerOunce.toFixed(0)}</span>
                   </div>
                 )}
                 {silverPrice && (
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 rounded border border-gray-200" title={`Silver: ₹${silverPrice.price.toFixed(2)} (${silverPrice.change > 0 ? '+' : ''}${silverPrice.change.toFixed(1)}%)`}>
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 rounded border border-gray-200" title={`Silver: ₹${silverPrice.pricePerOunce.toFixed(2)} (${silverPrice.change > 0 ? '+' : ''}${silverPrice.change.toFixed(1)}%)`}>
                     <span className="text-xs font-bold text-gray-900">Silver</span>
-                    <span className="text-xs font-bold text-gray-900">₹{silverPrice.price.toFixed(2)}</span>
+                    <span className="text-xs font-bold text-gray-900">₹{silverPrice.pricePerOunce.toFixed(2)}</span>
                   </div>
                 )}
               </>
@@ -146,10 +150,10 @@ export const Header = () => {
             ) : (
               <>
                 {goldPrice && (
-                  <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200" title={`24K Gold: ₹${goldPrice.price.toFixed(2)} per ounce`}>
+                  <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200" title={`24K Gold: ₹${goldPrice.pricePerOunce.toFixed(2)} per ounce`}>
                     <span className="text-xs font-medium text-yellow-800">24K Gold</span>
                     <span className="text-sm font-bold text-yellow-900">
-                      ₹{goldPrice.price.toFixed(0)}
+                      ₹{goldPrice.pricePerOunce.toFixed(0)}
                     </span>
                     {goldPrice.change >= 0 ? (
                       <TrendingUp className="h-3 w-3 text-green-600" />
@@ -162,10 +166,10 @@ export const Header = () => {
                   </div>
                 )}
                 {silverPrice && (
-                  <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200" title={`Silver: ₹₹{silverPrice.price.toFixed(2)} per ounce`}>
+                  <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200" title={`Silver: ₹${silverPrice.pricePerOunce.toFixed(2)} per ounce`}>
                     <span className="text-xs font-medium text-gray-700">Silver</span>
                     <span className="text-sm font-bold text-gray-900">
-                      ₹{silverPrice.price.toFixed(2)}
+                      ₹{silverPrice.pricePerOunce.toFixed(2)}
                     </span>
                     {silverPrice.change >= 0 ? (
                       <TrendingUp className="h-3 w-3 text-green-600" />
@@ -331,7 +335,7 @@ export const Header = () => {
                           <div className="flex-1 flex items-center justify-between p-2 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded border border-yellow-200">
                             <div>
                               <span className="text-xs font-medium text-yellow-800">24K Gold</span>
-                              <div className="text-sm font-bold text-yellow-900">₹{goldPrice.price.toFixed(0)}</div>
+                              <div className="text-sm font-bold text-yellow-900">₹{goldPrice.pricePerOunce.toFixed(0)}</div>
                             </div>
                             <div className="flex items-center space-x-1">
                               {goldPrice.change >= 0 ? (
@@ -349,7 +353,7 @@ export const Header = () => {
                           <div className="flex-1 flex items-center justify-between p-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded border border-gray-200">
                             <div>
                               <span className="text-xs font-medium text-gray-700">Silver</span>
-                              <div className="text-sm font-bold text-gray-900">₹{silverPrice.price.toFixed(2)}</div>
+                              <div className="text-sm font-bold text-gray-900">₹{silverPrice.pricePerOunce.toFixed(2)}</div>
                             </div>
                             <div className="flex items-center space-x-1">
                               {silverPrice.change >= 0 ? (

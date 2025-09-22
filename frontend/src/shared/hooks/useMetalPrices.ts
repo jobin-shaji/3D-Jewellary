@@ -2,125 +2,175 @@ import { useState, useEffect } from 'react';
 
 interface MetalPrice {
   name: string;
-  symbol: string;
-  price: number;
+  type: string;
+  purity: string;
+  purityPercentage: number;
+  pricePerGram: number;
+  pricePerOunce: number;
   change: number;
-  ticker: string;
   lastUpdated: string;
+  source: string;
   error?: string;
 }
 
-export const useMetalPrices = () => {
+interface MetalPriceFilters {
+  type?: string;
+  purity?: string;
+}
+
+interface AvailableMetalOption {
+  type: string;
+  purities: string[];
+}
+
+export const useMetalPrices = (filters?: MetalPriceFilters) => {
   const [metalPrices, setMetalPrices] = useState<MetalPrice[]>([]);
+  const [availableOptions, setAvailableOptions] = useState<AvailableMetalOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchMetalPrices = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Call backend API for real-time metal prices
-        const response = await fetch('http://localhost:3000/api/metal-prices/prices');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          setMetalPrices(result.data);
-        } else {
-          throw new Error(result.error || 'Failed to fetch metal prices');
-        }
-        
-      } catch (err) {
-        console.error('Error fetching metal prices:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch metal prices');
-        
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMetalPrices();
-    
-    // Refresh prices every 5 minutes
-    const interval = setInterval(fetchMetalPrices, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  const refreshPrices = async () => {
-    setLoading(true);
-    setError(null);
-    
+  const fetchMetalPrices = async (currentFilters?: MetalPriceFilters) => {
     try {
-      const response = await fetch('http://localhost:3000/api/metal-prices/prices');
+      setLoading(true);
+      setError(null);
+      
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (currentFilters?.type) {
+        queryParams.append('type', currentFilters.type);
+      }
+      if (currentFilters?.purity) {
+        queryParams.append('purity', currentFilters.purity);
+      }
+      
+      const queryString = queryParams.toString();
+      const url = `http://localhost:3000/api/metal-prices/prices${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await fetch(url);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const result = await response.json();
+      
       if (result.success) {
-        setMetalPrices(result.data);
+        // Ensure data is always an array
+        const dataArray = Array.isArray(result.data) ? result.data : [result.data];
+        setMetalPrices(dataArray);
       } else {
         throw new Error(result.error || 'Failed to fetch metal prices');
       }
-    } catch (err) {
-      console.error('Error refreshing metal prices:', err);
-      setError(err instanceof Error ? err.message : 'Failed to refresh metal prices');
       
-      // Fallback to mock data with random variations
-      const mockData: MetalPrice[] = [
+    } catch (err) {
+      console.error('Error fetching metal prices:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch metal prices');
+      
+      // Fallback to mock data if API fails
+      const fallbackData: MetalPrice[] = [
         { 
-          name: "Gold", 
-          symbol: "AU", 
-          price: 2050.25 + (Math.random() - 0.5) * 10, 
-          change: (Math.random() - 0.5) * 3,
-          ticker: "GC=F",
-          lastUpdated: new Date().toISOString(),
-          error: "Using fallback data"
-        },
-        { 
-          name: "Silver", 
-          symbol: "AG", 
-          price: 24.85 + (Math.random() - 0.5) * 1, 
+          name: "Gold 24k", 
+          type: "Gold",
+          purity: "24k",
+          purityPercentage: 99.9,
+          pricePerGram: 65.50, 
+          pricePerOunce: 2035.25,
           change: (Math.random() - 0.5) * 2,
-          ticker: "SI=F",
           lastUpdated: new Date().toISOString(),
+          source: "fallback",
           error: "Using fallback data"
         },
         { 
-          name: "Platinum", 
-          symbol: "PT", 
-          price: 995.50 + (Math.random() - 0.5) * 20, 
-          change: (Math.random() - 0.5) * 2.5,
-          ticker: "PL=F",
+          name: "Silver Sterling", 
+          type: "Silver",
+          purity: "Sterling",
+          purityPercentage: 92.5,
+          pricePerGram: 0.72, 
+          pricePerOunce: 22.43,
+          change: (Math.random() - 0.5) * 2,
           lastUpdated: new Date().toISOString(),
+          source: "fallback",
           error: "Using fallback data"
         },
         { 
-          name: "Palladium", 
-          symbol: "PD", 
-          price: 1275.30 + (Math.random() - 0.5) * 30, 
-          change: (Math.random() - 0.5) * 4,
-          ticker: "PA=F",
+          name: "Platinum 950", 
+          type: "Platinum",
+          purity: "950",
+          purityPercentage: 95.0,
+          pricePerGram: 30.85, 
+          pricePerOunce: 959.12,
+          change: (Math.random() - 0.5) * 2,
           lastUpdated: new Date().toISOString(),
+          source: "fallback",
           error: "Using fallback data"
         }
       ];
-      setMetalPrices(mockData);
+      
+      // Filter fallback data if filters are provided
+      let filteredData = fallbackData;
+      if (currentFilters?.type) {
+        filteredData = filteredData.filter(price => price.type === currentFilters.type);
+      }
+      if (currentFilters?.purity) {
+        filteredData = filteredData.filter(price => price.purity === currentFilters.purity);
+      }
+      
+      setMetalPrices(filteredData);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchAvailableOptions = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/metal-prices/types');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setAvailableOptions(result.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching available metal options:', err);
+      // Fallback options
+      setAvailableOptions([
+        { type: 'Gold', purities: ['24k', '22k', '18k', '14k', '10k'] },
+        { type: 'Silver', purities: ['Fine', 'Sterling', 'Coin', 'Britannia'] },
+        { type: 'Platinum', purities: ['950', '900', '850'] }
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    fetchMetalPrices(filters);
+    fetchAvailableOptions();
+    
+    // Refresh prices every 5 minutes
+    const interval = setInterval(() => fetchMetalPrices(filters), 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [filters?.type, filters?.purity]);
+
+  const refreshPrices = async (newFilters?: MetalPriceFilters) => {
+    const filtersToUse = newFilters || filters;
+    await fetchMetalPrices(filtersToUse);
+  };
+
+  const getPrice = (type: string, purity: string): MetalPrice | undefined => {
+    return metalPrices.find(price => price.type === type && price.purity === purity);
+  };
+
+  const getPricesByType = (type: string): MetalPrice[] => {
+    return metalPrices.filter(price => price.type === type);
+  };
+
   return {
     metalPrices,
+    availableOptions,
     loading,
     error,
-    refreshPrices
+    refreshPrices,
+    getPrice,
+    getPricesByType
   };
 };

@@ -20,6 +20,7 @@ import { validateAllFields } from "./validationUtils";
 import { 
   useFileUpload,
   createProduct,
+  updateProduct,
   fetchCategories,
   useProductSubmission
 } from "./hooks";
@@ -200,36 +201,41 @@ const ProductManagement = () => {
       }
 
       // Create product data using our utility function
-      const Product = createProductData(formData, metals, gemstones, customizations);
+      const productData = createProductData(formData, metals, gemstones, customizations);
 
-      console.log('Creating product with data:', Product);
+      console.log(isEdit ? 'Updating product with data:' : 'Creating product with data:', productData);
 
-      // Create the product using our utility function
-      const createdProduct = await createProduct(Product);
-      const product = createdProduct.product;
+      let product;
+      if (isEdit && id) {
+        // Update existing product
+        const updatedProduct = await updateProduct(id, productData);
+        product = updatedProduct.product;
+      } else {
+        // Create new product
+        const createdProduct = await createProduct(productData);
+        product = createdProduct.product;
+      }
 
       // Upload files with error handling
-      await uploadImagesWithToast(product.id, fileState.imageFiles);
-      await upload3DModelWithToast(product.id, fileState.model3DFile!);
-
+      await uploadImagesWithToast(product.id, fileState.imageFiles, isEdit);
+      await upload3DModelWithToast(product.id, fileState.model3DFile!, isEdit);
+      
       const certificatesData = certificates.map(cert => ({
         name: cert.name,
         file: cert.file!
       }));
-      await uploadCertificatesWithToast(product.id, certificatesData);
-
-      toast({
-        title: "Product Created",
-        description: `${product.name} has been created successfully.`,
+      await uploadCertificatesWithToast(product.id, certificatesData, isEdit);      toast({
+        title: isEdit ? "Product Updated" : "Product Created",
+        description: `${product.name} has been ${isEdit ? 'updated' : 'created'} successfully.`,
       });
 
-      navigate("/admin");
+      navigate(`/products/${product.id}`);
 
     } catch (error: any) {
       console.error('Error creating product:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create product. Please try again.",
+        description: error.message || `Failed to ${isEdit ? 'update' : 'create'} product. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -343,7 +349,7 @@ const ProductManagement = () => {
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Creating Product...
+                        {isEdit ? "Updating Product..." : "Creating Product..."}
                       </>
                     ) : (
                       <>

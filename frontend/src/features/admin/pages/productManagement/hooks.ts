@@ -35,6 +35,30 @@ export const createProduct = async (Product: Product): Promise<any> => {
   return response.json();
 };
 
+export const updateProduct = async (productId: string, Product: Product): Promise<any> => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    throw new Error('Authentication token not found. Please login again.');
+  }
+
+  const response = await fetch(`http://localhost:3000/api/products/${productId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(Product),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update product');
+  }
+
+  return response.json();
+};
+
 export const uploadProductImages = async (productId: number, imageFiles: File[]): Promise<any> => {
   const token = localStorage.getItem('token');
   
@@ -134,7 +158,7 @@ export const fetchCategories = async (): Promise<Array<{id: number; name: string
 export const useProductSubmission = () => {
   const { toast } = useToast();
 
-  const uploadImagesWithToast = async (productId: number, imageFiles: File[]) => {
+  const uploadImagesWithToast = async (productId: number, imageFiles: File[], isUpdate = false) => {
     if (imageFiles.length === 0) return null;
 
     try {
@@ -152,14 +176,14 @@ export const useProductSubmission = () => {
       console.error('❌ Image upload error:', imageError);
       toast({
         title: "Warning", 
-        description: "Product created but image upload failed.",
+        description: `Product ${isUpdate ? 'updated' : 'created'} but image upload failed.`,
         variant: "destructive",
       });
       throw imageError;
     }
   };
 
-  const upload3DModelWithToast = async (productId: number, model3DFile: File) => {
+  const upload3DModelWithToast = async (productId: number, model3DFile: File, isUpdate = false) => {
     if (!model3DFile) return null;
 
     try {
@@ -177,14 +201,14 @@ export const useProductSubmission = () => {
       console.error('❌ 3D model upload error:', modelError);
       toast({
         title: "Warning",
-        description: "Product created but 3D model upload failed.",
+        description: `Product ${isUpdate ? 'updated' : 'created'} but 3D model upload failed.`,
         variant: "destructive",
       });
       throw modelError;
     }
   };
 
-  const uploadCertificatesWithToast = async (productId: number, certificates: Array<{name: string, file: File}>) => {
+  const uploadCertificatesWithToast = async (productId: number, certificates: Array<{name: string, file: File}>, isUpdate = false) => {
     if (certificates.length === 0) return null;
 
     try {
@@ -202,7 +226,7 @@ export const useProductSubmission = () => {
       console.error('❌ Certificate upload error:', certificateError);
       toast({
         title: "Warning",
-        description: "Product created but certificate upload failed.",
+        description: `Product ${isUpdate ? 'updated' : 'created'} but certificate upload failed.`,
         variant: "destructive",
       });
       throw certificateError;

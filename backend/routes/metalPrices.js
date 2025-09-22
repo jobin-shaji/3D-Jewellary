@@ -1,240 +1,306 @@
 const express = require('express');
-const yahooFinance = require('yahoo-finance2');
 const router = express.Router();
 
-// Cache for metal prices (to avoid hitting API too frequently)
+// Cache for metal prices (to avoid regenerating too frequently)
 let priceCache = {};
 let lastFetch = 0;
-const CACHE_DURATION = 50 * 60 * 1000; // 50 minutes
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Mock metal prices as reliable fallback
-const getMockMetalPrices = () => {
+// Comprehensive mock metal prices data with type and purity
+const getComprehensiveMetalPrices = () => {
   const baseDate = new Date();
-  const randomVariation = () => (Math.random() - 0.5) * 4; // Random change between -2% and +2%
+  const randomVariation = () => (Math.random() - 0.5) * 2; // Random change between -1% and +1%
   
-  return [
-    {
-      name: 'Gold',
-      symbol: 'AU',
-      price: 11340.15 + (Math.random() * 20 - 10), // Base price with small random variation
-      change: randomVariation(),
-      ticker: 'GC=F',
-      lastUpdated: baseDate.toISOString(),
-      source: 'mock'
+  return {
+    Gold: {
+      '24k': {
+        name: 'Gold 24k',
+        type: 'Gold',
+        purity: '24k',
+        purityPercentage: 99.9,
+        pricePerGram: 5425.50 + (Math.random() * 100 - 50), // INR per gram
+        pricePerOunce: 168650.25 + (Math.random() * 1000 - 500), // INR per ounce
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      '22k': {
+        name: 'Gold 22k',
+        type: 'Gold',
+        purity: '22k',
+        purityPercentage: 91.7,
+        pricePerGram: 4950.85 + (Math.random() * 100 - 50),
+        pricePerOunce: 154015.15 + (Math.random() * 1000 - 500),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      '18k': {
+        name: 'Gold 18k',
+        type: 'Gold',
+        purity: '18k',
+        purityPercentage: 75.0,
+        pricePerGram: 4065.12 + (Math.random() * 100 - 50),
+        pricePerOunce: 126444.44 + (Math.random() * 1000 - 500),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      '14k': {
+        name: 'Gold 14k',
+        type: 'Gold',
+        purity: '14k',
+        purityPercentage: 58.3,
+        pricePerGram: 3165.20 + (Math.random() * 100 - 50),
+        pricePerOunce: 98455.55 + (Math.random() * 1000 - 500),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      '10k': {
+        name: 'Gold 10k',
+        type: 'Gold',
+        purity: '10k',
+        purityPercentage: 41.7,
+        pricePerGram: 2260.30 + (Math.random() * 50 - 25),
+        pricePerOunce: 70273.73 + (Math.random() * 500 - 250),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      }
     },
-    {
-      name: 'Silver',
-      symbol: 'AG',
-      price: 24.85 + (Math.random() * 2 - 1),
-      change: randomVariation(),
-      ticker: 'SI=F',
-      lastUpdated: baseDate.toISOString(),
-      source: 'mock'
+    Silver: {
+      'Fine': {
+        name: 'Fine Silver',
+        type: 'Silver',
+        purity: 'Fine',
+        purityPercentage: 99.9,
+        pricePerGram: 64.78 + (Math.random() * 3 - 1.5),
+        pricePerOunce: 2015.25 + (Math.random() * 50 - 25),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      'Sterling': {
+        name: 'Sterling Silver',
+        type: 'Silver',
+        purity: 'Sterling',
+        purityPercentage: 92.5,
+        pricePerGram: 59.72 + (Math.random() * 3 - 1.5),
+        pricePerOunce: 1858.43 + (Math.random() * 50 - 25),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      'Coin': {
+        name: 'Coin Silver',
+        type: 'Silver',
+        purity: 'Coin',
+        purityPercentage: 90.0,
+        pricePerGram: 58.00 + (Math.random() * 3 - 1.5),
+        pricePerOunce: 1804.83 + (Math.random() * 50 - 25),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      'Britannia': {
+        name: 'Britannia Silver',
+        type: 'Silver',
+        purity: 'Britannia',
+        purityPercentage: 95.8,
+        pricePerGram: 62.25 + (Math.random() * 3 - 1.5),
+        pricePerOunce: 1935.24 + (Math.random() * 50 - 25),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      }
     },
-    {
-      name: 'Platinum',
-      symbol: 'PT',
-      price: 950.20 + (Math.random() * 20 - 10),
-      change: randomVariation(),
-      ticker: 'PL=F',
-      lastUpdated: baseDate.toISOString(),
-      source: 'mock'
-    },
-    {
-      name: 'Palladium',
-      symbol: 'PD',
-      price: 1020.45 + (Math.random() * 30 - 15),
-      change: randomVariation(),
-      ticker: 'PA=F',
-      lastUpdated: baseDate.toISOString(),
-      source: 'mock'
+    Platinum: {
+      '950': {
+        name: 'Platinum 950',
+        type: 'Platinum',
+        purity: '950',
+        purityPercentage: 95.0,
+        pricePerGram: 2555.85 + (Math.random() * 100 - 50),
+        pricePerOunce: 79500.12 + (Math.random() * 1000 - 500),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      '900': {
+        name: 'Platinum 900',
+        type: 'Platinum',
+        purity: '900',
+        purityPercentage: 90.0,
+        pricePerGram: 2427.30 + (Math.random() * 100 - 50),
+        pricePerOunce: 75505.97 + (Math.random() * 1000 - 500),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      },
+      '850': {
+        name: 'Platinum 850',
+        type: 'Platinum',
+        purity: '850',
+        purityPercentage: 85.0,
+        pricePerGram: 2296.72 + (Math.random() * 100 - 50),
+        pricePerOunce: 71448.83 + (Math.random() * 1000 - 500),
+        change: randomVariation(),
+        lastUpdated: baseDate.toISOString(),
+        source: 'mock'
+      }
     }
-  ];
+  };
 };
 
 /**
- * Get real-time metal prices
+ * Get metal prices - supports filtering by type and purity
+ * Query parameters:
+ * - type: metal type (Gold, Silver, Platinum)
+ * - purity: purity level (24k, 18k, Sterling, 950, etc.)
  */
 router.get('/prices', async (req, res) => {
   try {
+    const { type, purity } = req.query;
     const now = Date.now();
     
-    // Return cached data if recent
-    if (lastFetch && (now - lastFetch) < CACHE_DURATION && Object.keys(priceCache).length > 0) {
+    // Check if we should use cached data
+    const cacheKey = type && purity ? `${type}_${purity}` : 'all';
+    const shouldUseCache = lastFetch && (now - lastFetch) < CACHE_DURATION && priceCache[cacheKey];
+    
+    if (shouldUseCache) {
       return res.json({
         success: true,
-        data: Object.values(priceCache),
+        data: priceCache[cacheKey],
         cached: true,
         lastUpdated: new Date(lastFetch).toISOString()
       });
     }
 
-    // Try to fetch real data from Yahoo Finance
-    const symbols = {
-      'GC=F': { name: 'Gold', symbol: 'AU' },        // Gold futures
-      'SI=F': { name: 'Silver', symbol: 'AG' },      // Silver futures
-      'PL=F': { name: 'Platinum', symbol: 'PT' },    // Platinum futures
-      'PA=F': { name: 'Palladium', symbol: 'PD' }    // Palladium futures
-    };
+    // Get fresh data
+    const allPrices = getComprehensiveMetalPrices();
+    let responseData;
 
-    let metalPrices = [];
-    let useYahooFinance = true;
-
-    try {
-      // console.log('Attempting to fetch real metal prices from Yahoo Finance...');
-      
-      const promises = Object.entries(symbols).map(async ([ticker, info]) => {
-        try {
-          const quote = await yahooFinance.quote(ticker);
-          const price = quote.regularMarketPrice || quote.previousClose || 0;
-          const previousClose = quote.previousClose || price;
-          const change = previousClose ? ((price - previousClose) / previousClose) * 100 : 0;
-
-          return {
-            name: info.name,
-            symbol: info.symbol,
-            price: price,
-            change: change,
-            ticker: ticker,
-            lastUpdated: new Date().toISOString(),
-            source: 'yahoo-finance'
-          };
-        } catch (error) {
-          // console.error(`Error fetching ${info.name} price from Yahoo Finance:`, error.message);
-          throw error; // Re-throw to trigger fallback for entire request
-        }
+    if (type && purity) {
+      // Get specific metal with specific purity
+      if (allPrices[type] && allPrices[type][purity]) {
+        responseData = allPrices[type][purity];
+      } else {
+        return res.status(404).json({
+          success: false,
+          error: `Metal price not found for ${type} ${purity}`,
+          availableTypes: Object.keys(allPrices),
+          availablePurities: type && allPrices[type] ? Object.keys(allPrices[type]) : []
+        });
+      }
+    } else if (type) {
+      // Get all purities for a specific metal type
+      if (allPrices[type]) {
+        responseData = Object.values(allPrices[type]);
+      } else {
+        return res.status(404).json({
+          success: false,
+          error: `Metal type '${type}' not found`,
+          availableTypes: Object.keys(allPrices)
+        });
+      }
+    } else {
+      // Get all metals and all purities (flattened)
+      responseData = [];
+      Object.values(allPrices).forEach(metalType => {
+        responseData = responseData.concat(Object.values(metalType));
       });
-
-      metalPrices = await Promise.all(promises);
-      // console.log('Successfully fetched real metal prices');
-      
-    } catch (error) {
-      console.error('Yahoo Finance API failed, using mock data:', error.message);
-      useYahooFinance = false;
-      metalPrices = getMockMetalPrices();
-    }
-
-    // If Yahoo Finance failed entirely, use mock data
-    if (!useYahooFinance || metalPrices.length === 0) {
-      // console.log('Using mock metal prices as fallback');
-      metalPrices = getMockMetalPrices();
     }
 
     // Update cache
-    priceCache = {};
-    metalPrices.forEach(price => {
-      priceCache[price.symbol] = price;
-    });
+    priceCache[cacheKey] = responseData;
     lastFetch = now;
 
     res.json({
       success: true,
-      data: metalPrices,
+      data: responseData,
       cached: false,
       lastUpdated: new Date().toISOString(),
-      dataSource: useYahooFinance ? 'yahoo-finance' : 'mock'
+      dataSource: 'mock',
+      filters: { type, purity }
     });
 
   } catch (error) {
-    // console.error('Error in metal prices endpoint, falling back to mock data:', error);
+    console.error('Error in metal prices endpoint:', error);
     
-    // Final fallback - always return mock data if everything fails
-    const mockPrices = getMockMetalPrices();
-    
-    res.json({
-      success: true,
-      data: mockPrices,
-      cached: false,
-      lastUpdated: new Date().toISOString(),
-      dataSource: 'mock-fallback',
-      error: 'Primary data source failed, using mock data'
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch metal prices',
+      message: error.message
     });
   }
 });
 
 /**
- * Get specific metal price
+ * Get available metal types and purities
  */
-router.get('/prices/:symbol', async (req, res) => {
+router.get('/types', async (req, res) => {
   try {
-    const { symbol } = req.params;
-    const symbolUpper = symbol.toUpperCase();
+    const allPrices = getComprehensiveMetalPrices();
     
-    // Check cache first
-    if (priceCache[symbolUpper]) {
-      return res.json({
-        success: true,
-        data: priceCache[symbolUpper],
-        cached: true
-      });
-    }
+    const availableOptions = Object.keys(allPrices).map(type => ({
+      type,
+      purities: Object.keys(allPrices[type])
+    }));
 
-    // If not in cache, try to fetch all prices
-    try {
-      const allPricesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/metal-prices/prices`);
-      const allPrices = await allPricesResponse.json();
-      
-      const requestedPrice = allPrices.data.find(price => price.symbol === symbolUpper);
-      
-      if (requestedPrice) {
-        return res.json({
-          success: true,
-          data: requestedPrice,
-          cached: false
-        });
-      }
-    } catch (fetchError) {
-      // console.error('Error fetching all prices, using mock data for single metal:', fetchError.message);
-    }
+    res.json({
+      success: true,
+      data: availableOptions,
+      lastUpdated: new Date().toISOString()
+    });
 
-    // Fallback to mock data for the specific metal
-    const mockPrices = getMockMetalPrices();
-    const mockPrice = mockPrices.find(price => price.symbol === symbolUpper);
+  } catch (error) {
+    console.error('Error fetching metal types:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch metal types',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Get specific metal price by type and purity (legacy endpoint)
+ * @deprecated Use /prices?type=X&purity=Y instead
+ */
+router.get('/prices/:type/:purity', async (req, res) => {
+  try {
+    const { type, purity } = req.params;
     
-    if (mockPrice) {
+    const allPrices = getComprehensiveMetalPrices();
+    
+    if (allPrices[type] && allPrices[type][purity]) {
+      const priceData = allPrices[type][purity];
+      
       res.json({
         success: true,
-        data: mockPrice,
+        data: priceData,
         cached: false,
-        dataSource: 'mock-fallback'
+        lastUpdated: new Date().toISOString(),
+        dataSource: 'mock'
       });
     } else {
       res.status(404).json({
         success: false,
-        error: `Metal price for symbol ${symbolUpper} not found`
+        error: `Metal price for ${type} ${purity} not found`,
+        availableTypes: Object.keys(allPrices),
+        availablePurities: allPrices[type] ? Object.keys(allPrices[type]) : []
       });
     }
 
   } catch (error) {
-    // console.error(`Error fetching price for ${req.params.symbol}:`, error);
+    console.error(`Error fetching price for ${req.params.type} ${req.params.purity}:`, error);
     
-    // Final fallback - try to return mock data
-    try {
-      const mockPrices = getMockMetalPrices();
-      const mockPrice = mockPrices.find(price => price.symbol === req.params.symbol.toUpperCase());
-      
-      if (mockPrice) {
-        res.json({
-          success: true,
-          data: mockPrice,
-          cached: false,
-          dataSource: 'mock-emergency-fallback',
-          error: 'Primary data source failed, using mock data'
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          error: 'Failed to fetch metal price and no fallback available',
-          message: error.message
-        });
-      }
-    } catch (fallbackError) {
-      res.status(500).json({
-        success: false,
-        error: 'Complete system failure',
-        message: error.message
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch metal price',
+      message: error.message
+    });
   }
 });
 

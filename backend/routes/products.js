@@ -170,41 +170,6 @@ router.get('/:id/full', async (req, res) => {
     const productId = req.params.id;
 
     // Get product
-    const product = await Product.findOne({ id: productId, is_active: true })
-      .populate('category');
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    // Get primary image (first image or one marked as primary)
-    const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0];
-
-    res.json({
-      ...product.toObject(),
-      primaryImage: primaryImage
-    });
-
-  } catch (error) {
-    console.error('Get product full error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-
-
-/**
- * @route   GET /api/products/:id/full/all
- * @desc    Get product with images populated
- * @access  admin
- */
-
-
-router.get('/:id/full/all', async (req, res) => {
-  try {
-    const productId = req.params.id;
-
-    // Get product
     const product = await Product.findOne({ id: productId})
       .populate('category');
 
@@ -225,6 +190,7 @@ router.get('/:id/full/all', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 
 /**
@@ -564,6 +530,66 @@ router.patch('/:id/toggle-active', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error toggling product active status:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+/**
+ * @route   PUT /api/products/:id
+ * @desc    Update a product (admin only)
+ * @access  Private (Admin)
+ */
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const productId = req.params.id;
+    const updateData = req.body;
+
+    console.log('🔄 Updating product:', productId);
+    console.log('📝 Update data:', updateData);
+
+    // Find the existing product using custom id field
+    const existingProduct = await Product.findOne({ id: productId });
+    if (!existingProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Update the product with new data using custom id field
+    const updatedProduct = await Product.findOneAndUpdate(
+      { id: productId },
+      updateData,
+      { 
+        new: true,  // Return the updated document
+        runValidators: true  // Run schema validations
+      }
+    );
+
+    console.log('✅ Product updated successfully:', updatedProduct.name);
+
+    res.status(200).json({
+      message: 'Product updated successfully',
+      product: updatedProduct
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating product:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors 
+      });
+    }
+
+    res.status(500).json({ 
+      message: 'Server error while updating product',
+      error: error.message 
+    });
   }
 });
 

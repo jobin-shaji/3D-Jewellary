@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Badge } from "@/shared/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { Metal } from "@/shared/types";
@@ -23,6 +24,37 @@ export const MetalsManagement: React.FC<MetalsManagementProps> = ({
   setNewMetal
 }) => {
   const { toast } = useToast();
+
+  // Purity options for each metal type
+  const purityOptions = {
+    Gold: [
+      { value: "24k", label: "24k (99.9% pure)" },
+      { value: "22k", label: "22k (91.7% pure)" },
+      { value: "18k", label: "18k (75% pure)" },
+      { value: "14k", label: "14k (58.3% pure)" },
+      { value: "10k", label: "10k (41.7% pure)" }
+    ],
+    Silver: [
+      { value: "Fine", label: "Fine Silver (99.9% pure)" },
+      { value: "Sterling", label: "Sterling Silver (92.5% pure)" },
+      { value: "Coin", label: "Coin Silver (90% pure)" },
+      { value: "Britannia", label: "Britannia Silver (95.8% pure)" }
+    ],
+    Platinum: [
+      { value: "950", label: "950 Platinum (95% pure)" },
+      { value: "900", label: "900 Platinum (90% pure)" },
+      { value: "850", label: "850 Platinum (85% pure)" }
+    ]
+  };
+
+  // Handle metal type change and reset purity
+  const handleMetalTypeChange = (value: string) => {
+    setNewMetal((prev) => ({
+      ...prev,
+      type: value,
+      purity: '' // Reset purity when metal type changes
+    }));
+  };
 
   const addMetal = () => {
     if (!newMetal.type.trim() || !newMetal.purity.trim() || newMetal.weight <= 0) {
@@ -97,29 +129,38 @@ export const MetalsManagement: React.FC<MetalsManagementProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Metal Type *</Label>
-              <Input
+              <Select
                 value={newMetal.type}
-                onChange={(e) =>
-                  setNewMetal((prev) => ({
-                    ...prev,
-                    type: e.target.value,
-                  }))
-                }
-                placeholder="e.g., Gold, Silver, Platinum"
-              />
+                onValueChange={handleMetalTypeChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select metal type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Gold">Gold</SelectItem>
+                  <SelectItem value="Silver">Silver</SelectItem>
+                  <SelectItem value="Platinum">Platinum</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Purity *</Label>
-              <Input
+              <Select
                 value={newMetal.purity}
-                onChange={(e) =>
-                  setNewMetal((prev) => ({
-                    ...prev,
-                    purity: e.target.value,
-                  }))
-                }
-                placeholder="e.g., 18k, 14k, 925"
-              />
+                onValueChange={(value) => setNewMetal((prev) => ({ ...prev, purity: value }))}
+                disabled={!newMetal.type}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!newMetal.type ? "Select metal type first" : "Select purity"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {newMetal.type && purityOptions[newMetal.type as keyof typeof purityOptions]?.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Weight (grams) *</Label>
