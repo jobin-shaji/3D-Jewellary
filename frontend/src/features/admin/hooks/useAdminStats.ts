@@ -20,7 +20,6 @@ export const useAdminStats = () => {
 
   const fetchStats = async () => {
     try {
-      console.log('useAdminStats: Fetching stats from API...');
       setLoading(true);
       setError(null);
       
@@ -31,7 +30,6 @@ export const useAdminStats = () => {
       }
       
       const data = await response.json();
-      console.log('useAdminStats: Received stats data:', data);
       setStats(data);
     } catch (err) {
       console.error('Error fetching admin stats:', err);
@@ -58,7 +56,6 @@ export const useAdminStats = () => {
 //   },);
 
   const refreshStats = () => {
-    console.log('useAdminStats: refreshStats called');
     fetchStats();
   };
 

@@ -8,21 +8,20 @@ import { Plus, Edit, Trash2, Eye, EyeOff, Package, Loader2 } from "lucide-react"
 import { useToast } from "@/shared/hooks/use-toast";
 import { useProductVisibility } from "@/shared/hooks/useProductVisibility";
 import { useDeleteProduct } from "@/features/admin/hooks/useDeleteProduct";
-import { useAdminStatsContext } from "../../../contexts/AdminStatsContext";
 import { Product } from "@/shared/types";
 
 interface ProductsTabProps {
   products: Product[];
   loading: boolean;
   fetchProducts: () => void;
+  refreshStats: () => void;
 }
 
-export const ProductsTab = ({ products, loading, fetchProducts}: ProductsTabProps) => {
+export const ProductsTab = ({ products, loading, fetchProducts, refreshStats}: ProductsTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { toggleProductVisibility, isProductLoading } = useProductVisibility();
   const { deleteProduct, deleteAttempts } = useDeleteProduct();
-  const { refreshStats } = useAdminStatsContext();
 
   // Refresh stats when products change (e.g., when returning from create/edit)
   useEffect(() => {
