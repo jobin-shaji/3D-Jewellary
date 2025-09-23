@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
 
-interface DashboardStats {
-  totalRevenue: number;
-  totalOrders: number;
-  totalUsers: number;
-  totalProducts: number;
-}
 
 interface Order {
   id: string;
@@ -34,12 +28,6 @@ interface AnalyticsData {
 }
 
 export const useAdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalUsers: 0,
-    totalProducts: 0
-  });
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
@@ -60,14 +48,6 @@ export const useAdminDashboard = () => {
 
       // TODO: Replace with actual API calls
       // For now, using mock data
-      
-      // Mock stats
-      const mockStats: DashboardStats = {
-        totalRevenue: 125000,
-        totalOrders: 450,
-        totalUsers: 1250,
-        totalProducts: 85
-      };
 
       // Mock orders
       const mockOrders: Order[] = [
@@ -100,7 +80,6 @@ export const useAdminDashboard = () => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      setStats(mockStats);
       setOrders(mockOrders);
       setUsers(mockUsers);
       setAnalyticsData(mockAnalytics);
@@ -147,7 +126,6 @@ export const useAdminDashboard = () => {
   };
 
   return {
-    stats,
     orders,
     users,
     analyticsData,

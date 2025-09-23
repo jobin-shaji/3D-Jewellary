@@ -2,10 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Package, Users, ShoppingCart, DollarSign, Eye, RefreshCw, Loader2 } from "lucide-react";
+import { Package, Users, ShoppingCart, Eye, RefreshCw, Loader2 } from "lucide-react";
 import { StatsCard } from "../shared/StatsCard";
 import { MetalPriceCard } from "../shared/MetalPriceCard";
 import { type MetalPrice } from "@/shared/hooks/useMetalPrices";
+import { type DashboardStats } from "@/features/admin/hooks/useAdminStats";
 
 interface Order {
   id: string;
@@ -13,13 +14,6 @@ interface Order {
   total: number;
   status: string;
   date: string;
-}
-
-interface DashboardStats {
-  totalRevenue: number;
-  totalOrders: number;
-  totalUsers: number;
-  totalProducts: number;
 }
 
 interface OverviewTabProps {
@@ -67,6 +61,12 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
           icon={Package}
         />
         <StatsCard
+          title="Active Products"
+          value={stats.activeProducts}
+          description="Available products"
+          icon={Package}
+        />
+        <StatsCard
           title="Total Users"
           value={stats.totalUsers}
           description="Registered users"
@@ -77,12 +77,6 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
           value={stats.totalOrders}
           description="Orders processed"
           icon={ShoppingCart}
-        />
-        <StatsCard
-          title="Total Revenue"
-          value={formatPrice(stats.totalRevenue)}
-          description="Total sales revenue"
-          icon={DollarSign}
         />
       </div>
 

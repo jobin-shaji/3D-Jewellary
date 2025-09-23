@@ -192,7 +192,6 @@ router.get('/:id/full', async (req, res) => {
 });
 
 
-
 /**
  * @route   POST /api/products
  * @desc    Create a new product (admin only)

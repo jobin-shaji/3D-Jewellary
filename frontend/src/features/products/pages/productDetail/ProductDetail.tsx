@@ -37,8 +37,12 @@ const ProductDetail = () => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedCustomizations, setSelectedCustomizations] = useState<Record<string, string | number>>({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [viewMode, setViewMode] = useState<'3d' | 'image'>('3d'); // Track current view mode
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  
+  // Initialize viewMode based on whether 3D model is available
+  const [viewMode, setViewMode] = useState<'3d' | 'image'>(() => 
+    product?.model_3d_url ? '3d' : 'image'
+  );
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -71,6 +75,9 @@ const ProductDetail = () => {
           });
           setSelectedCustomizations(defaults);
         }
+
+        // Set initial view mode based on 3D model availability
+        setViewMode(productData.model_3d_url ? '3d' : 'image');
 
       } catch (err) {
         toast({
@@ -212,7 +219,7 @@ const ProductDetail = () => {
                 {/* Main Display Area */}
                 <Card className="overflow-hidden">
                   <CardContent className="p-0">
-                    {viewMode === '3d' ? (
+                    {viewMode === '3d' && product.model_3d_url ? (
                       // 3D Viewer Display
                       <Product3DViewer 
                         modelUrl={product.model_3d_url}
@@ -221,7 +228,7 @@ const ProductDetail = () => {
                       />
                     ) : (
                       // Image Display with Zoom
-                      product.images && product.images.length > 0 && (
+                      product.images && product.images.length > 0 ? (
                         <Dialog>
                           <DialogTrigger asChild>
                             <div className="relative group cursor-pointer">
@@ -243,6 +250,14 @@ const ProductDetail = () => {
                             />
                           </DialogContent>
                         </Dialog>
+                      ) : (
+                        // Fallback when no images or 3D model
+                        <div className="h-96 lg:h-[500px] flex items-center justify-center bg-muted/30">
+                          <div className="text-center">
+                            <Box className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                            <p className="text-muted-foreground">No visual content available</p>
+                          </div>
+                        </div>
                       )
                     )}
                   </CardContent>
@@ -344,7 +359,7 @@ const ProductDetail = () => {
                 {/* Main Display Area */}
                 <Card className="overflow-hidden flex-1">
                   <CardContent className="p-0">
-                    {viewMode === '3d' ? (
+                    {viewMode === '3d' && product.model_3d_url ? (
                       // 3D Viewer Display
                       <Product3DViewer 
                         modelUrl={product.model_3d_url}
@@ -353,7 +368,7 @@ const ProductDetail = () => {
                       />
                     ) : (
                       // Image Display with Zoom
-                      product.images && product.images.length > 0 && (
+                      product.images && product.images.length > 0 ? (
                         <Dialog>
                           <DialogTrigger asChild>
                             <div className="relative group cursor-pointer">
@@ -375,6 +390,14 @@ const ProductDetail = () => {
                             />
                           </DialogContent>
                         </Dialog>
+                      ) : (
+                        // Fallback when no images or 3D model
+                        <div className="h-96 lg:h-[500px] flex items-center justify-center bg-muted/30">
+                          <div className="text-center">
+                            <Box className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                            <p className="text-muted-foreground">No visual content available</p>
+                          </div>
+                        </div>
                       )
                     )}
                   </CardContent>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, Eye, EyeOff, Package, Loader2 } from "lucide-react"
 import { useToast } from "@/shared/hooks/use-toast";
 import { useProductVisibility } from "@/shared/hooks/useProductVisibility";
 import { useDeleteProduct } from "@/features/admin/hooks/useDeleteProduct";
+import { useAdminStatsContext } from "../../../contexts/AdminStatsContext";
 import { Product } from "@/shared/types";
 
 interface ProductsTabProps {
@@ -21,11 +22,20 @@ export const ProductsTab = ({ products, loading, fetchProducts}: ProductsTabProp
   const { toast } = useToast();
   const { toggleProductVisibility, isProductLoading } = useProductVisibility();
   const { deleteProduct, deleteAttempts } = useDeleteProduct();
+  const { refreshStats } = useAdminStatsContext();
+
+  // Refresh stats when products change (e.g., when returning from create/edit)
+  useEffect(() => {
+    if (!loading && products.length >= 0) {
+      refreshStats();
+    }
+  }, [products.length, loading, refreshStats]);
 
   const handleToggleVisibility = async (productId: string, productName: string, currentStatus: boolean) => {
     const result = await toggleProductVisibility(productId, productName, currentStatus);
     if (result.success) {
       fetchProducts(); // Refresh the products list
+      refreshStats(); // Refresh admin stats
     }
   };
 
@@ -170,7 +180,10 @@ export const ProductsTab = ({ products, loading, fetchProducts}: ProductsTabProp
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => deleteProduct(product.id.toString(), product.name, () => fetchProducts())}
+                          onClick={() => deleteProduct(product.id.toString(), product.name, () => {
+                            fetchProducts();
+                            refreshStats(); // Refresh stats after product deletion
+                          })}
                           title={deleteAttempts[product.id] ? "Click again to confirm delete" : "Delete Product"}
                           className={`${deleteAttempts[product.id] ? 'bg-red-100 text-red-700' : 'text-destructive hover:text-destructive'}`}
                         >

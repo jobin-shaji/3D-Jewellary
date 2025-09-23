@@ -15,6 +15,7 @@ const authRouter = require('./routes/auth');
 const products = require('./routes/products');
 const categories = require('./routes/categories');
 const metalPricesRouter = require('./routes/metalPrices');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/metal-prices', metalPricesRouter);
 app.use('/api/categories', categories);
 app.use('/api/products', products);
+app.use('/api/admin', adminRouter);
 
 // Mount routers for existing routes
 app.get('/api/test', (req, res) => {
