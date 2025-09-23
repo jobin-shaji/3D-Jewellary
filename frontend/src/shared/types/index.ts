@@ -63,7 +63,7 @@ export interface Product {
   id?: string;
   name: string;
   description?: string;
-  price: number;
+  makingPrice: number;
   category_id: number;
   category?: Category;
   stock_quantity: number;

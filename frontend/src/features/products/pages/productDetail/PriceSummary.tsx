@@ -30,8 +30,8 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
     return total;
   }, 0) || 0;
 
-  // Making charges - use the product.price as the base making charges
-  const makingCharges = product.price || 0;
+  // Making charges - use the product.makingPrice as the base making charges
+  const makingCharges = product.makingPrice || 0;
   
   // GST rate changed to 3% for jewelry
   const gstRate = 0.03;
@@ -118,7 +118,7 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
           {!hasDetailedPricing && (
             <div className="flex justify-between items-center py-2 border-b border-border/30">
               <span className="text-sm text-muted-foreground">Product Price</span>
-              <span className="font-medium">₹{(product.price || 0).toLocaleString()}</span>
+              <span className="font-medium">₹{(product.makingPrice || 0).toLocaleString()}</span>
             </div>
           )}
         </div>

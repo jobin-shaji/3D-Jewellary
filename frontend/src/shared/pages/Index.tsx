@@ -21,7 +21,7 @@ const Index = () => {
     {
       id: 1,
       name: "Diamond Engagement Ring",
-      price: 2999,
+      makingPrice: 2999,
       compare_price: 3499,
       image: "/placeholder.svg",
       model_3d_url: "",
@@ -31,7 +31,7 @@ const Index = () => {
     {
       id: 2,
       name: "Pearl Necklace",
-      price: 899,
+      makingPrice: 899,
       image: "/placeholder.svg",
       model_3d_url: "",
       rating: 4.8,
@@ -40,7 +40,7 @@ const Index = () => {
     {
       id: 3,
       name: "Gold Bracelet",
-      price: 1299,
+      makingPrice: 1299,
       image: "/placeholder.svg",
       model_3d_url: "",
       rating: 4.7,
@@ -139,7 +139,7 @@ const Index = () => {
                       />
                       {product.compare_price && (
                         <Badge className="absolute top-4 left-4 bg-destructive">
-                          Save ₹{product.compare_price - product.price}
+                          Save ₹{product.compare_price - product.makingPrice}
                         </Badge>
                       )}
                     </div>
@@ -174,7 +174,7 @@ const Index = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="text-2xl font-bold text-foreground">
-                          ₹{product.price}
+                          ₹{product.makingPrice}
                         </span>
                         {product.compare_price && (
                           <span className="text-lg text-muted-foreground line-through">

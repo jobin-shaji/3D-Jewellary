@@ -34,7 +34,7 @@ const createProductData = (
 ): Product => {
   return {
     name: formData.name,
-    price: Number(formData.price),
+    makingPrice: Number(formData.price),
     category_id: Number(formData.category_id),
     description: formData.description,
     is_active: formData.inStock,
@@ -142,7 +142,7 @@ const ProductManagement = () => {
         // Populate form with product data
         setFormData({
           name: productData.name || "",
-          price: productData.price?.toString() || "",
+          price: productData.makingPrice?.toString() || "",
           category_id: productData.category_id?.toString() || "",
           description: productData.description || "",
           inStock: productData.is_active ?? true,

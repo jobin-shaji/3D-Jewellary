@@ -7,6 +7,7 @@ export interface MetalPrice {
   purityPercentage: number;
   pricePerGram: number;
   change: number;
+  absoluteChange?: number; // Optional for backward compatibility
   lastUpdated: string;
   source: string;
   error?: string;
@@ -43,7 +44,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
       }
       
       const queryString = queryParams.toString();
-      const url = `http://localhost:3000/api/metal-prices/prices${queryString ? `?${queryString}` : ''}`;
+      const url = `http://localhost:3000/api/metal/prices${queryString ? `?${queryString}` : ''}`;
       
       const response = await fetch(url);
       
@@ -74,6 +75,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
           purityPercentage: 99.9,
           pricePerGram: 7425.50, 
           change: (Math.random() - 0.5) * 2,
+          absoluteChange: 89.10,
           lastUpdated: new Date().toISOString(),
           source: "fallback",
           error: "Using fallback data"
@@ -85,6 +87,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
           purityPercentage: 92.5,
           pricePerGram: 78.42, 
           change: (Math.random() - 0.5) * 2,
+          absoluteChange: 1.25,
           lastUpdated: new Date().toISOString(),
           source: "fallback",
           error: "Using fallback data"
@@ -96,6 +99,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
           purityPercentage: 95.0,
           pricePerGram: 3055.85, 
           change: (Math.random() - 0.5) * 2,
+          absoluteChange: 45.30,
           lastUpdated: new Date().toISOString(),
           source: "fallback",
           error: "Using fallback data"
@@ -119,7 +123,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
 
   const fetchAvailableOptions = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/metal-prices/types');
+      const response = await fetch('http://localhost:3000/api/metal/types');
       if (response.ok) {
         const result = await response.json();
         if (result.success) {

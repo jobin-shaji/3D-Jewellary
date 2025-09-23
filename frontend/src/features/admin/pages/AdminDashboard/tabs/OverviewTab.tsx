@@ -88,7 +88,7 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
             <Button
               variant="outline"
               size="sm"
-              onClick={refreshPrices}
+              onClick={() => refreshPrices()}
               disabled={metalPricesLoading}
             >
               <RefreshCw className={`h-4 w-4 ${metalPricesLoading ? 'animate-spin' : ''}`} />

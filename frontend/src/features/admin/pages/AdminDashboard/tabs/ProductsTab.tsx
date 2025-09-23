@@ -131,7 +131,7 @@ export const ProductsTab = ({ products, loading, fetchProducts, refreshStats}: P
                     <TableCell className="capitalize">
                       {product.category?.name || 'Uncategorized'}
                     </TableCell>
-                    <TableCell>{formatPrice(product.price)}</TableCell>
+                    <TableCell>{formatPrice(product.makingPrice)}</TableCell>
                     <TableCell>
                       <span className={`${
                         product.stock_quantity === 0 

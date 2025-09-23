@@ -205,7 +205,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     let { 
       name, 
-      price, 
+      makingPrice, 
       category_id, 
       description = '',
       is_active = true,
@@ -216,7 +216,7 @@ router.post('/', authenticateToken, async (req, res) => {
     } = req.body;
 
     // Parse possible string fields
-    price = Number(price);
+    makingPrice = Number(makingPrice);
     stock_quantity = Number(stock_quantity);
     
     // if your category_id is numeric in DB:
@@ -235,11 +235,11 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Validation
-    if (!name || !price || !category_id) {
-      return res.status(400).json({ message: 'Name, price, and category are required' });
+    if (!name || !makingPrice || !category_id) {
+      return res.status(400).json({ message: 'Name, making price, and category are required' });
     }
-    if (price <= 0) {
-      return res.status(400).json({ message: 'Price must be greater than 0' });
+    if (makingPrice <= 0) {
+      return res.status(400).json({ message: 'Making price must be greater than 0' });
     }
     if (!Number.isFinite(stock_quantity) || stock_quantity < 0) {
       return res.status(400).json({ message: 'stock_quantity must be a non-negative number' });
@@ -270,7 +270,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // Let the Product schema generate its own string ID
     const product = new Product({
       name,
-      price,
+      makingPrice,
       category_id,
       description,
       is_active,

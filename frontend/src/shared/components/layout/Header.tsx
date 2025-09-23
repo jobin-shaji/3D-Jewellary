@@ -127,7 +127,7 @@ export const Header = () => {
                 {goldPrice && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-50 rounded border border-yellow-200" title={`24K Gold: ₹${goldPrice.pricePerGram.toFixed(2)}/g (${goldPrice.change > 0 ? '+' : ''}${goldPrice.change.toFixed(1)}%)`}>
                     <span className="text-xs font-bold text-yellow-900">24K Gold</span>
-                    <span className="text-xs font-bold text-yellow-900">₹{goldPrice.pricePerGram.toFixed(0)}/g</span>
+                    <span className="text-xs font-bold text-yellow-900">₹{goldPrice.pricePerGram.toFixed(2)}/g</span>
                   </div>
                 )}
                 {silverPrice && (
@@ -153,7 +153,7 @@ export const Header = () => {
                   <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200" title={`24K Gold: ₹${goldPrice.pricePerGram.toFixed(2)} per gram`}>
                     <span className="text-xs font-medium text-yellow-800">24K Gold</span>
                     <span className="text-sm font-bold text-yellow-900">
-                      ₹{goldPrice.pricePerGram.toFixed(0)}/g
+                      ₹{goldPrice.pricePerGram.toFixed(2)}/g
                     </span>
                     {goldPrice.change >= 0 ? (
                       <TrendingUp className="h-3 w-3 text-green-600" />
