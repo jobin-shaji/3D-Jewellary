@@ -4,7 +4,7 @@ const metalSchema = new mongoose.Schema({
   metal: {
     type: String,
     required: true,
-    enum: ['Gold', 'Silver', 'Platinum'],
+    enum: ['Gold', 'Silver', 'Platinum', 'Palladium'],
     trim: true
   },
   purity: {

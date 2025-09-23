@@ -2,9 +2,9 @@ const express = require('express');
 const Metal = require('../models/metal');
 const router = express.Router();
 
-// Helper function to get purity percentage based on metal type and purity
-const getPurityPercentage = (metal, purity) => {
-  const purityMap = {
+// Purity data and helper functions
+const purityData = {
+  map: {
     Gold: {
       '24k': 99.9,
       '22k': 91.7,
@@ -22,11 +22,19 @@ const getPurityPercentage = (metal, purity) => {
       '950': 95.0,
       '900': 90.0,
       '850': 85.0
+    },
+    Palladium: {
+      '950': 95.0,
+      '900': 90.0,
+      '850': 85.0
     }
-  };
-
-  return purityMap[metal]?.[purity] || 0;
+  },
+  get: (metal, purity) => purityData.map[metal]?.[purity] || 0,
+  getPurities: (metal) => Object.keys(purityData.map[metal] || {})
 };
+
+// Helper function to get purity percentage based on metal type and purity
+const getPurityPercentage = purityData.get;
 
 // Helper function to format metal data to match frontend expectations
 const formatMetalData = (metalDoc) => {
@@ -52,10 +60,18 @@ const formatMetalData = (metalDoc) => {
 router.get('/prices', async (req, res) => {
   try {
     const { type, purity } = req.query;
-    
+
     // Log the incoming request for debugging
     console.log('Metal prices request:', { type, purity });
-    
+
+    // Check if prices need updating (older than 4 days)
+    const latestMetal = await Metal.findOne().sort({ updatedAt: -1 });
+    const fourDaysInMs = 4 * 24 * 60 * 60 * 1000;
+    if (!latestMetal || (new Date() - latestMetal.updatedAt) >= fourDaysInMs) {
+      console.log('Metal prices are stale, updating from API...');
+      await updateMetalPricesFromAPI();
+    }
+
     // Build query filter
     const filter = {};
     if (type) {
@@ -70,16 +86,16 @@ router.get('/prices', async (req, res) => {
 
     if (metals.length === 0) {
       const availableMetals = await Metal.distinct('metal');
-      const availablePurities = type ? 
-        await Metal.distinct('purity', { metal: type }) : 
+      const availablePurities = type ?
+        await Metal.distinct('purity', { metal: type }) :
         await Metal.distinct('purity');
 
       console.log('No metals found for filter:', filter, 'Available:', { availableMetals, availablePurities });
 
       return res.status(404).json({
         success: false,
-        error: type && purity ? 
-          `Metal price not found for ${type} ${purity}` : 
+        error: type && purity ?
+          `Metal price not found for ${type} ${purity}` :
           type ? `No metals found for type '${type}'` : 'No metal prices found',
         availableTypes: availableMetals,
         availablePurities: availablePurities,
@@ -91,7 +107,7 @@ router.get('/prices', async (req, res) => {
     const responseData = metals.map(formatMetalData);
 
     // If specific metal and purity requested, return single object
-    const finalData = (type && purity && responseData.length === 1) ? 
+    const finalData = (type && purity && responseData.length === 1) ?
       responseData[0] : responseData;
 
     res.json({
@@ -105,7 +121,7 @@ router.get('/prices', async (req, res) => {
 
   } catch (error) {
     console.error('Error in metal prices endpoint:', error);
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to fetch metal prices',
@@ -121,7 +137,7 @@ router.get('/types', async (req, res) => {
   try {
     // Get all distinct metal types and their purities
     const metals = await Metal.find({}, 'metal purity').sort({ metal: 1, purity: 1 });
-    
+
     // Group by metal type
     const groupedMetals = metals.reduce((acc, metal) => {
       if (!acc[metal.metal]) {
@@ -155,4 +171,82 @@ router.get('/types', async (req, res) => {
   }
 });
 
+// Function to update metal prices from API
+async function updateMetalPricesFromAPI() {
+  const apiKey = process.env.metalprice_api_key2;
+  const url = `https://api.metalpriceapi.com/v1/latest?api_key=${apiKey}&base=INR&currencies=XAU,XAG,XPT,XPD`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    console.log('API Response:', JSON.stringify(data, null, 2));
+
+    if (!data.success) {
+      throw new Error('API request failed');
+    }
+
+    const rates = data.rates;
+    const ounceToGram = 31.1035; // 1 troy ounce = 31.1035 grams
+
+    const metalMap = {
+      XAU: 'Gold',
+      XAG: 'Silver',
+      XPT: 'Platinum',
+      XPD: 'Palladium'
+    };
+
+    for (const symbol in metalMap) {
+      const metal = metalMap[symbol];
+      // The API provides both direct rates (XAU) and INR rates (INRXAU)
+      // Use the INR rates directly as they give price per troy ounce in INR
+      const inrSymbol = `INR${symbol}`;
+      const pricePerOunce = rates[inrSymbol];
+      
+      if (!pricePerOunce) {
+        console.log(`No price found for ${metal} (${inrSymbol})`);
+        continue;
+      }
+      
+      const pricePerGram = pricePerOunce / ounceToGram;
+
+      // Get all purities for this metal
+      const purities = purityData.getPurities(metal);
+
+      for (const purity of purities) {
+        const purityPercentage = getPurityPercentage(metal, purity);
+        const adjustedPricePerGram = pricePerGram * (purityPercentage / 100);
+
+        // Find existing entry to calculate change
+        const existing = await Metal.findOne({ metal, purity });
+        let change = 0;
+        let absoluteChange = 0;
+
+        if (existing) {
+          change = ((adjustedPricePerGram - existing.pricePerGram) / existing.pricePerGram) * 100;
+          absoluteChange = adjustedPricePerGram - existing.pricePerGram;
+        }
+
+        // Update or insert the entry
+        await Metal.findOneAndUpdate(
+          { metal, purity },
+          {
+            pricePerGram: adjustedPricePerGram,
+            change,
+            absoluteChange,
+            source: 'api',
+            updatedAt: new Date()
+          },
+          { upsert: true, new: true }
+        );
+      }
+    }
+
+    console.log('Metal prices updated successfully');
+  } catch (error) {
+    console.error('Error updating metal prices from API:', error);
+  }
+}
+
 module.exports = router;
+module.exports.updateMetalPricesFromAPI = updateMetalPricesFromAPI;
