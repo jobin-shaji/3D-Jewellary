@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Separator } from "@/shared/components/ui/separator";
 import { Product } from "@/shared/types";
 import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface PriceSummaryProps {
   product: Product;
@@ -11,8 +11,11 @@ interface PriceSummaryProps {
 
 export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) => {
   const { metalPrices, loading: pricesLoading, getPrice } = useMetalPrices();
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [loadingRemote, setLoadingRemote] = useState(false);
+  const [serverData, setServerData] = useState<any | null>(null);
 
-  // Calculate metal costs from product.metals array
+  // Calculate metal costs from product.metals array (client-only, not authoritative)
   const metalCosts = product.metals?.reduce((total, metal) => {
     // Get current price per gram for this metal type and purity
     const metalPrice = getPrice(metal.type, metal.purity);
@@ -23,11 +26,11 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
   }, 0) || 0;
 
   // Calculate gemstone costs from product.gemstones array
+  // Normalize: `gemstone.price` is treated as price-per-item (per count)
   const gemstoneCosts = product.gemstones?.reduce((total, gemstone) => {
-    if (gemstone.price && gemstone.count) {
-      return total + (gemstone.price * gemstone.count);
-    }
-    return total;
+    const price = gemstone.price || 0;
+    const count = gemstone.count || 0;
+    return total + (price * count);
   }, 0) || 0;
 
   // Making charges - use the product.makingPrice as the base making charges
@@ -39,10 +42,11 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
   // Calculate total from components
   const calculatedPrice = metalCosts + gemstoneCosts + makingCharges;
   
-  // Use calculated price if we have metal/gemstone data, otherwise use base price
-  const effectiveSubtotal = calculatedPrice;
-  const gstAmount = effectiveSubtotal * gstRate;
-  const finalTotal = effectiveSubtotal + gstAmount;
+  // Use DB snapshot when available (authoritative). Client-side compute is only fallback for display while server data loads.
+  const snapshotTotal = typeof product.totalPrice === 'number' ? product.totalPrice : null;
+  const effectiveSubtotal = snapshotTotal !== null ? snapshotTotal / (1 + gstRate) : calculatedPrice;
+  const gstAmount = snapshotTotal !== null ? snapshotTotal - (snapshotTotal / (1 + gstRate)) : effectiveSubtotal * gstRate;
+  const finalTotal = snapshotTotal !== null ? snapshotTotal : effectiveSubtotal + gstAmount;
 
   // Check if we have detailed pricing data
   const hasDetailedPricing = (product.metals && product.metals.length > 0) || (product.gemstones && product.gemstones.length > 0);
@@ -53,6 +57,45 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
       onPriceCalculated(Math.round(finalTotal));
     }
   }, [finalTotal, onPriceCalculated]);
+
+  // Fetch server-side computed price (if available) to get authoritative total and timestamp
+  async function fetchServerCompute() {
+    setLoadingRemote(true);
+    try {
+      // Send full product payload to backend for authoritative compute
+      // Persist the computed rounded total back to product snapshot
+      const resp = await fetch('/api/metal/compute-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, persist: true })
+      });
+
+      if (!resp.ok) throw new Error('Server compute failed');
+      const json = await resp.json();
+      if (json && json.success && json.data) {
+        setServerData(json.data);
+        // Prefer server-provided lastUpdated; if persist occurred backend may not include it, fallback to now
+        setLastUpdated(json.data.lastUpdated || new Date().toISOString());
+        const rounded = typeof json.data.roundedTotal === 'number' ? json.data.roundedTotal : Math.round(json.data.total || 0);
+        if (onPriceCalculated) onPriceCalculated(rounded);
+      } else {
+        // If server returned no data, clear serverData so UI shows zeros
+        setServerData(null);
+        setLastUpdated(null);
+        if (onPriceCalculated) onPriceCalculated(0);
+      }
+    } catch (err) {
+      console.debug('Server compute unavailable, using client-side calculation', err?.message || err);
+    } finally {
+      setLoadingRemote(false);
+    }
+  }
+
+  useEffect(() => {
+    // Try server compute on mount
+    fetchServerCompute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   return (
     <Card className="sticky top-24">
@@ -128,13 +171,13 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
         {/* Subtotal */}
         <div className="flex justify-between items-center py-2">
           <span className="font-medium">Subtotal</span>
-          <span className="font-semibold">₹{effectiveSubtotal.toLocaleString()}</span>
+          <span className="font-semibold">₹{(serverData ? serverData.subtotal : effectiveSubtotal).toLocaleString()}</span>
         </div>
         
         {/* GST */}
         <div className="flex justify-between items-center py-2 border-b border-border/30">
           <span className="text-sm text-muted-foreground">GST ({(gstRate * 100)}%)</span>
-          <span className="font-medium">₹{Math.round(gstAmount).toLocaleString()}</span>
+          <span className="font-medium">₹{Math.round(serverData ? serverData.tax : gstAmount).toLocaleString()}</span>
         </div>
         
         <Separator />
@@ -142,10 +185,29 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
         {/* Final Total */}
         <div className="flex justify-between items-center py-3 bg-primary/5 rounded-lg px-4">
           <span className="text-lg font-bold">Total Amount</span>
-          <span className="text-xl font-bold text-primary">₹{Math.round(finalTotal).toLocaleString()}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-bold text-primary">₹{Math.round(serverData ? serverData.total : finalTotal).toLocaleString()}</span>
+            <span className="text-xs text-muted-foreground px-2 py-1 border rounded">
+              {serverData ? 'Server' : 'Client'}
+            </span>
+          </div>
         </div>
         
         {/* Price Breakdown Note */}
+        {lastUpdated && (
+          <div className="text-xs text-muted-foreground">
+            Last updated: {new Date(lastUpdated).toLocaleString()}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button
+            className="btn btn-sm"
+            onClick={() => fetchServerCompute()}
+            disabled={loadingRemote}
+          >
+            {loadingRemote ? 'Refreshing...' : 'Refresh Price'}
+          </button>
+        </div>
         <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
           <p className="font-medium mb-1">Price includes:</p>
           <ul className="space-y-1">

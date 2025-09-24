@@ -4,6 +4,7 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const Product = require('../models/product');
 const { authenticateToken } = require('../utils/jwt');
+const { computeProductPrice } = require('../utils/priceUtils');
 
 const router = express.Router();
 
@@ -99,6 +100,42 @@ router.get('/', async (req, res) => {
         primaryImage: primaryImage
       };
     });
+
+    // Trigger background batch price update in-process if many products have stale `latestPriceUpdate`
+    try {
+      const PRICE_REFRESH_HOURS = Number(process.env.PRICE_REFRESH_HOURS) || 4;
+      const staleThreshold = new Date(Date.now() - PRICE_REFRESH_HOURS * 60 * 60 * 1000);
+      const staleCount = await Product.countDocuments({ is_active: true, $or: [ { latestPriceUpdate: { $lt: staleThreshold } }, { latestPriceUpdate: null } ] });
+      if (staleCount > 0) {
+        // Fire-and-forget: run update in the same process without blocking the response
+        (async () => {
+          try {
+            const limit = 100; // cap per run to avoid long blocking work
+            const staleProducts = await Product.find({ is_active: true, $or: [ { latestPriceUpdate: { $lt: staleThreshold } }, { latestPriceUpdate: null } ] }).limit(limit);
+            let updated = 0;
+            for (const p of staleProducts) {
+              try {
+                const res = await computeProductPrice(p);
+                if (res && res.success && res.data) {
+                  p.totalPrice = res.data.roundedTotal || Math.round(res.data.total || 0);
+                  p.latestPriceUpdate = new Date();
+                  await p.save();
+                  updated++;
+                }
+              } catch (err) {
+                console.error('Error updating product price in background for', p.id, err);
+              }
+            }
+            console.log(`Background price update completed. Updated ${updated} products.`);
+          } catch (err) {
+            console.error('Background price updater failed', err);
+          }
+        })();
+      }
+
+    } catch (bgErr) {
+      console.error('Error evaluating background price update:', bgErr);
+    }
 
     res.json({
       products: productsWithImages,
@@ -628,6 +665,48 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Delete product error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+/**
+ * @route   POST /api/products/update-prices
+ * @desc    Batch update products' totalPrice and latestPriceUpdate
+ * @access  Public (safe operation) - accepts optional { productIds: [] }
+ */
+router.post('/update-prices', async (req, res) => {
+  try {
+    const { productIds } = req.body || {};
+
+    const filter = { is_active: true };
+    if (Array.isArray(productIds) && productIds.length) {
+      filter.id = { $in: productIds };
+    }
+
+    const products = await Product.find(filter);
+
+    let updatedCount = 0;
+
+    for (const product of products) {
+      try {
+        const result = await computeProductPrice(product);
+        if (result && result.success && result.data) {
+          const rounded = result.data.roundedTotal || Math.round(result.data.total || 0);
+          product.totalPrice = rounded;
+          product.latestPriceUpdate = new Date();
+          await product.save();
+          updatedCount++;
+        }
+      } catch (innerErr) {
+        console.error('Error computing price for product', product.id, innerErr);
+        // continue with next product
+      }
+    }
+
+    return res.json({ success: true, updated: updatedCount });
+  } catch (error) {
+    console.error('Batch update prices error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

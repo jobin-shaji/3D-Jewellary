@@ -127,7 +127,7 @@ const Products = () => {
                 <Badge variant="secondary" className="mb-2">
                   {product.category?.name || 'No Category'}
                 </Badge>
-                <p className="text-2xl font-bold text-primary">₹{product.makingPrice}</p>
+                <p className="text-2xl font-bold text-primary">₹{product.totalPrice}</p>
                 {product.stock_quantity <= 0 && (
                   <Badge variant="destructive" className="mt-2">Out of Stock</Badge>
                 )}

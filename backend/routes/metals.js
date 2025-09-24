@@ -1,6 +1,7 @@
 const express = require('express');
 const Metal = require('../models/metal');
 const router = express.Router();
+const { computeProductPrice } = require('../utils/priceUtils');
 
 // Purity data and helper functions
 const purityData = {
@@ -50,6 +51,83 @@ const formatMetalData = (metalDoc) => {
     source: metalDoc.source
   };
 };
+
+// Function to update metal prices from API
+async function updateMetalPricesFromAPI() {
+  const apiKey = process.env.metalprice_api_key2;
+  const url = `https://api.metalpriceapi.com/v1/latest?api_key=${apiKey}&base=INR&currencies=XAU,XAG,XPT,XPD`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    console.log('API Response:', JSON.stringify(data, null, 2));
+
+    if (!data.success) {
+      throw new Error('API request failed');
+    }
+
+    const rates = data.rates;
+    const ounceToGram = 31.1035; // 1 troy ounce = 31.1035 grams
+
+    const metalMap = {
+      XAU: 'Gold',
+      XAG: 'Silver',
+      XPT: 'Platinum',
+      XPD: 'Palladium'
+    };
+
+    for (const symbol in metalMap) {
+      const metal = metalMap[symbol];
+      // The API provides both direct rates (XAU) and INR rates (INRXAU)
+      // Use the INR rates directly as they give price per troy ounce in INR
+      const inrSymbol = `INR${symbol}`;
+      const pricePerOunce = rates[inrSymbol];
+      
+      if (!pricePerOunce) {
+        console.log(`No price found for ${metal} (${inrSymbol})`);
+        continue;
+      }
+      
+      const pricePerGram = pricePerOunce / ounceToGram;
+
+      // Get all purities for this metal
+      const purities = purityData.getPurities(metal);
+
+      for (const purity of purities) {
+        const purityPercentage = getPurityPercentage(metal, purity);
+        const adjustedPricePerGram = pricePerGram * (purityPercentage / 100);
+
+        // Find existing entry to calculate change
+        const existing = await Metal.findOne({ metal, purity });
+        let change = 0;
+        let absoluteChange = 0;
+
+        if (existing) {
+          change = ((adjustedPricePerGram - existing.pricePerGram) / existing.pricePerGram) * 100;
+          absoluteChange = adjustedPricePerGram - existing.pricePerGram;
+        }
+
+        // Update or insert the entry
+        await Metal.findOneAndUpdate(
+          { metal, purity },
+          {
+            pricePerGram: adjustedPricePerGram,
+            change,
+            absoluteChange,
+            source: 'api',
+            updatedAt: new Date()
+          },
+          { upsert: true, new: true }
+        );
+      }
+    }
+
+    console.log('Metal prices updated successfully');
+  } catch (error) {
+    console.error('Error updating metal prices from API:', error);
+  }
+}
 
 /**
  * Get metal prices - supports filtering by type and purity
@@ -171,82 +249,92 @@ router.get('/types', async (req, res) => {
   }
 });
 
-// Function to update metal prices from API
-async function updateMetalPricesFromAPI() {
-  const apiKey = process.env.metalprice_api_key2;
-  const url = `https://api.metalpriceapi.com/v1/latest?api_key=${apiKey}&base=INR&currencies=XAU,XAG,XPT,XPD`;
-
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-
-    console.log('API Response:', JSON.stringify(data, null, 2));
-
-    if (!data.success) {
-      throw new Error('API request failed');
-    }
-
-    const rates = data.rates;
-    const ounceToGram = 31.1035; // 1 troy ounce = 31.1035 grams
-
-    const metalMap = {
-      XAU: 'Gold',
-      XAG: 'Silver',
-      XPT: 'Platinum',
-      XPD: 'Palladium'
-    };
-
-    for (const symbol in metalMap) {
-      const metal = metalMap[symbol];
-      // The API provides both direct rates (XAU) and INR rates (INRXAU)
-      // Use the INR rates directly as they give price per troy ounce in INR
-      const inrSymbol = `INR${symbol}`;
-      const pricePerOunce = rates[inrSymbol];
-      
-      if (!pricePerOunce) {
-        console.log(`No price found for ${metal} (${inrSymbol})`);
-        continue;
-      }
-      
-      const pricePerGram = pricePerOunce / ounceToGram;
-
-      // Get all purities for this metal
-      const purities = purityData.getPurities(metal);
-
-      for (const purity of purities) {
-        const purityPercentage = getPurityPercentage(metal, purity);
-        const adjustedPricePerGram = pricePerGram * (purityPercentage / 100);
-
-        // Find existing entry to calculate change
-        const existing = await Metal.findOne({ metal, purity });
-        let change = 0;
-        let absoluteChange = 0;
-
-        if (existing) {
-          change = ((adjustedPricePerGram - existing.pricePerGram) / existing.pricePerGram) * 100;
-          absoluteChange = adjustedPricePerGram - existing.pricePerGram;
-        }
-
-        // Update or insert the entry
-        await Metal.findOneAndUpdate(
-          { metal, purity },
-          {
-            pricePerGram: adjustedPricePerGram,
-            change,
-            absoluteChange,
-            source: 'api',
-            updatedAt: new Date()
-          },
-          { upsert: true, new: true }
-        );
-      }
-    }
-
-    console.log('Metal prices updated successfully');
-  } catch (error) {
-    console.error('Error updating metal prices from API:', error);
-  }
-}
-
 module.exports = router;
 module.exports.updateMetalPricesFromAPI = updateMetalPricesFromAPI;
+
+// POST /compute-price
+// Body: { metal, purity, weightGrams, makingCharge, taxPercent, productId (optional) }
+router.post('/compute-price', async (req, res) => {
+  try {
+    const { product, metal, purity, weightGrams, makingCharge = 0, taxPercent = 0 } = req.body || {};
+
+    // If full product provided, delegate to computeProductPrice helper
+    if (product) {
+      // Ensure latest metal prices
+      const latestMetal = await Metal.findOne().sort({ updatedAt: -1 });
+      const fourDaysInMs = 4 * 24 * 60 * 60 * 1000;
+      if (!latestMetal || (new Date() - latestMetal.updatedAt) >= fourDaysInMs) {
+        await updateMetalPricesFromAPI();
+      }
+
+      const result = await computeProductPrice(product, { taxPercent: Number(product.taxPercent || taxPercent || 3) });
+      const latest = await Metal.findOne().sort({ updatedAt: -1 });
+
+      // Optional persist flag: if client requests persistence, save roundedTotal to product document
+      // Body may include { persist: true }
+      const { persist } = req.body || {};
+      if (persist && product.id) {
+        try {
+          const Product = require('../models/product');
+          const rounded = typeof result.data.roundedTotal === 'number' ? result.data.roundedTotal : Math.round(result.data.total || 0);
+          await Product.findOneAndUpdate({ id: product.id }, { totalPrice: rounded, latestPriceUpdate: new Date() });
+        } catch (errPersist) {
+          console.warn('Failed to persist computed price for product', product.id, errPersist.message);
+        }
+      }
+
+      return res.json({ success: true, data: { ...result.data, roundedTotal: result.data.roundedTotal, lastUpdated: latest ? latest.updatedAt.toISOString() : null } });
+    }
+
+    // Backward compatible single-metal compute path
+    if (!metal || !purity || typeof weightGrams !== 'number') {
+      return res.status(400).json({ success: false, error: 'Provide either full product or metal, purity and weightGrams(number)' });
+    }
+
+    // Ensure latest prices (reuse existing logic - will skip if updated recently)
+    const latestMetal = await Metal.findOne().sort({ updatedAt: -1 });
+    const fourDaysInMs = 4 * 24 * 60 * 60 * 1000;
+    if (!latestMetal || (new Date() - latestMetal.updatedAt) >= fourDaysInMs) {
+      await updateMetalPricesFromAPI();
+    }
+
+    // Fetch pricePerGram from DB
+    const metalDoc = await Metal.findOne({ metal, purity });
+    if (!metalDoc) {
+      return res.status(404).json({ success: false, error: `Price not found for ${metal} ${purity}` });
+    }
+
+    const pricePerGram = metalDoc.pricePerGram;
+
+    // Compute components
+    const metalValue = pricePerGram * weightGrams;
+    const making = Number(makingCharge) || 0;
+    const subtotal = metalValue + making;
+    const tax = (taxPercent / 100) * subtotal;
+    const total = subtotal + tax;
+
+    // Round sensible values
+    const round = (v) => Math.round(v * 100) / 100;
+
+    res.json({
+      success: true,
+      data: {
+        metal,
+        purity,
+        weightGrams,
+        pricePerGram: round(pricePerGram),
+        metalValue: round(metalValue),
+        making: round(making),
+        taxPercent,
+        tax: round(tax),
+        subtotal: round(subtotal),
+        total: round(total),
+        lastUpdated: metalDoc.updatedAt.toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in compute-price:', error);
+    res.status(500).json({ success: false, error: 'Failed to compute price', message: error.message });
+  }
+});

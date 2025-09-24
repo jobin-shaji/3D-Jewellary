@@ -140,6 +140,17 @@ const productSchema = new mongoose.Schema({
     }],
     default: []
   }
+  ,
+  // Computed total price snapshot and last update timestamp
+  totalPrice: {
+    type: Number,
+    default: null,
+    min: 0
+  },
+  latestPriceUpdate: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 });

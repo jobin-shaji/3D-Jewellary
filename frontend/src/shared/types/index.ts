@@ -76,6 +76,8 @@ export interface Product {
   certificates?: Certificate[];
   is_active: boolean;
   created_at?: string;
+  totalPrice?: number;
+  latestPriceUpdate?: string;
 }
 
 // export interface CartItem {
