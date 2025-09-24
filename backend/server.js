@@ -1,11 +1,11 @@
 // const validator = require('validator');
 // const bcrypt = require('bcrypt');
+// const cloudinary = require('cloudinary').v2;
+// const multer = require('multer');
+// const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const cloudinary = require('cloudinary').v2;
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 
 const Product = require('./models/product');

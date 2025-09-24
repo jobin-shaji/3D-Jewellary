@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { updateMetalPricesFromAPI } = require('./routes/metals');
+const { updateMetalPricesFromAPI } = require('../routes/metals');
 
 async function runTest() {
   try {
