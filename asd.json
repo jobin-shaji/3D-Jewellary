@@ -1,0 +1,15 @@
+{
+    "name": "string",
+    "variante": {
+        "name": {},
+        "stock_quantity": {},
+        "price_adjestment": {},
+        "metal": [
+            {
+                "Type": "Gold",
+                "purity": "18k",
+                "weight_adjestment": 4.8
+            }
+        ]
+    }
+}
