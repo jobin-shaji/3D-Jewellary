@@ -99,10 +99,51 @@ const productSchema = new mongoose.Schema({
       min: 0
     }
   }],
-  customizations: {
-    type: Array,
-    default: []
-  },
+  variants: [{
+    variant_id: {
+      type: String,
+      required: true,
+      default: function () {
+        return 'var_' + Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      }
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    stock_quantity: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0
+    },
+    making_price: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    metal: [{
+      Type: {
+        type: String, // e.g., "Gold", "Silver", "Platinum"
+        required: true
+      },
+      purity: {
+        type: String, // e.g., "18k", "14k", "925"
+        required: true
+      },
+      weight: {
+        type: Number, // in grams
+        required: true,
+        min: 0
+      }
+    }],
+    totalPrice: {
+      type: Number,
+      default: 0,
+      min: 0
+    }
+  }],
   images: [{
     image_url: {
       type: String,

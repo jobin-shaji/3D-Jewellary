@@ -65,4 +65,52 @@ async function computeProductPrice(product, options = {}) {
   };
 }
 
-module.exports = { computeProductPrice };
+// Compute variant price using variant-specific metal and making price
+// Expects variant to have:
+// - metal: [{ Type, purity, weight }]
+// - making_price: number
+// - taxPercent: number (optional) - if not provided, defaults to 3
+async function computeVariantPrice(variant, options = {}) {
+  const taxPercent = typeof options.taxPercent === 'number' ? options.taxPercent : 3;
+
+  // Helper to get latest metal price per gram from DB for given type & purity.
+  async function getPricePerGram(metalType, purity) {
+    if (!metalType) return 0;
+    try {
+      const m = await Metal.findOne({ metal: metalType, purity }).lean();
+      return m ? (m.pricePerGram || 0) : 0;
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  // Calculate metal costs for variant
+  let metalCosts = 0;
+  if (Array.isArray(variant.metal)) {
+    for (const metal of variant.metal) {
+      const weight = metal.weight || 0;
+      const pricePerGram = await getPricePerGram(metal.Type, metal.purity);
+      metalCosts += weight * pricePerGram;
+    }
+  }
+
+  const makingCharges = variant.making_price || 0;
+
+  const subtotal = metalCosts + makingCharges;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
+
+  return {
+    success: true,
+    data: {
+      metalCosts,
+      makingCharges,
+      subtotal,
+      tax,
+      total,
+      roundedTotal: roundRupees(total),
+    },
+  };
+}
+
+module.exports = { computeProductPrice, computeVariantPrice };

@@ -4,7 +4,7 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const Product = require('../models/product');
 const { authenticateToken } = require('../utils/jwt');
-const { computeProductPrice } = require('../utils/priceUtils');
+const { computeProductPrice, computeVariantPrice } = require('../utils/priceUtils');
 
 const router = express.Router();
 
@@ -202,6 +202,33 @@ router.get('/all',authenticateToken, async (req, res) => {
  * @desc    Get product with images populated
  * @access  Public
  */
+/**
+ * @route   GET /api/products/:id
+ * @desc    Get a single product by ID
+ * @access  Public
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Get product
+    const product = await Product.findOne({ id: productId });
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.json({
+      message: 'Product fetched successfully',
+      product: product
+    });
+
+  } catch (error) {
+    console.error('Get product error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.get('/:id/full', async (req, res) => {
   try {
     const productId = req.params.id;
@@ -246,7 +273,7 @@ router.post('/', authenticateToken, async (req, res) => {
       category_id, 
       description = '',
       is_active = true,
-      customizations = [],
+      variants = [],
       metals = [],
       gemstones = [],
       stock_quantity = 0
@@ -261,8 +288,8 @@ router.post('/', authenticateToken, async (req, res) => {
     category_id = Number(category_id);
 
     // Parse JSON if front-end sent strings
-    if (typeof customizations === 'string') {
-      try { customizations = JSON.parse(customizations); } catch (e) { customizations = []; }
+    if (typeof variants === 'string') {
+      try { variants = JSON.parse(variants); } catch (e) { variants = []; }
     }
     if (typeof metals === 'string') {
       try { metals = JSON.parse(metals); } catch (e) { metals = []; }
@@ -304,6 +331,51 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
+    // Validate variants array
+    if (variants && Array.isArray(variants)) {
+      for (const variant of variants) {
+        // Generate variant_id if not provided
+        if (!variant.variant_id) {
+          variant.variant_id = 'var_' + Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        }
+
+        if (!variant.name || !variant.making_price || variant.making_price <= 0) {
+          return res.status(400).json({ 
+            message: 'Each variant must have name and making_price > 0' 
+          });
+        }
+        if (!Number.isFinite(variant.stock_quantity) || variant.stock_quantity < 0) {
+          return res.status(400).json({ 
+            message: 'Each variant stock_quantity must be a non-negative number' 
+          });
+        }
+        if (variant.metal && Array.isArray(variant.metal)) {
+          for (const metal of variant.metal) {
+            if (!metal.Type || !metal.purity || !metal.weight || metal.weight <= 0) {
+              return res.status(400).json({ 
+                message: 'Each variant metal must have Type, purity, and weight > 0' 
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Calculate totalPrice for each variant
+    for (const variant of variants) {
+      try {
+        const priceResult = await computeVariantPrice(variant);
+        if (priceResult.success) {
+          variant.totalPrice = priceResult.data.roundedTotal;
+        } else {
+          variant.totalPrice = 0;
+        }
+      } catch (error) {
+        console.error('Error calculating variant price:', error);
+        variant.totalPrice = 0;
+      }
+    }
+
     // Let the Product schema generate its own string ID
     const product = new Product({
       name,
@@ -311,7 +383,7 @@ router.post('/', authenticateToken, async (req, res) => {
       category_id,
       description,
       is_active,
-      customizations,
+      variants,
       metals,
       gemstones,
       stock_quantity
@@ -593,6 +665,50 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // If variants are being updated, calculate totalPrice for each variant
+    if (updateData.variants && Array.isArray(updateData.variants)) {
+      for (const variant of updateData.variants) {
+        // Generate variant_id if not provided
+        if (!variant.variant_id) {
+          variant.variant_id = 'var_' + Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Validate variant structure
+        if (!variant.name || !variant.making_price || variant.making_price <= 0) {
+          return res.status(400).json({ 
+            message: 'Each variant must have name and making_price > 0' 
+          });
+        }
+        if (!Number.isFinite(variant.stock_quantity) || variant.stock_quantity < 0) {
+          return res.status(400).json({ 
+            message: 'Each variant stock_quantity must be a non-negative number' 
+          });
+        }
+        if (variant.metal && Array.isArray(variant.metal)) {
+          for (const metal of variant.metal) {
+            if (!metal.Type || !metal.purity || !metal.weight || metal.weight <= 0) {
+              return res.status(400).json({ 
+                message: 'Each variant metal must have Type, purity, and weight > 0' 
+              });
+            }
+          }
+        }
+
+        // Calculate totalPrice for the variant
+        try {
+          const priceResult = await computeVariantPrice(variant);
+          if (priceResult.success) {
+            variant.totalPrice = priceResult.data.roundedTotal;
+          } else {
+            variant.totalPrice = 0;
+          }
+        } catch (error) {
+          console.error('Error calculating variant price:', error);
+          variant.totalPrice = 0;
+        }
+      }
+    }
+
     // Update the product with new data using custom id field
     const updatedProduct = await Product.findOneAndUpdate(
       { id: productId },
@@ -602,6 +718,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
         runValidators: true  // Run schema validations
       }
     );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: 'Product not found for update' });
+    }
 
     console.log('✅ Product updated successfully:', updatedProduct.name);
 
