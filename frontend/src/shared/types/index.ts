@@ -27,6 +27,21 @@ export interface ProductCustomization {
   default_value?: string | number;
 }
 
+export interface VariantMetal {
+  Type: string; // e.g., "Gold", "Silver", "Platinum"
+  purity: string; // e.g., "18k", "14k", "925"
+  weight: number; // in grams
+}
+
+export interface ProductVariant {
+  variant_id: string;
+  name: string;
+  stock_quantity: number;
+  making_price: number;
+  metal: VariantMetal[];
+  totalPrice: number;
+}
+
 export interface Metal {
   id?: string;
   type: string; 
@@ -69,6 +84,7 @@ export interface Product {
   stock_quantity: number;
   metals?: Metal[];
   gemstones?: Gemstone[];
+  variants?: ProductVariant[];
   customizations?: ProductCustomization[];
   images?: ProductImage[];
   primaryImage?: ProductImage;
