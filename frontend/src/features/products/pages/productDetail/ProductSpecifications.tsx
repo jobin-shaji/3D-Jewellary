@@ -4,7 +4,7 @@ import { Product } from "@/shared/types";
 
 export const ProductSpecifications = ({ product }: { product: Product }) => {
   return (
-    <div className="xl:col-span-2 space-y-8">
+    <div className="space-y-8">
       {/* Metal Information */}
       {product.metals && product.metals.length > 0 && (
         <div>
