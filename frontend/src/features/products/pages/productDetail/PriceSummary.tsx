@@ -126,9 +126,9 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
                 return (
                   <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
                     <span className="text-sm text-muted-foreground">
-                      {metal.type} {metal.purity} ({metal.weight}g @ ₹{currentPrice.toLocaleString()}/g)
+                      {metal.type} {metal.purity} ({metal.weight}g @ ₹{currentPrice.toFixed(2)}/g)
                     </span>
-                    <span className="font-medium">₹{metalCost.toLocaleString()}</span>
+                    <span className="font-medium">₹{metalCost.toFixed(2)}</span>
                   </div>
                 );
               })}
@@ -146,7 +146,7 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
                     <span className="text-sm text-muted-foreground">
                       {gemstone.type} ({gemstone.carat}ct) x{gemstone.count}
                     </span>
-                    <span className="font-medium">₹{gemstoneCost.toLocaleString()}</span>
+                    <span className="font-medium">₹{gemstoneCost.toFixed(2)}</span>
                   </div>
                 );
               })}
@@ -157,7 +157,7 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
           {makingCharges > 0 && (
             <div className="flex justify-between items-center py-2 border-b border-border/30">
               <span className="text-sm text-muted-foreground">Making Charges</span>
-              <span className="font-medium">₹{makingCharges.toLocaleString()}</span>
+              <span className="font-medium">₹{makingCharges.toFixed(2)}</span>
             </div>
           )}
           
@@ -165,7 +165,7 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
           {!hasDetailedPricing && (
             <div className="flex justify-between items-center py-2 border-b border-border/30">
               <span className="text-sm text-muted-foreground">Product Price</span>
-              <span className="font-medium">₹{(product.makingPrice || 0).toLocaleString()}</span>
+              <span className="font-medium">₹{(product.makingPrice || 0).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -175,13 +175,13 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
         {/* Subtotal */}
         <div className="flex justify-between items-center py-2">
           <span className="font-medium">Subtotal</span>
-          <span className="font-semibold">₹{(serverData ? serverData.subtotal : effectiveSubtotal).toLocaleString()}</span>
+          <span className="font-semibold">₹{(serverData ? serverData.subtotal : effectiveSubtotal).toFixed(2)}</span>
         </div>
         
         {/* GST */}
         <div className="flex justify-between items-center py-2 border-b border-border/30">
           <span className="text-sm text-muted-foreground">GST ({(gstRate * 100)}%)</span>
-          <span className="font-medium">₹{Math.round(serverData ? serverData.tax : gstAmount).toLocaleString()}</span>
+          <span className="font-medium">₹{(serverData ? serverData.tax : gstAmount).toFixed(2)}</span>
         </div>
         
         <Separator />
@@ -190,7 +190,7 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
         <div className="flex justify-between items-center py-3 bg-primary/5 rounded-lg px-4">
           <span className="text-lg font-bold">Total Amount</span>
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-primary">₹{Math.round(serverData ? serverData.total : finalTotal).toLocaleString()}</span>
+            <span className="text-xl font-bold text-primary">₹{(serverData ? serverData.total : finalTotal).toFixed(2)}</span>
             <span className="text-xs text-muted-foreground px-2 py-1 border rounded">
               {serverData ? 'Server' : 'Client'}
             </span>

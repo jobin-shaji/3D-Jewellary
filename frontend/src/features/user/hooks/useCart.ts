@@ -7,6 +7,10 @@ export interface CartItem {
   name: string;
   priceAtPurchase: number;
   quantity: number;
+  image?: {
+    image_url: string;
+    alt_text: string;
+  } | null;
 }
 
 export interface Cart {
@@ -208,6 +212,9 @@ export const useCart = () => {
     }
   }, [toast]);
 
+  // Get cart count from local state
+  const cartCount = cart?.summary?.itemCount || 0;
+
   // Load cart on mount
   useEffect(() => {
     fetchCart();
@@ -215,6 +222,7 @@ export const useCart = () => {
 
   return {
     cart,
+    cartCount,
     loading,
     error,
     fetchCart,

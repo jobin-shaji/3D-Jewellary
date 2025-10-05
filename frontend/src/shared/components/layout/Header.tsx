@@ -36,10 +36,7 @@ export const Header = () => {
   const { user, isLoggedIn, logout: authLogout } = useAuth();
   const { toast } = useToast();
   const { metalPrices, loading: metalLoading } = useMetalPrices();
-  const { getCartCount } = useCart();
-
-  // Real cart count from API
-  const [cartItemsCount, setCartItemsCount] = useState(0);
+  const { cartCount } = useCart();
 
   // Get gold and silver prices - using new interface
   const goldPrice = metalPrices.find(metal => metal.type === 'Gold' && metal.purity === '24k');
@@ -70,36 +67,6 @@ export const Header = () => {
       localStorage.getItem("token") ? "Present" : "Missing"
     );
   }, [user, isLoggedIn]);
-
-  // Fetch cart count when user logs in/out
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      if (isLoggedIn) {
-        const count = await getCartCount();
-        setCartItemsCount(count);
-      } else {
-        setCartItemsCount(0);
-      }
-    };
-
-    fetchCartCount();
-  }, [isLoggedIn, getCartCount]);
-
-  // Function to refresh cart count (can be called after adding items)
-  const refreshCartCount = async () => {
-    if (isLoggedIn) {
-      const count = await getCartCount();
-      setCartItemsCount(count);
-    }
-  };
-
-  // Expose refresh function globally for other components to use
-  useEffect(() => {
-    (window as any).refreshCartCount = refreshCartCount;
-    return () => {
-      delete (window as any).refreshCartCount;
-    };
-  }, [refreshCartCount]);
 
   return (
     <header className="border-b bg-background sticky top-0 z-50">
@@ -254,12 +221,12 @@ export const Header = () => {
               <Button variant="ghost" size="icon" className="relative" asChild>
                 <Link to="/cart">
                   <ShoppingCart className="h-5 w-5" />
-                  {cartItemsCount > 0 && (
+                  {cartCount > 0 && (
                     <Badge
                       variant="destructive"
                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
                     >
-                      {cartItemsCount}
+                      {cartCount}
                     </Badge>
                   )}
                   <span className="sr-only">Shopping cart</span>
@@ -470,7 +437,7 @@ export const Header = () => {
                           >
                             <Link to="/cart">
                               <ShoppingCart className="mr-2 h-4 w-4" />
-                              Cart {cartItemsCount > 0 && `(${cartItemsCount})`}
+                              Cart {cartCount > 0 && `(${cartCount})`}
                             </Link>
                           </Button>
                         </>

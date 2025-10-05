@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
-import { Heart, ShoppingCart, Loader2 } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { Product3DViewer } from "@/features/products/components/Product3DViewer";
 import { useProducts } from "@/features/products/hooks/useProducts";
 
@@ -132,16 +132,6 @@ const Products = () => {
                   <Badge variant="destructive" className="mt-2">Out of Stock</Badge>
                 )}
               </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button 
-                  className="w-full" 
-                  disabled={product.stock_quantity <= 0}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  {product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
-                </Button>
-              </CardFooter>
             </Card>
           ))}
         </div>

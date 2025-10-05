@@ -223,12 +223,43 @@ class CartService {
   }
 
   /**
-   * Get user's cart
+   * Get user's cart with product images
    * @param {string} userId - User ID
-   * @returns {Object} - Cart document
+   * @returns {Object} - Cart document with populated product images
    */
   static async getCart(userId) {
-    return await this.getOrCreateCart(userId);
+    const cart = await this.getOrCreateCart(userId);
+
+    // Populate cart items with product images
+    const populatedItems = await Promise.all(
+      cart.items.map(async (item) => {
+        try {
+          const product = await Product.findOne({ id: item.productId });
+          if (!product) {
+            return item; // Return item as-is if product not found
+          }
+
+          // Find primary image or first image
+          const primaryImage = product.images.find(img => img.is_primary) || product.images[0];
+
+          return {
+            ...item.toObject(),
+            image: primaryImage ? {
+              image_url: primaryImage.image_url,
+              alt_text: primaryImage.alt_text || product.name
+            } : null
+          };
+        } catch (error) {
+          console.error(`Error fetching image for product ${item.productId}:`, error);
+          return item; // Return item as-is on error
+        }
+      })
+    );
+
+    return {
+      ...cart.toObject(),
+      items: populatedItems
+    };
   }
 
   /**
