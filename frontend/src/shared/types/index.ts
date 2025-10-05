@@ -15,31 +15,25 @@ export interface Category {
   createdAt?: string;
 }
 
-export interface ProductCustomization {
-  id?: string;
-  name: string;
-  type: 'select' | 'range' | 'text';
-  options?: string[];
-  min?: number;
-  max?: number;
-  unit?: string;
-  required: boolean;
-  default_value?: string | number;
-}
-
-export interface VariantMetal {
-  Type: string; // e.g., "Gold", "Silver", "Platinum"
-  purity: string; // e.g., "18k", "14k", "925"
-  weight: number; // in grams
-}
+// export interface ProductCustomization {
+//   id?: string;
+//   name: string;
+//   type: 'select' | 'range' | 'text';
+//   options?: string[];
+//   min?: number;
+//   max?: number;
+//   unit?: string;
+//   required: boolean;
+//   default_value?: string | number;
+// }
 
 export interface ProductVariant {
-  variant_id: string;
+  variant_id?: string;
   name: string;
   stock_quantity: number;
   making_price: number;
-  metal: VariantMetal[];
-  totalPrice: number;
+  metal: Metal[];
+  totalPrice?: number;
 }
 
 export interface Metal {
@@ -85,7 +79,7 @@ export interface Product {
   metals?: Metal[];
   gemstones?: Gemstone[];
   variants?: ProductVariant[];
-  customizations?: ProductCustomization[];
+  // customizations?: ProductCustomization[];
   images?: ProductImage[];
   primaryImage?: ProductImage;
   model_3d_url?: string;

@@ -124,7 +124,7 @@ const productSchema = new mongoose.Schema({
       min: 0
     },
     metal: [{
-      Type: {
+      type: {
         type: String, // e.g., "Gold", "Silver", "Platinum"
         required: true
       },
@@ -136,6 +136,10 @@ const productSchema = new mongoose.Schema({
         type: Number, // in grams
         required: true,
         min: 0
+      },
+      color: {
+        type: String, // e.g., "White", "Yellow", "Rose"
+        default: ''
       }
     }],
     totalPrice: {

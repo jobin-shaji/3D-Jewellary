@@ -198,11 +198,6 @@ router.get('/all',authenticateToken, async (req, res) => {
 
 
 /**
- * @route   GET /api/products/:id/full
- * @desc    Get product with images populated
- * @access  Public
- */
-/**
  * @route   GET /api/products/:id
  * @desc    Get a single product by ID
  * @access  Public
@@ -229,6 +224,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/products/:id/full
+ * @desc    Get product with images populated
+ * @access  Public
+ */
 router.get('/:id/full', async (req, res) => {
   try {
     const productId = req.params.id;
@@ -351,9 +351,9 @@ router.post('/', authenticateToken, async (req, res) => {
         }
         if (variant.metal && Array.isArray(variant.metal)) {
           for (const metal of variant.metal) {
-            if (!metal.Type || !metal.purity || !metal.weight || metal.weight <= 0) {
+            if (!metal.type || !metal.purity || !metal.weight || metal.weight <= 0) {
               return res.status(400).json({ 
-                message: 'Each variant metal must have Type, purity, and weight > 0' 
+                message: 'Each variant metal must have type, purity, and weight > 0' 
               });
             }
           }
@@ -686,9 +686,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
         if (variant.metal && Array.isArray(variant.metal)) {
           for (const metal of variant.metal) {
-            if (!metal.Type || !metal.purity || !metal.weight || metal.weight <= 0) {
+            if (!metal.type || !metal.purity || !metal.weight || metal.weight <= 0) {
               return res.status(400).json({ 
-                message: 'Each variant metal must have Type, purity, and weight > 0' 
+                message: 'Each variant metal must have type, purity, and weight > 0' 
               });
             }
           }

@@ -1,5 +1,6 @@
 import { toast } from "@/shared/hooks/use-toast";
 import { ProductFormData } from "./BasicInfoForm";
+import { PricingInventoryData } from "./PricingInventoryForm";
 
 export const validateField = (field: string, value: any) => {
   const validators = {
@@ -50,7 +51,7 @@ export const validateField = (field: string, value: any) => {
 };
 
 // Comprehensive validation function that validates all fields at once
-export const validateAllFields = (formData: ProductFormData): string | null => {
+export const validateAllFields = (formData: ProductFormData, pricingData: PricingInventoryData): string | null => {
   // Check name
   if (!formData.name.trim()) {
     return "Product name is required";
@@ -68,8 +69,8 @@ export const validateAllFields = (formData: ProductFormData): string | null => {
   }
 
   // Check price
-  const priceNum = Number(formData.price);
-  if (!formData.price) {
+  const priceNum = Number(pricingData.price);
+  if (!pricingData.price) {
     return "Price is required";
   }
   if (isNaN(priceNum)) {
@@ -94,8 +95,8 @@ export const validateAllFields = (formData: ProductFormData): string | null => {
   }
 
   // Check stock quantity
-  const stockNum = Number(formData.stock_quantity);
-  if (formData.stock_quantity === "" || formData.stock_quantity === null || formData.stock_quantity === undefined) {
+  const stockNum = Number(pricingData.stock_quantity);
+  if (pricingData.stock_quantity === "" || pricingData.stock_quantity === null || pricingData.stock_quantity === undefined) {
     return "Stock quantity is required";
   }
   if (isNaN(stockNum)) {

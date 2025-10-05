@@ -2,22 +2,25 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Label } from "@/shared/components/ui/label";
+import { Switch } from "@/shared/components/ui/switch";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
-import { ProductCustomization, Metal, Gemstone ,Category,Product} from "@/shared/types";
+import { ProductVariant, Metal, Gemstone, Category, Product } from "@/shared/types";
 import { useAuth } from "@/shared/contexts/auth";
-import { type Certification } from "./SpecificationsForm";
+import { type Certification } from "./certification";
 import { useFetchProducts } from "@/features/admin/hooks/useFetchProducts";
 
 // Import our new components individually for better tree shaking
 import { BasicInfoForm, type ProductFormData } from "./BasicInfoForm";
-import { SpecificationsForm } from "./SpecificationsForm";
+import { PricingInventoryForm, type PricingInventoryData } from "./PricingInventoryForm";
+import { SpecificationsForm } from "./certification";
 import { MetalsManagement } from "./MetalsManagement";
 import { GemstonesManagement } from "./GemstonesManagement";
 import { FileUploadSection, type FileUploadState } from "./FileUploadSection";
-import { ProductCustomizations, type NewCustomization } from "./ProductCustomizations";
+import { ProductVariants, validateVariants } from "./ProductVariants";
 import { validateAllFields } from "./validationUtils";
-import { 
+import {
   useFileUpload,
   createProduct,
   updateProduct,
@@ -28,20 +31,22 @@ import {
 // Validation and utility functions
 const createProductData = (
   formData: ProductFormData,
+  pricingData: PricingInventoryData,
   metals: Metal[],
   gemstones: Gemstone[],
-  customizations: ProductCustomization[]
+  variants: ProductVariant[],
+  hasMultipleVariants: boolean
 ): Product => {
   return {
     name: formData.name,
-    makingPrice: Number(formData.price),
+    makingPrice: hasMultipleVariants ? 0 : Number(pricingData.price), // Use 0 for variants mode
     category_id: Number(formData.category_id),
     description: formData.description,
-    is_active: formData.inStock,
-    stock_quantity: Number(formData.stock_quantity || 0),
-    metals: metals.map(({ id, ...metal }) => metal), // Remove frontend-only id
+    is_active: true,// always true for now 
+    stock_quantity: hasMultipleVariants ? 0 : Number(pricingData.stock_quantity || 0), // Use 0 for variants mode
+    metals: hasMultipleVariants ? [] : metals.map(({ id, ...metal }) => metal), // Empty for variants mode
     gemstones: gemstones.map(({ id, ...gemstone }) => gemstone), // Remove frontend-only id
-    customizations: customizations,
+    variants: hasMultipleVariants ? variants : [], // Only include variants in variants mode
   };
 };
 
@@ -57,24 +62,18 @@ const ProductManagement = () => {
   // Initialize form data with empty values
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
-    price: "",
     category_id: "",
     description: "",
     inStock: true,
+  });
+
+  const [pricingData, setPricingData] = useState<PricingInventoryData>({
+    price: "",
     stock_quantity: "0",
   });
 
-  const [customizations, setCustomizations] = useState<ProductCustomization[]>([]);
-  const [newCustomization, setNewCustomization] = useState<NewCustomization>({
-    name: "",
-    type: "select" as "select" | "range" | "text",
-    options: "",
-    min: "",
-    max: "",
-    unit: "",
-    required: false,
-    default_value: "",
-  });
+  const [hasMultipleVariants, setHasMultipleVariants] = useState<boolean>(false);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
 
   // File upload states using our custom hook
   const { fileState, handle3DModelUpload, handleImageUpload, removeImage, remove3DModel } = useFileUpload();
@@ -107,10 +106,18 @@ const ProductManagement = () => {
     field: string,
     value: string | number | boolean
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    // Check if the field belongs to pricing data
+    if (field === 'price' || field === 'stock_quantity') {
+      setPricingData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
   // Update the fetchCategories function with more detailed logging
@@ -133,19 +140,23 @@ const ProductManagement = () => {
   useEffect(() => {
     const loadProductForEdit = async () => {
       if (!isEdit || !id) return;
-      
+
       try {
         console.log('Fetching product for edit:', id);
         const productData = await fetchProduct(id);
         console.log('Product data received:', productData);
-        
-        // Populate form with product data
+
+        // Populate basic form data
         setFormData({
           name: productData.name || "",
-          price: productData.makingPrice?.toString() || "",
           category_id: productData.category_id?.toString() || "",
           description: productData.description || "",
           inStock: productData.is_active ?? true,
+        });
+
+        // Populate pricing data
+        setPricingData({
+          price: productData.makingPrice?.toString() || "",
           stock_quantity: productData.stock_quantity?.toString() || "0",
         });
 
@@ -165,9 +176,12 @@ const ProductManagement = () => {
           })));
         }
 
-        // Populate customizations if available
-        if (productData.customizations && productData.customizations.length > 0) {
-          setCustomizations(productData.customizations);
+        // Populate variants if available and set toggle state
+        if (productData.variants && productData.variants.length > 0) {
+          setVariants(productData.variants);
+          setHasMultipleVariants(true);
+        } else {
+          setHasMultipleVariants(false);
         }
 
       } catch (error) {
@@ -190,7 +204,24 @@ const ProductManagement = () => {
 
     try {
       // Validate required fields using our utility function
-      const validationError = validateAllFields(formData);
+      let validationError = null;
+      // validate basic form data first
+      if (!formData.name.trim()) {
+        validationError = "Product name is required";
+      } else if (!formData.category_id) {
+        validationError = "Please select a category";
+      } else if (!formData.description.trim()) {
+        validationError = "Product description is required";
+      }
+      if (hasMultipleVariants) {
+        // Let ProductVariants handle its own validation
+        validationError = validateVariants(variants);
+
+      } else {
+        // For single product mode, validate all fields
+        validationError = validateAllFields(formData, pricingData);
+      }
+
       if (validationError) {
         toast({
           title: "Validation Error",
@@ -201,7 +232,7 @@ const ProductManagement = () => {
       }
 
       // Create product data using our utility function
-      const productData = createProductData(formData, metals, gemstones, customizations);
+      const productData = createProductData(formData, pricingData, metals, gemstones, variants, hasMultipleVariants);
 
       console.log(isEdit ? 'Updating product with data:' : 'Creating product with data:', productData);
 
@@ -219,12 +250,12 @@ const ProductManagement = () => {
       // Upload files with error handling
       await uploadImagesWithToast(product.id, fileState.imageFiles, isEdit);
       await upload3DModelWithToast(product.id, fileState.model3DFile!, isEdit);
-      
+
       const certificatesData = certificates.map(cert => ({
         name: cert.name,
         file: cert.file!
       }));
-      await uploadCertificatesWithToast(product.id, certificatesData, isEdit);      toast({
+      await uploadCertificatesWithToast(product.id, certificatesData, isEdit); toast({
         title: isEdit ? "Product Updated" : "Product Created",
         description: `${product.name} has been ${isEdit ? 'updated' : 'created'} successfully.`,
       });
@@ -249,7 +280,7 @@ const ProductManagement = () => {
       navigate('/login');
       return;
     }
-    
+
     if (user.role !== 'admin') {
       toast({
         title: "Access Denied",
@@ -296,70 +327,102 @@ const ProductManagement = () => {
                   </Button>
                 </div>
               ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Basic Information & Pricing */}
-                <BasicInfoForm 
-                  formData={formData}
-                  onInputChange={handleInputChange}
-                  categories={categories}
-                />
+                  {/* Basic Information */}
+                  <BasicInfoForm
+                    formData={formData}
+                    onInputChange={handleInputChange}
+                    categories={categories}
+                  />
 
-                {/* Metals Section */}
-                <MetalsManagement
-                  metals={metals}
-                  setMetals={setMetals}
-                  newMetal={newMetal}
-                  setNewMetal={setNewMetal}
-                />
+                  {/* Product Configuration Type Toggle */}
+                  <div className="border-t pt-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="variant-toggle"
+                          checked={hasMultipleVariants}
+                          onCheckedChange={setHasMultipleVariants}
+                        />
+                        <Label htmlFor="variant-toggle" className="text-sm font-medium">
+                          This product has multiple variants
+                        </Label>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {hasMultipleVariants
+                        ? "Configure different variants with their own metals, pricing, and stock quantities."
+                        : "Configure a single product with unified pricing, stock, and metal specifications."
+                      }
+                    </p>
+                  </div>
 
-                {/* Gemstones Section */}
-                <GemstonesManagement
-                  gemstones={gemstones}
-                  setGemstones={setGemstones}
-                  newGemstone={newGemstone}
-                  setNewGemstone={setNewGemstone}
-                />
+                  {/* Conditional Rendering Based on Variant Toggle */}
+                  {hasMultipleVariants ? (
+                    /* Multiple Variants Mode */
+                    <ProductVariants
+                      variants={variants}
+                      setVariants={setVariants}
+                    />
+                  ) : (
+                    /* Single Product Mode */
+                    <>
+                      {/* Pricing & Inventory */}
+                      <PricingInventoryForm
+                        formData={pricingData}
+                        onInputChange={handleInputChange}
+                      />
 
-                {/* Product Customizations */}
-                <ProductCustomizations
-                  customizations={customizations}
-                  setCustomizations={setCustomizations}
-                  newCustomization={newCustomization}
-                  setNewCustomization={setNewCustomization}
-                />
+                      {/* Metals Section */}
+                      <MetalsManagement
+                        metals={metals}
+                        setMetals={setMetals}
+                        newMetal={newMetal}
+                        setNewMetal={setNewMetal}
+                      />
+                    </>
+                  )}
 
-                {/* Certifications */}
-                <SpecificationsForm 
-                  onCertificationsChange={setCertifications}
-                />
+                  {/* Gemstones Section */}
+                  <GemstonesManagement
+                    gemstones={gemstones}
+                    setGemstones={setGemstones}
+                    newGemstone={newGemstone}
+                    setNewGemstone={setNewGemstone}
+                  />
 
-                {/* File Uploads */}
-                <FileUploadSection
-                  fileState={fileState}
-                  onModel3DUpload={handle3DModelUpload}
-                  onImageUpload={handleImageUpload}
-                  onRemoveImage={removeImage}
-                  onRemove3DModel={remove3DModel}
-                />
+                  {/* Certifications */}
+                  <SpecificationsForm
+                    onCertificationsChange={setCertifications}
+                  />
 
-                {/* Submit Button */}
-                <div className="flex justify-end pt-6 border-t">
-                  <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {isEdit ? "Updating Product..." : "Creating Product..."}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        {isEdit ? "Update Product" : "Create Product"}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
+                  {/* File Uploads */}
+                  <FileUploadSection
+                    fileState={fileState}
+                    onModel3DUpload={handle3DModelUpload}
+                    onImageUpload={handleImageUpload}
+                    onRemoveImage={removeImage}
+                    onRemove3DModel={remove3DModel}
+                  />
+
+                  {/* Submit Button */}
+                  <div className="flex justify-end pt-6 border-t">
+                    <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {isEdit ? "Updating Product..." : "Creating Product..."}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {isEdit ? "Update Product" : "Create Product"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
               )}
             </CardContent>
           </Card>
