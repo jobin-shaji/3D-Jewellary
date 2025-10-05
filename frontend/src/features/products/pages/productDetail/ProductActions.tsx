@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
-import { Heart, ShoppingCart, Share2, Edit } from "lucide-react";
+import { Heart, ShoppingCart, Share2, Edit, Loader2 } from "lucide-react";
 import { Product, ProductVariant } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
 
@@ -13,6 +13,7 @@ interface ProductActionsProps {
   onAddToCart: () => void;
   onShare: () => void;
   selectedVariant?: ProductVariant | null;
+  isAddingToCart?: boolean;
 }
 
 export const ProductActions = ({ 
@@ -22,7 +23,8 @@ export const ProductActions = ({
   onWishlistToggle, 
   onAddToCart,
   onShare,
-  selectedVariant
+  selectedVariant,
+  isAddingToCart = false
 }: ProductActionsProps) => {
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
@@ -72,10 +74,21 @@ export const ProductActions = ({
           <Button 
             className="flex-1" 
             onClick={handleAddToCartWithQuantity}
-            disabled={currentStock === 0}
+            disabled={currentStock === 0 || isAddingToCart}
           >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {currentStock > 0 ? "Add to Cart" : "Out of Stock"}
+            {isAddingToCart ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Adding...
+              </>
+            ) : currentStock > 0 ? (
+              <>
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Add to Cart
+              </>
+            ) : (
+              "Out of Stock"
+            )}
           </Button>
         )}
 

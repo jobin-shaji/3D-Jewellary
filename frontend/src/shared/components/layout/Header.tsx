@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/shared/contexts/auth";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
+import { useCart } from "@/features/user/hooks/useCart";
 
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,9 +36,10 @@ export const Header = () => {
   const { user, isLoggedIn, logout: authLogout } = useAuth();
   const { toast } = useToast();
   const { metalPrices, loading: metalLoading } = useMetalPrices();
+  const { getCartCount } = useCart();
 
-  // Mock data - replace with actual state management
-  const cartItemsCount = 3;
+  // Real cart count from API
+  const [cartItemsCount, setCartItemsCount] = useState(0);
 
   // Get gold and silver prices - using new interface
   const goldPrice = metalPrices.find(metal => metal.type === 'Gold' && metal.purity === '24k');
@@ -68,6 +70,36 @@ export const Header = () => {
       localStorage.getItem("token") ? "Present" : "Missing"
     );
   }, [user, isLoggedIn]);
+
+  // Fetch cart count when user logs in/out
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (isLoggedIn) {
+        const count = await getCartCount();
+        setCartItemsCount(count);
+      } else {
+        setCartItemsCount(0);
+      }
+    };
+
+    fetchCartCount();
+  }, [isLoggedIn, getCartCount]);
+
+  // Function to refresh cart count (can be called after adding items)
+  const refreshCartCount = async () => {
+    if (isLoggedIn) {
+      const count = await getCartCount();
+      setCartItemsCount(count);
+    }
+  };
+
+  // Expose refresh function globally for other components to use
+  useEffect(() => {
+    (window as any).refreshCartCount = refreshCartCount;
+    return () => {
+      delete (window as any).refreshCartCount;
+    };
+  }, [refreshCartCount]);
 
   return (
     <header className="border-b bg-background sticky top-0 z-50">

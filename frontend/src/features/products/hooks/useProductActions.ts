@@ -1,23 +1,79 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Product } from "@/shared/types";
+import { Product, ProductVariant } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
 
-export const useProductActions = (product: Product | null) => {
+export const useProductActions = (product: Product | null, selectedVariant?: ProductVariant | null) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
+
+    setIsAddingToCart(true);
     
-    console.log("Adding to cart:", { product: product.id, quantity });
-    toast({
-      title: "Added to Cart",
-      description: `${quantity} x ${product.name} has been added to your cart.`,
-    });
-    // navigate("/checkout"); // Uncomment if you want to redirect to checkout
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to add items to cart.",
+          variant: "destructive",
+        });
+        navigate('/login');
+        return;
+      }
+
+      // Determine variant_id: use selectedVariant's id, or product.id for non-variant products
+      const variantId = selectedVariant?.variant_id || product.id;
+
+      const response = await fetch('http://localhost:3000/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          variant_id: variantId,
+          quantity: quantity,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add item to cart');
+      }
+
+      console.log("✅ Added to cart:", data);
+      
+      toast({
+        title: "Added to Cart",
+        description: `${quantity} x ${product.name}${selectedVariant ? ` (${selectedVariant.name})` : ''} has been added to your cart.`,
+      });
+
+      // Refresh cart count in header
+      if ((window as any).refreshCartCount) {
+        (window as any).refreshCartCount();
+      }
+
+      // Optional: navigate to cart or keep on page
+      // navigate("/cart");
+
+    } catch (error: any) {
+      console.error('❌ Error adding to cart:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   const handleWishlistToggle = () => {
@@ -57,5 +113,6 @@ export const useProductActions = (product: Product | null) => {
     handleAddToCart,
     handleWishlistToggle,
     handleShare,
+    isAddingToCart,
   };
 };

@@ -17,7 +17,7 @@ export const ProductDetailLayout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { product, loading, error, calculatedPrice, selectedVariant, setSelectedVariant, handlePriceCalculated } = useProductDetail();
-  const { isWishlisted, handleAddToCart, handleWishlistToggle, handleShare } = useProductActions(product);
+  const { isWishlisted, handleAddToCart, handleWishlistToggle, handleShare, isAddingToCart } = useProductActions(product, selectedVariant);
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -106,6 +106,7 @@ export const ProductDetailLayout = () => {
               onAddToCart={handleAddToCart}
               onShare={handleShare}
               selectedVariant={selectedVariant}
+              isAddingToCart={isAddingToCart}
             />
 
             <Separator />
