@@ -194,7 +194,7 @@ export const MetalsManagement: React.FC<MetalsManagementProps> = ({
               />
             </div>
           </div>
-          <Button onClick={addMetal} disabled={!newMetal.type.trim()}>
+          <Button onClick={addMetal} disabled={!newMetal.type.trim()} type="button">
             <Plus className="h-4 w-4 mr-2" />
             Add Metal
           </Button>

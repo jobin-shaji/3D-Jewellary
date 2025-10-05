@@ -1,14 +1,15 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/badge";
 import { ChevronRight, Home } from "lucide-react";
-import { Product } from "@/shared/types";
+import { Product, ProductVariant } from "@/shared/types";
 
 interface ProductInfoProps {
   product: Product;
   calculatedPrice: number | null;
+  selectedVariant?: ProductVariant | null;
 }
 
-export const ProductInfo = ({ product, calculatedPrice }: ProductInfoProps) => {
+export const ProductInfo = ({ product, calculatedPrice, selectedVariant }: ProductInfoProps) => {
   return (
     <div className="space-y-6">
       {/* Breadcrumb Navigation */}
@@ -50,8 +51,8 @@ export const ProductInfo = ({ product, calculatedPrice }: ProductInfoProps) => {
             ₹{calculatedPrice !== null ? calculatedPrice.toLocaleString() : "Loading..."}
           </span>
         </div>
-        <Badge variant={product.stock_quantity > 0 ? "secondary" : "destructive"}>
-          {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : "Out of Stock"}
+        <Badge variant={selectedVariant ? (selectedVariant.stock_quantity > 0 ? "secondary" : "destructive") : (product.stock_quantity > 0 ? "secondary" : "destructive")}>
+          {selectedVariant ? (selectedVariant.stock_quantity > 0 ? `${selectedVariant.stock_quantity} in stock` : "Out of Stock") : (product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : "Out of Stock")}
         </Badge>
       </div>
     </div>

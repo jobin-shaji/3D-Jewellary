@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Heart, ShoppingCart, Share2, Edit } from "lucide-react";
-import { Product } from "@/shared/types";
+import { Product, ProductVariant } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
 
 interface ProductActionsProps {
@@ -12,6 +12,7 @@ interface ProductActionsProps {
   onWishlistToggle: () => void;
   onAddToCart: () => void;
   onShare: () => void;
+  selectedVariant?: ProductVariant | null;
 }
 
 export const ProductActions = ({ 
@@ -20,10 +21,14 @@ export const ProductActions = ({
   isWishlisted, 
   onWishlistToggle, 
   onAddToCart,
-  onShare 
+  onShare,
+  selectedVariant
 }: ProductActionsProps) => {
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
+
+  // Use selected variant stock if available, otherwise use product stock
+  const currentStock = selectedVariant ? selectedVariant.stock_quantity : product.stock_quantity;
 
   const handleAddToCartWithQuantity = () => {
     onAddToCart();
@@ -32,7 +37,7 @@ export const ProductActions = ({
   return (
     <div className="space-y-4">
       {/* Quantity Selector - Hidden for Admins */}
-      {!isAdmin && product.stock_quantity > 0 && (
+      {!isAdmin && currentStock > 0 && (
         <div className="flex items-center gap-4">
           <label className="text-sm font-medium">Quantity:</label>
           <div className="flex items-center border rounded-md">
@@ -48,14 +53,14 @@ export const ProductActions = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
-              disabled={quantity >= product.stock_quantity}
+              onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
+              disabled={quantity >= currentStock}
             >
               +
             </Button>
           </div>
           <span className="text-sm text-muted-foreground">
-            ({product.stock_quantity} available)
+            ({currentStock} available)
           </span>
         </div>
       )}
@@ -67,10 +72,10 @@ export const ProductActions = ({
           <Button 
             className="flex-1" 
             onClick={handleAddToCartWithQuantity}
-            disabled={product.stock_quantity === 0}
+            disabled={currentStock === 0}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            {product.stock_quantity > 0 ? "Add to Cart" : "Out of Stock"}
+            {currentStock > 0 ? "Add to Cart" : "Out of Stock"}
           </Button>
         )}
 

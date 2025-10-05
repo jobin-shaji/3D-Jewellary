@@ -134,6 +134,7 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => removeGemstone(gemstone.id!)}
+                type="button"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -273,7 +274,7 @@ export const GemstonesManagement: React.FC<GemstonesManagementProps> = ({
               />
             </div>
           </div>
-          <Button onClick={addGemstone} disabled={!newGemstone.type.trim()}>
+          <Button onClick={addGemstone} disabled={!newGemstone.type.trim()} type="button">
             <Plus className="h-4 w-4 mr-2" />
             Add Gemstone
           </Button>

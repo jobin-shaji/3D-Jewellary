@@ -303,6 +303,7 @@ export const ProductVariants: React.FC<VariantsProps> = ({
                               onClick={() => removeMetalFromEditingVariant(index)}
                               size="sm"
                               variant="ghost"
+                              type="button"
                             >
                               <X className="h-3 w-3" />
                             </Button>
@@ -357,7 +358,7 @@ export const ProductVariants: React.FC<VariantsProps> = ({
                           onChange={(e) => setNewMetal({...newMetal, color: e.target.value})}
                         />
 
-                        <Button onClick={addMetalToEditingVariant} size="sm">
+                        <Button onClick={addMetalToEditingVariant} size="sm" type="button">
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
@@ -369,10 +370,10 @@ export const ProductVariants: React.FC<VariantsProps> = ({
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium text-lg">{variant.name}</h4>
                       <div className="flex gap-2">
-                        <Button onClick={() => startEditing(variant)} size="sm" variant="outline">
+                        <Button onClick={() => startEditing(variant)} size="sm" variant="outline" type="button">
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button onClick={() => removeVariant(variant.variant_id)} size="sm" variant="destructive">
+                        <Button onClick={() => removeVariant(variant.variant_id)} size="sm" variant="destructive" type="button">
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
@@ -465,6 +466,7 @@ export const ProductVariants: React.FC<VariantsProps> = ({
                       onClick={() => removeMetalFromNewVariant(index)}
                       size="sm"
                       variant="ghost"
+                      type="button"
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -520,13 +522,13 @@ export const ProductVariants: React.FC<VariantsProps> = ({
                 onChange={(e) => setNewMetal({...newMetal, color: e.target.value})}
               />
 
-              <Button onClick={addMetalToNewVariant} size="sm">
+              <Button onClick={addMetalToNewVariant} size="sm" type="button">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <Button onClick={addVariant} className="w-full">
+          <Button onClick={addVariant} className="w-full" type="button">
             <Plus className="h-4 w-4 mr-2" />
             Add Variant
           </Button>

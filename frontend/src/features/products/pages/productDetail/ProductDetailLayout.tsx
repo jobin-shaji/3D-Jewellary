@@ -9,14 +9,14 @@ import { ProductInfo } from "./ProductInfo";
 import { ProductActions } from "./ProductActions";
 import { PriceSummary } from "./PriceSummary";
 import { ProductSpecifications } from "./ProductSpecifications";
-import ProductCustomization from "./ProductCustomization";
+import ProductVariant from "./ProductVariant";
 import { useProductDetail } from "@/features/products/hooks/useProductDetail";
 import { useProductActions } from "@/features/products/hooks/useProductActions";
 
 export const ProductDetailLayout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { product, loading, error, calculatedPrice, selectedCustomizations, setSelectedCustomizations, handlePriceCalculated } = useProductDetail();
+  const { product, loading, error, calculatedPrice, selectedVariant, setSelectedVariant, handlePriceCalculated } = useProductDetail();
   const { isWishlisted, handleAddToCart, handleWishlistToggle, handleShare } = useProductActions(product);
 
   // Check if user is admin
@@ -95,6 +95,7 @@ export const ProductDetailLayout = () => {
             <ProductInfo 
               product={product} 
               calculatedPrice={calculatedPrice}
+              selectedVariant={selectedVariant}
             />
 
             <ProductActions 
@@ -104,16 +105,17 @@ export const ProductDetailLayout = () => {
               onWishlistToggle={handleWishlistToggle}
               onAddToCart={handleAddToCart}
               onShare={handleShare}
+              selectedVariant={selectedVariant}
             />
 
             <Separator />
 
-            {/* Product Customization - Only show if product has customizations */}
+            {/* Product Variants - Only show if product has variants */}
             {product.variants && product.variants.length > 0 && (
               <>
-                <ProductCustomization 
-                  customizations={[]} // Will be replaced with actual customizations when implemented
-                  onCustomizationChange={setSelectedCustomizations}
+                <ProductVariant 
+                  variants={product.variants}
+                  onVariantChange={setSelectedVariant}
                 />
                 <Separator />
               </>
@@ -128,13 +130,14 @@ export const ProductDetailLayout = () => {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             {/* Specifications Content - Left Side (2 columns) */}
             <div className="xl:col-span-2">
-              <ProductSpecifications product={product} />
+              <ProductSpecifications product={product} selectedVariant={selectedVariant} />
             </div>
             
             {/* Price Summary - Right Side (1 column) */}
             <div className="xl:col-span-1">
               <PriceSummary 
                 product={product}
+                selectedVariant={selectedVariant}
                 onPriceCalculated={handlePriceCalculated}
               />
             </div>

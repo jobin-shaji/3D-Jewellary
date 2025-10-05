@@ -1,22 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
-import { Product } from "@/shared/types";
+import { Product, ProductVariant } from "@/shared/types";
 import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
 import { useEffect, useState } from "react";
 
 interface PriceSummaryProps {
   product: Product;
+  selectedVariant?: ProductVariant | null;
   onPriceCalculated?: (totalPrice: number) => void;
 }
 
-export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) => {
+export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: PriceSummaryProps) => {
   const { metalPrices, loading: pricesLoading, getPrice } = useMetalPrices();
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loadingRemote, setLoadingRemote] = useState(false);
   const [serverData, setServerData] = useState<any | null>(null);
 
-  // Calculate metal costs from product.metals array (client-only, not authoritative)
-  const metalCosts = product.metals?.reduce((total, metal) => {
+  // Determine which metals to use for calculation - variant metals if variant is selected, otherwise product metals
+  const metalsToUse = selectedVariant?.metal || product.metals;
+
+  // Calculate metal costs from metalsToUse array (client-only, not authoritative)
+  const metalCosts = metalsToUse?.reduce((total, metal) => {
     // Get current price per gram for this metal type and purity
     const metalPrice = getPrice(metal.type, metal.purity);
     if (metalPrice && metal.weight) {
@@ -33,8 +37,8 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
     return total + (price * count);
   }, 0) || 0;
 
-  // Making charges - use the product.makingPrice as the base making charges
-  const makingCharges = product.makingPrice || 0;
+  // Making charges - use variant making price if variant is selected, otherwise product making price
+  const makingCharges = selectedVariant?.making_price || product.makingPrice || 0;
   
   // GST rate changed to 3% for jewelry
   const gstRate = 0.03;
@@ -49,7 +53,7 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
   const finalTotal = snapshotTotal !== null ? snapshotTotal : effectiveSubtotal + gstAmount;
 
   // Check if we have detailed pricing data
-  const hasDetailedPricing = (product.metals && product.metals.length > 0) || (product.gemstones && product.gemstones.length > 0);
+  const hasDetailedPricing = (metalsToUse && metalsToUse.length > 0) || (product.gemstones && product.gemstones.length > 0);
 
   // Notify parent component about the calculated price
   useEffect(() => {
@@ -62,12 +66,12 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
   async function fetchServerCompute() {
     setLoadingRemote(true);
     try {
-      // Send full product payload to backend for authoritative compute
+      // Send full product payload with selected variant to backend for authoritative compute
       // Persist the computed rounded total back to product snapshot
       const resp = await fetch('/api/metal/compute-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product, persist: true })
+        body: JSON.stringify({ product, selectedVariant, persist: true })
       });
 
       if (!resp.ok) throw new Error('Server compute failed');
@@ -92,10 +96,10 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
   }
 
   useEffect(() => {
-    // Try server compute on mount
+    // Try server compute on mount and when variant changes
     fetchServerCompute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id]);
+  }, [product.id, selectedVariant]);
 
   return (
     <Card className="sticky top-24">
@@ -112,9 +116,9 @@ export const PriceSummary = ({ product, onPriceCalculated }: PriceSummaryProps) 
         {/* Component Costs */}
         <div className="space-y-3">
           {/* Metal Costs */}
-          {product.metals && product.metals.length > 0 && (
+          {metalsToUse && metalsToUse.length > 0 && (
             <>
-              {product.metals.map((metal, index) => {
+              {metalsToUse.map((metal, index) => {
                 const metalPrice = getPrice(metal.type, metal.purity);
                 const currentPrice = metalPrice?.pricePerGram || 0;
                 const metalCost = metal.weight ? metal.weight * currentPrice : 0;
