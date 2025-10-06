@@ -71,6 +71,7 @@ router.post('/register', async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        isActive: newUser.isActive,
         createdAt: newUser.createdAt,
       }
     });
@@ -110,6 +111,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isActive: user.isActive,
         createdAt: user.createdAt,
       }
     });
@@ -167,6 +169,7 @@ router.post('/google', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isActive: user.isActive,
         createdAt: user.createdAt,
       }
     });

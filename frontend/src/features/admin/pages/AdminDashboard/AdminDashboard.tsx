@@ -107,7 +107,7 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="users" className="space-y-6">
-              <UsersTab users={users} />
+              <UsersTab />
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">

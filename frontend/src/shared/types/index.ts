@@ -1,9 +1,12 @@
+export type UserRole = 'admin' | 'client';
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  phone: string;
-  role: string;
+  phone?: string;
+  role: UserRole;
+  isActive: boolean;
   createdAt: string;
   // isVerified: boolean;
 }
