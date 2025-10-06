@@ -116,6 +116,7 @@ export const ProductDetailLayout = () => {
               <>
                 <ProductVariant 
                   variants={product.variants}
+                  selectedVariant={selectedVariant}
                   onVariantChange={setSelectedVariant}
                 />
                 <Separator />

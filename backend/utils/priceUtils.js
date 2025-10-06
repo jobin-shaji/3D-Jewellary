@@ -6,10 +6,12 @@ function roundRupees(value) {
 }
 
 // Compute product price using provided product object.
+// Returns an array of pricing data - one element per variant, or one element for the base product if no variants
 // Expects product to have:
-// - metals: [{ type, purity, weight }]
+// - metals: [{ type, purity, weight }] (for base product)
 // - gemstones: [{ price, count }]
-// - makingPrice: number
+// - makingPrice: number (for base product)
+// - variants: [{ variant_id, metal: [...], making_price }] (optional)
 // - taxPercent: number (optional) - if not provided, defaults to 3
 async function computeProductPrice(product, options = {}) {
   const taxPercent = typeof options.taxPercent === 'number' ? options.taxPercent : 3;
@@ -25,35 +27,71 @@ async function computeProductPrice(product, options = {}) {
     }
   }
 
-  // Calculate metal costs
-  let metalCosts = 0;
-  if (Array.isArray(product.metals)) {
-    for (const metal of product.metals) {
-      const weight = metal.weight || 0;
-      const pricePerGram = await getPricePerGram(metal.type, metal.purity);
-      metalCosts += weight * pricePerGram;
+  // Helper to calculate gemstone costs (shared across variants)
+  const calculateGemstoneCosts = () => {
+    let gemstoneCosts = 0;
+    if (Array.isArray(product.gemstones)) {
+      for (const g of product.gemstones) {
+        const price = g.price || 0;
+        const count = g.count || 0;
+        gemstoneCosts += price * count;
+      }
     }
-  }
+    return gemstoneCosts;
+  };
 
-  // Calculate gemstone costs
-  let gemstoneCosts = 0;
-  if (Array.isArray(product.gemstones)) {
-    for (const g of product.gemstones) {
-      const price = g.price || 0;
-      const count = g.count || 0;
-      gemstoneCosts += price * count;
+  // Helper to calculate metal costs for given metals array
+  const calculateMetalCosts = async (metals) => {
+    let metalCosts = 0;
+    if (Array.isArray(metals)) {
+      for (const metal of metals) {
+        const weight = metal.weight || 0;
+        const pricePerGram = await getPricePerGram(metal.type || metal.Type, metal.purity);
+        metalCosts += weight * pricePerGram;
+      }
     }
-  }
+    return metalCosts;
+  };
 
-  const makingCharges = product.makingPrice || 0;
+  const results = [];
 
-  const subtotal = metalCosts + gemstoneCosts + makingCharges;
-  const tax = subtotal * (taxPercent / 100);
-  const total = subtotal + tax;
+  // If product has variants, calculate price for each variant
+  if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+    const gemstoneCosts = calculateGemstoneCosts();
+    
+    for (const variant of product.variants) {
+      const metalCosts = await calculateMetalCosts(variant.metal);
+      const makingCharges = variant.making_price || 0;
+      
+      const subtotal = metalCosts + gemstoneCosts + makingCharges;
+      const tax = subtotal * (taxPercent / 100);
+      const total = subtotal + tax;
 
-  return {
-    success: true,
-    data: {
+      results.push({
+        variant_id: variant.variant_id,
+        variant_name: variant.name,
+        metalCosts,
+        gemstoneCosts,
+        makingCharges,
+        subtotal,
+        tax,
+        total,
+        roundedTotal: roundRupees(total),
+      });
+    }
+  } else {
+    // No variants - calculate for base product
+    const metalCosts = await calculateMetalCosts(product.metals);
+    const gemstoneCosts = calculateGemstoneCosts();
+    const makingCharges = product.makingPrice || 0;
+
+    const subtotal = metalCosts + gemstoneCosts + makingCharges;
+    const tax = subtotal * (taxPercent / 100);
+    const total = subtotal + tax;
+
+    results.push({
+      variant_id: product.id, // Use product ID as variant ID for non-variant products
+      variant_name: product.name,
       metalCosts,
       gemstoneCosts,
       makingCharges,
@@ -61,7 +99,12 @@ async function computeProductPrice(product, options = {}) {
       tax,
       total,
       roundedTotal: roundRupees(total),
-    },
+    });
+  }
+
+  return {
+    success: true,
+    data: results,
   };
 }
 

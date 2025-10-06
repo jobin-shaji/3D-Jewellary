@@ -16,16 +16,30 @@ export const useProductDetail = () => {
     }
   }, [id, fetchProduct]);
 
+  // Select default variant when product loads
+  useEffect(() => {
+    if (product && product.variants && product.variants.length > 0 && !selectedVariant) {
+      // First try to find a variant with stock
+      const variantWithStock = product.variants.find(variant => variant.stock_quantity > 0);
+      
+      if (variantWithStock) {
+        setSelectedVariant(variantWithStock);
+      } else {
+        // If no variants have stock, select the first variant
+        setSelectedVariant(product.variants[0]);
+      }
+    }
+  }, [product, selectedVariant]);
+
   // Update calculated price when product loads or variant changes
   useEffect(() => {
-    if (product) {
-      if (selectedVariant) {
-        // Use the selected variant's total price or making price
-        setCalculatedPrice(selectedVariant.totalPrice || selectedVariant.making_price || 0);
-      } else {
-        // Use the product's totalPrice or makingPrice as fallback
-        setCalculatedPrice(product.totalPrice || product.makingPrice || 0);
-      }
+    // Don't set price immediately when variant changes - wait for PriceSummary to provide authoritative price
+    if (product && !selectedVariant) {
+      // Only set initial price when no variant is selected (base product price)
+      setCalculatedPrice(product.totalPrice || product.makingPrice || 0);
+    } else if (selectedVariant) {
+      // When variant is selected, temporarily set to null to show loading until PriceSummary provides the price
+      setCalculatedPrice(null);
     }
   }, [product, selectedVariant]);
 

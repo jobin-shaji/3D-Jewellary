@@ -116,8 +116,21 @@ router.get('/', async (req, res) => {
             for (const p of staleProducts) {
               try {
                 const res = await computeProductPrice(p);
-                if (res && res.success && res.data) {
-                  p.totalPrice = res.data.roundedTotal || Math.round(res.data.total || 0);
+                if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+                  // Use the first result (base product or first variant) for the main totalPrice
+                  const basePricing = res.data[0];
+                  p.totalPrice = basePricing.roundedTotal || Math.round(basePricing.total || 0);
+                  
+                  // Update variant prices if variants exist
+                  if (p.variants && p.variants.length > 0) {
+                    for (const variant of p.variants) {
+                      const variantPricing = res.data.find(item => item.variant_id === variant.variant_id);
+                      if (variantPricing) {
+                        variant.totalPrice = variantPricing.roundedTotal || Math.round(variantPricing.total || 0);
+                      }
+                    }
+                  }
+                  
                   p.latestPriceUpdate = new Date();
                   await p.save();
                   updated++;
@@ -299,11 +312,8 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Validation
-    if (!name || !makingPrice || !category_id) {
-      return res.status(400).json({ message: 'Name, making price, and category are required' });
-    }
-    if (makingPrice <= 0) {
-      return res.status(400).json({ message: 'Making price must be greater than 0' });
+    if (!name || !category_id) {
+      return res.status(400).json({ message: 'Name and category are required' });
     }
     if (!Number.isFinite(stock_quantity) || stock_quantity < 0) {
       return res.status(400).json({ message: 'stock_quantity must be a non-negative number' });
@@ -810,9 +820,21 @@ router.post('/update-prices', async (req, res) => {
     for (const product of products) {
       try {
         const result = await computeProductPrice(product);
-        if (result && result.success && result.data) {
-          const rounded = result.data.roundedTotal || Math.round(result.data.total || 0);
-          product.totalPrice = rounded;
+        if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
+          // Use the first result (base product or first variant) for the main totalPrice
+          const basePricing = result.data[0];
+          product.totalPrice = basePricing.roundedTotal || Math.round(basePricing.total || 0);
+          
+          // Update variant prices if variants exist
+          if (product.variants && product.variants.length > 0) {
+            for (const variant of product.variants) {
+              const variantPricing = result.data.find(item => item.variant_id === variant.variant_id);
+              if (variantPricing) {
+                variant.totalPrice = variantPricing.roundedTotal || Math.round(variantPricing.total || 0);
+              }
+            }
+          }
+          
           product.latestPriceUpdate = new Date();
           await product.save();
           updatedCount++;

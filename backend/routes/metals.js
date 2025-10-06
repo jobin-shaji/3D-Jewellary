@@ -271,19 +271,53 @@ router.post('/compute-price', async (req, res) => {
       const latest = await Metal.findOne().sort({ updatedAt: -1 });
 
       // Optional persist flag: if client requests persistence, save roundedTotal to product document
-      // Body may include { persist: true }
-      const { persist } = req.body || {};
-      if (persist && product.id) {
+      // Body may include { persist: true, selectedVariant }
+      const { persist, selectedVariant } = req.body || {};
+      if (persist && product.id && Array.isArray(result.data)) {
         try {
           const Product = require('../models/product');
-          const rounded = typeof result.data.roundedTotal === 'number' ? result.data.roundedTotal : Math.round(result.data.total || 0);
-          await Product.findOneAndUpdate({ id: product.id }, { totalPrice: rounded, latestPriceUpdate: new Date() });
+          
+          // If selectedVariant is provided, persist only that variant's price
+          if (selectedVariant?.variant_id) {
+            const variantPricing = result.data.find(v => v.variant_id === selectedVariant.variant_id);
+            if (variantPricing) {
+              // Update the specific variant's totalPrice in the product document
+              await Product.findOneAndUpdate(
+                { id: product.id, 'variants.variant_id': selectedVariant.variant_id },
+                { 
+                  $set: { 
+                    'variants.$.totalPrice': variantPricing.roundedTotal,
+                    latestPriceUpdate: new Date()
+                  }
+                }
+              );
+            }
+          } else {
+            // No specific variant selected - persist base product price (first result)
+            const basePricing = result.data[0];
+            if (basePricing) {
+              await Product.findOneAndUpdate(
+                { id: product.id }, 
+                { 
+                  totalPrice: basePricing.roundedTotal, 
+                  latestPriceUpdate: new Date() 
+                }
+              );
+            }
+          }
         } catch (errPersist) {
           console.warn('Failed to persist computed price for product', product.id, errPersist.message);
         }
       }
 
-      return res.json({ success: true, data: { ...result.data, roundedTotal: result.data.roundedTotal, lastUpdated: latest ? latest.updatedAt.toISOString() : null } });
+      // Return array format with lastUpdated timestamp
+      return res.json({ 
+        success: true, 
+        data: result.data.map(item => ({
+          ...item,
+          lastUpdated: latest ? latest.updatedAt.toISOString() : null
+        }))
+      });
     }
 
     // Backward compatible single-metal compute path

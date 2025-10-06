@@ -11,7 +11,7 @@ interface PriceSummaryProps {
 }
 
 export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: PriceSummaryProps) => {
-  const { metalPrices, loading: pricesLoading, getPrice } = useMetalPrices();
+  const { loading: pricesLoading, getPrice } = useMetalPrices();
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loadingRemote, setLoadingRemote] = useState(false);
   const [serverData, setServerData] = useState<any | null>(null);
@@ -62,6 +62,13 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
     }
   }, [finalTotal, onPriceCalculated]);
 
+  // Notify parent component about the calculated price (from backend authoritative data)
+  useEffect(() => {
+    if (onPriceCalculated && serverData && typeof serverData.roundedTotal === 'number') {
+      onPriceCalculated(serverData.roundedTotal);
+    }
+  }, [serverData, onPriceCalculated]);
+
   // Fetch server-side computed price (if available) to get authoritative total and timestamp
   async function fetchServerCompute() {
     setLoadingRemote(true);
@@ -76,11 +83,22 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
 
       if (!resp.ok) throw new Error('Server compute failed');
       const json = await resp.json();
-      if (json && json.success && json.data) {
-        setServerData(json.data);
-        // Prefer server-provided lastUpdated; if persist occurred backend may not include it, fallback to now
-        setLastUpdated(json.data.lastUpdated || new Date().toISOString());
-        const rounded = typeof json.data.roundedTotal === 'number' ? json.data.roundedTotal : Math.round(json.data.total || 0);
+      if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+        // Find the data for the selected variant or use the first/base product data
+        let currentVariantData;
+        if (selectedVariant?.variant_id) {
+          currentVariantData = json.data.find(item => item.variant_id === selectedVariant.variant_id);
+        }
+        
+        // Fallback to first item if no variant matched or no variant selected
+        if (!currentVariantData) {
+          currentVariantData = json.data[0];
+        }
+
+        setServerData(currentVariantData);
+        setLastUpdated(currentVariantData.lastUpdated || new Date().toISOString());
+        const rounded = typeof currentVariantData.roundedTotal === 'number' ? 
+          currentVariantData.roundedTotal : Math.round(currentVariantData.total || 0);
         if (onPriceCalculated) onPriceCalculated(rounded);
       } else {
         // If server returned no data, clear serverData so UI shows zeros

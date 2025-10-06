@@ -48,7 +48,7 @@ export const ProductInfo = ({ product, calculatedPrice, selectedVariant }: Produ
       <div className="flex items-center gap-4">
         <div className="flex flex-col">
           <span className="text-3xl font-bold text-primary">
-            ₹{calculatedPrice !== null ? calculatedPrice.toLocaleString() : "Loading..."}
+            ₹{calculatedPrice !== null ? calculatedPrice.toFixed(2) : "Calculating..."}
           </span>
         </div>
         <Badge variant={selectedVariant ? (selectedVariant.stock_quantity > 0 ? "secondary" : "destructive") : (product.stock_quantity > 0 ? "secondary" : "destructive")}>

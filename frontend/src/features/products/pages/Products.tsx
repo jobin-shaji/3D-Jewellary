@@ -128,9 +128,21 @@ const Products = () => {
                   {product.category?.name || 'No Category'}
                 </Badge>
                 <p className="text-2xl font-bold text-primary">₹{product.totalPrice}</p>
-                {product.stock_quantity <= 0 && (
-                  <Badge variant="destructive" className="mt-2">Out of Stock</Badge>
-                )}
+                {(() => {
+                  // For products with variants, check if at least one variant has stock
+                  if (product.variants && product.variants.length > 0) {
+                    const hasStockInAnyVariant = product.variants.some(variant => variant.stock_quantity > 0);
+                    if (!hasStockInAnyVariant) {
+                      return <Badge variant="destructive" className="mt-2">Out of Stock</Badge>;
+                    }
+                  } else {
+                    // For products without variants, check the main product stock
+                    if (product.stock_quantity <= 0) {
+                      return <Badge variant="destructive" className="mt-2">Out of Stock</Badge>;
+                    }
+                  }
+                  return null;
+                })()}
               </CardContent>
             </Card>
           ))}
