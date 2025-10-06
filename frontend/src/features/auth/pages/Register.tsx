@@ -47,7 +47,7 @@ const Register = () => {
         console.error("Google registration failed:", error);
         toast({
           title: "Google Registration Failed",
-          description: error.response?.data?.message || "Google registration failed. Please try again.",
+          description: error.message || "Google registration failed. Please try again.",
           variant: "destructive",
         });
       }
@@ -99,7 +99,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     console.error("Registration failed:", error);
     toast({
       title: "Registration Failed",
-      description: error.response?.data?.message || "Registration failed. Please try again.",
+      description: error.message || "Registration failed. Please try again.",
       variant: "destructive"
     });
   } finally {

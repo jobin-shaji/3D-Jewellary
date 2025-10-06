@@ -46,7 +46,7 @@ const Login = () => {
         console.error("Google login failed:", error);
         toast({
           title: "Google Login Failed",
-          description: error.response?.data?.message || "Google login failed. Please try again.",
+          description: error.message || "Google login failed. Please try again.",
           variant: "destructive",
         });
       } finally {

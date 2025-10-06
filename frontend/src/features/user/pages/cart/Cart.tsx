@@ -4,6 +4,17 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Separator } from "@/shared/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/shared/components/ui/alert-dialog";
 import { Minus, Plus, Trash2, Loader2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/features/user/hooks/useCart";
 import { useAuth } from "@/shared/contexts/auth";
@@ -13,6 +24,7 @@ const Cart = () => {
   const { user, isLoggedIn } = useAuth();
   const { cart, loading, updateCartItem, clearCart } = useCart();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false);
 
   // Redirect to login if not authenticated
   if (!isLoggedIn) {
@@ -45,9 +57,8 @@ const Cart = () => {
 
   // Handle clear cart
   const handleClearCart = async () => {
-    if (window.confirm('Are you sure you want to clear your cart?')) {
-      await clearCart();
-    }
+    await clearCart();
+    setShowClearCartDialog(false);
   };
 
   // Loading state
@@ -91,9 +102,30 @@ const Cart = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Shopping Cart</h1>
           {cart.items.length > 0 && (
-            <Button variant="outline" onClick={handleClearCart}>
-              Clear Cart
-            </Button>
+            <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                  Clear Cart
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear Shopping Cart</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to remove all items from your cart? This action cannot be undone and you'll lose all the items you've selected.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleClearCart}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Clear Cart
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
 

@@ -14,7 +14,7 @@ import OrderDetail from "@/features/user/pages/OrderDetail";
 import Wishlist from "@/features/user/pages/Wishlist";
 import Login from "@/features/auth/pages/Login";
 import Register from "@/features/auth/pages/Register";
-import Profile from "@/features/user/pages/Profile";
+import Profile from "@/features/user/pages/profile/Profile";
 import UserDashboard from "@/features/user/pages/UserDashboard";
 import Orders from "@/features/user/pages/Orders";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard/AdminDashboard";

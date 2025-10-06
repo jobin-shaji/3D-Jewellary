@@ -114,23 +114,24 @@ export interface Product {
 //   updated_at: string;
 // }
 
-// export interface Address {
-//   id: number;
-//   user_id: number;
-//   type: 'shipping' | 'billing';
-//   first_name: string;
-//   last_name: string;
-//   company?: string;
-//   address_line_1: string;
-//   address_line_2?: string;
-//   city: string;
-//   state: string;
-//   postal_code: string;
-//   country: string;
-//   phone?: string;
-//   is_default: boolean;
-//   created_at: string;
-// }
+export interface Address {
+  id: string;
+  userId: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // export interface OrderItem {
 //   id: number;

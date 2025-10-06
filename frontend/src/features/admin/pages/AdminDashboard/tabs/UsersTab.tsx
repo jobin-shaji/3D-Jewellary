@@ -25,6 +25,7 @@ import { Eye, EyeOff, Shield, UserX, Users, Loader2 } from "lucide-react";
 import { useUserManagement } from "@/features/admin/hooks/useUserManagement";
 import { User, UserRole } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
+import { useAuth } from "@/shared/contexts/auth";
 
 interface UsersTabProps {
   users?: User[]; // Make it optional as we'll use the hook
@@ -32,6 +33,7 @@ interface UsersTabProps {
 
 export const UsersTab = ({ users: propsUsers }: UsersTabProps) => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const { 
     users: hookUsers, 
     loading, 
@@ -210,45 +212,51 @@ export const UsersTab = ({ users: propsUsers }: UsersTabProps) => {
                     </TableCell>
                     <TableCell>{formatDate(user.createdAt)}</TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          title={user.isActive ? "Deactivate User" : "Activate User"}
-                          onClick={() => handleToggleActive(user.id, user.isActive)}
-                          disabled={toggleLoading === user.id}
-                        >
-                          {toggleLoading === user.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : user.isActive ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Select
-                          value={user.role}
-                          onValueChange={(newRole: UserRole) => handleRoleChangeRequest(user.id, user.name, user.role, newRole)}
-                          disabled={roleChangeLoading === user.id}
-                        >
-                          <SelectTrigger className="w-8 h-8 p-0">
-                            <Shield className="h-4 w-4" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="client">Client</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          title="Suspend User (Coming Soon)"
-                          className="text-red-500"
-                          disabled
-                        >
-                          <UserX className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {currentUser?.id !== user.id ? (
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title={user.isActive ? "Deactivate User" : "Activate User"}
+                            onClick={() => handleToggleActive(user.id, user.isActive)}
+                            disabled={toggleLoading === user.id}
+                          >
+                            {toggleLoading === user.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : user.isActive ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Select
+                            value={user.role}
+                            onValueChange={(newRole: UserRole) => handleRoleChangeRequest(user.id, user.name, user.role, newRole)}
+                            disabled={roleChangeLoading === user.id}
+                          >
+                            <SelectTrigger className="w-8 h-8 p-0">
+                              <Shield className="h-4 w-4" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="client">Client</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="Suspend User (Coming Soon)"
+                            className="text-red-500"
+                            disabled
+                          >
+                            <UserX className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end text-sm text-muted-foreground">
+                          Your account
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

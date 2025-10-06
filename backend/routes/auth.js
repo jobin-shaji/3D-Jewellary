@@ -94,7 +94,11 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
-    
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Your account is inactive. Please contact support.' });
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -142,11 +146,16 @@ router.post('/google', async (req, res) => {
     // Verify Google token
     const googleUser = await verifyGoogleToken(token);
 
+
     // Check if user already exists
     let user = await User.findOne({ email: googleUser.email });
 
     if (user) {
-      // User exists - login
+      // User exists - check if active
+      if (!user.isActive) {
+        return res.status(403).json({ message: 'Your account is inactive. Please contact support.' });
+      }
+      // Proceed to login
     } else {
       // User doesn't exist - register
       user = new User({
