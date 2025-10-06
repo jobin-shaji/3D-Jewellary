@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
@@ -176,13 +174,13 @@ const Cart = () => {
                   <span>₹99.00</span> {/* TODO: Calculate actual shipping */}
                 </div>
                 <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>₹{(cart.totalAmount * 0.18).toFixed(2)}</span> {/* 18% GST */}
+                  <span>GST (3% included)</span>
+                  <span>₹{(cart.totalAmount * 0.03).toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>₹{(cart.totalAmount + 99 + cart.totalAmount * 0.18).toFixed(2)}</span>
+                  <span>₹{(cart.totalAmount + 99).toFixed(2)}</span>
                 </div>
                 <Button className="w-full" size="lg" asChild>
                   <Link to="/checkout">Proceed to Checkout</Link>
