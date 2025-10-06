@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/shared/hooks/use-toast';
+import { apiUrl } from '@/shared/lib/api';
 
 export const useDeleteProduct = () => {
   const { toast } = useToast();
@@ -27,7 +28,7 @@ export const useDeleteProduct = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/products/${productId}`, {
+  const response = await fetch(apiUrl(`/api/products/${productId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

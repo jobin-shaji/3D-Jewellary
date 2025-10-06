@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiUrl } from '@/shared/lib/api';
 
 // Export the interface to reduce complexity and avoid duplication
 export interface DashboardStats {
@@ -23,7 +24,7 @@ export const useAdminStats = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:3000/api/admin/stats');
+  const response = await fetch(apiUrl('/api/admin/stats'));
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

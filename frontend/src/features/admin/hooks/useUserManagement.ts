@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, UserRole } from '@/shared/types';
-
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+import { apiUrl } from '@/shared/lib/api';
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -19,7 +18,7 @@ export const useUserManagement = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+  const response = await fetch(apiUrl('/api/admin/users'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -49,7 +48,7 @@ export const useUserManagement = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/toggle-active`, {
+  const response = await fetch(apiUrl(`/api/admin/users/${userId}/toggle-active`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -90,7 +89,7 @@ export const useUserManagement = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/change-role`, {
+  const response = await fetch(apiUrl(`/api/admin/users/${userId}/change-role`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { Product} from "@/shared/types";
+import { apiUrl } from '@/shared/lib/api';
 // import { ProductData } from "./types";
 
 interface FileUploadState {
@@ -18,7 +19,7 @@ export const createProduct = async (Product: Product): Promise<any> => {
     throw new Error('Authentication token not found. Please login again.');
   }
 
-  const response = await fetch('http://localhost:3000/api/products', {
+  const response = await fetch(apiUrl('/api/products'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -42,7 +43,7 @@ export const updateProduct = async (productId: string, Product: Product): Promis
     throw new Error('Authentication token not found. Please login again.');
   }
 
-  const response = await fetch(`http://localhost:3000/api/products/${productId}`, {
+  const response = await fetch(apiUrl(`/api/products/${productId}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -71,7 +72,7 @@ export const uploadProductImages = async (productId: number, imageFiles: File[])
     imageFormData.append('images', file);
   });
 
-  const response = await fetch(`http://localhost:3000/api/products/${productId}/images`, {
+  const response = await fetch(apiUrl(`/api/products/${productId}/images`), {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -97,7 +98,7 @@ export const upload3DModel = async (productId: number, model3DFile: File): Promi
   const modelFormData = new FormData();
   modelFormData.append('model', model3DFile);
 
-  const response = await fetch(`http://localhost:3000/api/products/${productId}/model`, {
+  const response = await fetch(apiUrl(`/api/products/${productId}/model`), {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -128,7 +129,7 @@ export const uploadCertificates = async (productId: number, certificates: Array<
     certificateFormData.append(`certificates[${index}][name]`, cert.name);
   });
 
-  const response = await fetch(`http://localhost:3000/api/products/${productId}/certificates`, {
+  const response = await fetch(apiUrl(`/api/products/${productId}/certificates`), {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -145,7 +146,7 @@ export const uploadCertificates = async (productId: number, certificates: Array<
 };
 
 export const fetchCategories = async (): Promise<Array<{id: number; name: string; description?: string;createdAt?: string}>> => {
-  const response = await fetch('http://localhost:3000/api/categories');
+  const response = await fetch(apiUrl('/api/categories'));
   
   if (!response.ok) {
     throw new Error('Failed to fetch categories');

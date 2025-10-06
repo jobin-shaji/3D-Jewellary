@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Product } from '@/shared/types';
+import { apiUrl } from '@/shared/lib/api';
 
 export const useFetchProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,7 +19,7 @@ export const useFetchProducts = () => {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/products/all', {
+  const response = await fetch(apiUrl('/api/products/all'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -47,7 +48,7 @@ export const useFetchProducts = () => {
         setSingleProduct(null);
         const token = localStorage.getItem('token');
 
-        const response = await fetch(`http://localhost:3000/api/products/${id}/full`);
+  const response = await fetch(apiUrl(`/api/products/${id}/full`));
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Product not found');

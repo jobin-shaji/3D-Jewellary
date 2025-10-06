@@ -20,11 +20,14 @@ router.get('/stats', async (req, res) => {
     //   ]
     // });
 
+    // Get active products count (assuming products with is_active: true are active)
+    const totalUsers = await User.countDocuments();
+
     const stats = {
       totalProducts,
       activeProducts,
+      totalUsers,
       // Mock data for users and orders as requested
-      totalUsers: 1526,
       totalOrders: 189
     };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/shared/hooks/use-toast";
+import { apiUrl } from "@/shared/lib/api";
 
 export interface CartItem {
   productId: string;
@@ -43,7 +44,7 @@ export const useCart = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart', {
+  const response = await fetch(apiUrl('/api/cart'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -71,7 +72,7 @@ export const useCart = () => {
     if (!token) return 0;
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart/count', {
+  const response = await fetch(apiUrl('/api/cart/count'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -104,7 +105,7 @@ export const useCart = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart/add', {
+  const response = await fetch(apiUrl('/api/cart/add'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +145,7 @@ export const useCart = () => {
     if (!token) return false;
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart/update', {
+  const response = await fetch(apiUrl('/api/cart/update'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -184,7 +185,7 @@ export const useCart = () => {
     if (!token) return false;
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart/clear', {
+  const response = await fetch(apiUrl('/api/cart/clear'), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

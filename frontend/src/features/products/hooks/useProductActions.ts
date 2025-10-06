@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Product, ProductVariant } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
+import { apiUrl } from "@/shared/lib/api";
 
 export const useProductActions = (product: Product | null, selectedVariant?: ProductVariant | null) => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export const useProductActions = (product: Product | null, selectedVariant?: Pro
       // Determine variant_id: use selectedVariant's id, or product.id for non-variant products
       const variantId = selectedVariant?.variant_id || product.id;
 
-      const response = await fetch('http://localhost:3000/api/cart/add', {
+  const response = await fetch(apiUrl('/api/cart/add'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

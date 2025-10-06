@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Product } from '@/shared/types';
+import { apiUrl } from '@/shared/lib/api';
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -14,7 +15,7 @@ export const useProducts = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:3000/api/products');
+  const response = await fetch(apiUrl('/api/products'));
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
@@ -37,7 +38,7 @@ export const useProducts = () => {
       setSingleProductError(null);
       setSingleProduct(null);
 
-      const response = await fetch(`http://localhost:3000/api/products/${id}/full`);
+  const response = await fetch(apiUrl(`/api/products/${id}/full`));
       
       if (!response.ok) {
         if (response.status === 404) {
