@@ -173,7 +173,7 @@ class CartService {
         productId,
         variant_id,
         name: itemName,
-        priceAtPurchase: variant.totalPrice,
+        totalprice: variant.totalPrice,
         quantity
       });
     }

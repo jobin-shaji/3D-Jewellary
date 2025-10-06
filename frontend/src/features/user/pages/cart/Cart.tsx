@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -21,14 +21,18 @@ import { useAuth } from "@/shared/contexts/auth";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
   const { cart, loading, updateCartItem, clearCart } = useCart();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
 
-  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, []);
+
   if (!isLoggedIn) {
-    navigate('/login');
     return null;
   }
 
@@ -146,9 +150,11 @@ const Cart = () => {
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.name}</h3>
-                        <p className="text-2xl font-bold text-primary">₹{item.priceAtPurchase.toFixed(2)}</p>
+                        <p className="text-2xl font-bold text-primary">
+                          ₹{typeof item.totalprice === 'number' ? (item.totalprice*item.quantity).toLocaleString() : 'N/A'}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          ₹{item.priceAtPurchase.toFixed(2)} each
+                          ₹{typeof item.totalprice === 'number' ? item.totalprice.toLocaleString() : 'N/A'} each
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">

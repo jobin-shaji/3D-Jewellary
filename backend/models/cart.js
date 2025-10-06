@@ -16,7 +16,7 @@ const cartItemSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  priceAtPurchase: {
+  totalprice: {
     type: Number,
     required: true,
     min: 0
@@ -57,7 +57,7 @@ const cartSchema = new mongoose.Schema({
 // Calculate totals before saving
 cartSchema.pre('save', function(next) {
   this.totalItems = this.items.reduce((total, item) => total + item.quantity, 0);
-  this.totalAmount = this.items.reduce((total, item) => total + (item.priceAtPurchase * item.quantity), 0);
+  this.totalAmount = this.items.reduce((total, item) => total + (item.totalprice * item.quantity), 0);
   next();
 });
 
