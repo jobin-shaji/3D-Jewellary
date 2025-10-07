@@ -27,7 +27,7 @@ router.post('/add', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log(`🛒 Adding item to cart - User: ${userId}, Product: ${productId}, Variant: ${variant_id}, Quantity: ${quantity}`);
+    console.log(`Adding item to cart - User: ${userId}, Product: ${productId}, Variant: ${variant_id}, Quantity: ${quantity}`);
 
     // Add item to cart using service
     const updatedCart = await CartService.addItemToCart(userId, {
@@ -36,7 +36,7 @@ router.post('/add', authenticateToken, async (req, res) => {
       quantity
     });
 
-    console.log(`✅ Item added to cart successfully - Total items: ${updatedCart.totalItems}`);
+    console.log(`Item added to cart successfully - Total items: ${updatedCart.totalItems}`);
 
     res.status(200).json({
       message: 'Item added to cart successfully',
@@ -44,7 +44,7 @@ router.post('/add', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error adding item to cart:', error);
+    console.error('Error adding item to cart:', error);
     
     // Handle specific error types
     if (error.message.includes('not found') || error.message.includes('not available')) {
@@ -89,13 +89,13 @@ router.patch('/update', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log(`🔄 Updating cart item - User: ${userId}, Product: ${productId}, Variant: ${variant_id}, New Quantity: ${quantity}`);
+    console.log(`Updating cart item - User: ${userId}, Product: ${productId}, Variant: ${variant_id}, New Quantity: ${quantity}`);
 
     // Update item using service
     const updatedCart = await CartService.updateCartItem(userId, productId, variant_id, quantity);
 
     const action = quantity === 0 ? 'removed from' : 'updated in';
-    console.log(`✅ Item ${action} cart successfully - Total items: ${updatedCart.totalItems}`);
+    console.log(`Item ${action} cart successfully - Total items: ${updatedCart.totalItems}`);
 
     res.status(200).json({
       message: `Item ${action} cart successfully`,
@@ -103,7 +103,7 @@ router.patch('/update', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error updating cart item:', error);
+    console.error('Error updating cart item:', error);
     
     if (error.message.includes('not found')) {
       return res.status(404).json({
@@ -133,12 +133,12 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log(`📋 Fetching cart - User: ${userId}`);
+    console.log(`Fetching cart - User: ${userId}`);
 
     // Get cart using service
     const cart = await CartService.getCart(userId);
 
-    console.log(`✅ Cart fetched successfully - Total items: ${cart.totalItems}`);
+    console.log(`Cart fetched successfully - Total items: ${cart.totalItems}`);
 
     res.status(200).json({
       message: 'Cart fetched successfully',
@@ -147,7 +147,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching cart:', error);
+    console.error('Error fetching cart:', error);
     
     res.status(500).json({
       message: 'Server error while fetching cart',
@@ -165,12 +165,12 @@ router.delete('/clear', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log(`🗑️ Clearing cart - User: ${userId}`);
+    console.log(` Clearing cart - User: ${userId}`);
 
     // Clear cart using service
     const clearedCart = await CartService.clearCart(userId);
 
-    console.log(`✅ Cart cleared successfully - User: ${userId}`);
+    console.log(`Cart cleared successfully - User: ${userId}`);
 
     res.status(200).json({
       message: 'Cart cleared successfully',
@@ -178,7 +178,7 @@ router.delete('/clear', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error clearing cart:', error);
+    console.error('Error clearing cart:', error);
     
     if (error.message.includes('not found')) {
       return res.status(404).json({
@@ -209,7 +209,7 @@ router.get('/count', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error getting cart count:', error);
+    console.error('Error getting cart count:', error);
     
     res.status(500).json({
       message: 'Server error while getting cart count',
@@ -227,7 +227,7 @@ router.post('/cleanup', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log(`🧹 Cleaning up cart - User: ${userId}`);
+    console.log(`Cleaning up cart - User: ${userId}`);
 
     const cleanedCart = await CartService.cleanupCart(userId);
 
@@ -237,7 +237,7 @@ router.post('/cleanup', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log(`✅ Cart cleaned up successfully - User: ${userId}`);
+    console.log(`Cart cleaned up successfully - User: ${userId}`);
 
     res.status(200).json({
       message: 'Cart cleaned up successfully',
@@ -245,7 +245,7 @@ router.post('/cleanup', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error cleaning up cart:', error);
+    console.error('Error cleaning up cart:', error);
     
     res.status(500).json({
       message: 'Server error while cleaning up cart',

@@ -108,18 +108,20 @@ async function updateMetalPricesFromAPI() {
           absoluteChange = adjustedPricePerGram - existing.pricePerGram;
         }
 
-        // Update or insert the entry
-        await Metal.findOneAndUpdate(
-          { metal, purity },
-          {
-            pricePerGram: adjustedPricePerGram,
-            change,
-            absoluteChange,
-            source: 'api',
-            updatedAt: new Date()
-          },
-          { upsert: true, new: true }
-        );
+        // Only update if there's a price change or it's a new entry
+        if (!existing || absoluteChange !== 0) {
+          await Metal.findOneAndUpdate(
+            { metal, purity },
+            {
+              pricePerGram: adjustedPricePerGram,
+              change,
+              absoluteChange,
+              source: 'api',
+              updatedAt: new Date()
+            },
+            { upsert: true, new: true }
+          );
+        }
       }
     }
 
@@ -251,124 +253,3 @@ router.get('/types', async (req, res) => {
 
 module.exports = router;
 module.exports.updateMetalPricesFromAPI = updateMetalPricesFromAPI;
-
-// POST /compute-price
-// Body: { metal, purity, weightGrams, makingCharge, taxPercent, productId (optional) }
-router.post('/compute-price', async (req, res) => {
-  try {
-    const { product, metal, purity, weightGrams, makingCharge = 0, taxPercent = 0 } = req.body || {};
-
-    // If full product provided, delegate to computeProductPrice helper
-    if (product) {
-      // Ensure latest metal prices
-      const latestMetal = await Metal.findOne().sort({ updatedAt: -1 });
-      const fourDaysInMs = 4 * 24 * 60 * 60 * 1000;
-      if (!latestMetal || (new Date() - latestMetal.updatedAt) >= fourDaysInMs) {
-        await updateMetalPricesFromAPI();
-      }
-
-      const result = await computeProductPrice(product, { taxPercent: Number(product.taxPercent || taxPercent || 3) });
-      const latest = await Metal.findOne().sort({ updatedAt: -1 });
-
-      // Optional persist flag: if client requests persistence, save roundedTotal to product document
-      // Body may include { persist: true, selectedVariant }
-      const { persist, selectedVariant } = req.body || {};
-      if (persist && product.id && Array.isArray(result.data)) {
-        try {
-          const Product = require('../models/product');
-          
-          // If selectedVariant is provided, persist only that variant's price
-          if (selectedVariant?.variant_id) {
-            const variantPricing = result.data.find(v => v.variant_id === selectedVariant.variant_id);
-            if (variantPricing) {
-              // Update the specific variant's totalPrice in the product document
-              await Product.findOneAndUpdate(
-                { id: product.id, 'variants.variant_id': selectedVariant.variant_id },
-                { 
-                  $set: { 
-                    'variants.$.totalPrice': variantPricing.roundedTotal,
-                    latestPriceUpdate: new Date()
-                  }
-                }
-              );
-            }
-          } else {
-            // No specific variant selected - persist base product price (first result)
-            const basePricing = result.data[0];
-            if (basePricing) {
-              await Product.findOneAndUpdate(
-                { id: product.id }, 
-                { 
-                  totalPrice: basePricing.roundedTotal, 
-                  latestPriceUpdate: new Date() 
-                }
-              );
-            }
-          }
-        } catch (errPersist) {
-          console.warn('Failed to persist computed price for product', product.id, errPersist.message);
-        }
-      }
-
-      // Return array format with lastUpdated timestamp
-      return res.json({ 
-        success: true, 
-        data: result.data.map(item => ({
-          ...item,
-          lastUpdated: latest ? latest.updatedAt.toISOString() : null
-        }))
-      });
-    }
-
-    // Backward compatible single-metal compute path
-    if (!metal || !purity || typeof weightGrams !== 'number') {
-      return res.status(400).json({ success: false, error: 'Provide either full product or metal, purity and weightGrams(number)' });
-    }
-
-    // Ensure latest prices (reuse existing logic - will skip if updated recently)
-    const latestMetal = await Metal.findOne().sort({ updatedAt: -1 });
-    const fourDaysInMs = 4 * 24 * 60 * 60 * 1000;
-    if (!latestMetal || (new Date() - latestMetal.updatedAt) >= fourDaysInMs) {
-      await updateMetalPricesFromAPI();
-    }
-
-    // Fetch pricePerGram from DB
-    const metalDoc = await Metal.findOne({ metal, purity });
-    if (!metalDoc) {
-      return res.status(404).json({ success: false, error: `Price not found for ${metal} ${purity}` });
-    }
-
-    const pricePerGram = metalDoc.pricePerGram;
-
-    // Compute components
-    const metalValue = pricePerGram * weightGrams;
-    const making = Number(makingCharge) || 0;
-    const subtotal = metalValue + making;
-    const tax = (taxPercent / 100) * subtotal;
-    const total = subtotal + tax;
-
-    // Round sensible values
-    const round = (v) => Math.round(v * 100) / 100;
-
-    res.json({
-      success: true,
-      data: {
-        metal,
-        purity,
-        weightGrams,
-        pricePerGram: round(pricePerGram),
-        metalValue: round(metalValue),
-        making: round(making),
-        taxPercent,
-        tax: round(tax),
-        subtotal: round(subtotal),
-        total: round(total),
-        lastUpdated: metalDoc.updatedAt.toISOString()
-      }
-    });
-
-  } catch (error) {
-    console.error('Error in compute-price:', error);
-    res.status(500).json({ success: false, error: 'Failed to compute price', message: error.message });
-  }
-});

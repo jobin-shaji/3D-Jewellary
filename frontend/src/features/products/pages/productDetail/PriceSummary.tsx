@@ -75,7 +75,7 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
     try {
       // Send full product payload with selected variant to backend for authoritative compute
       // Persist the computed rounded total back to product snapshot
-      const resp = await fetch('/api/metal/compute-price', {
+      const resp = await fetch('/api/pricing/compute-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product, selectedVariant, persist: true })

@@ -1,5 +1,6 @@
-const Cart = require('../models/cart');
-const Product = require('../models/product');
+const Cart = require("../models/cart");
+const Product = require("../models/product");
+const User = require("../models/user");
 
 class CartService {
   /**
@@ -9,30 +10,36 @@ class CartService {
    * @param {number} requestedQuantity - Requested quantity
    * @returns {Object} - Validation result with product and variant data
    */
-  static async validateProductVariant(productId, variant_id, requestedQuantity = 1) {
+  static async validateProductVariant(
+    productId,
+    variant_id,
+    requestedQuantity = 1
+  ) {
     try {
-      console.log(`🔍 Looking for product with ID: ${productId}`);
-      
+      console.log(`Looking for product with ID: ${productId}`);
+
       // Debug: Check what products exist
-      const allProducts = await Product.find({}, 'id name');
-      console.log(`📋 Available products:`, allProducts.map(p => ({ id: p.id, name: p.name })));
-      
+      const allProducts = await Product.find({}, "id name");
+      console.log(
+        `Available products:`,
+        allProducts.map((p) => ({ id: p.id, name: p.name }))
+      );
+
       // Find the product
-      console.log('🔍 Searching for product:', productId);
+      console.log("Searching for product:", productId);
       const product = await Product.findOne({ id: productId });
-      console.log('🔍 Product found:', product ? product.name : 'NOT FOUND');
+      console.log("Product found:", product ? product.name : "NOT FOUND");
       if (!product) {
         return {
           isValid: false,
-          error: 'Product not found'
+          error: "Product not found",
         };
       }
 
-      // Check if product is active
       if (!product.is_active) {
         return {
           isValid: false,
-          error: 'Product is not available'
+          error: "Product is not available",
         };
       }
 
@@ -44,11 +51,11 @@ class CartService {
       // Check if product has variants
       if (product.variants && product.variants.length > 0) {
         // Product has variants - find the specific variant
-        variant = product.variants.find(v => v.variant_id === variant_id);
+        variant = product.variants.find((v) => v.variant_id === variant_id);
         if (!variant) {
           return {
             isValid: false,
-            error: 'Product variant not found'
+            error: "Product variant not found",
           };
         }
         stockQuantity = variant.stock_quantity;
@@ -60,16 +67,16 @@ class CartService {
         if (variant_id !== productId) {
           return {
             isValid: false,
-            error: 'Product variant not found'
+            error: "Product variant not found",
           };
         }
-        
+
         // Create a virtual variant object for consistency
         variant = {
           variant_id: productId,
           name: product.name,
           stock_quantity: product.stock_quantity || 0,
-          totalPrice: product.totalPrice || 0
+          totalPrice: product.totalPrice || 0,
         };
         stockQuantity = product.stock_quantity || 0;
         totalPrice = product.totalPrice || 0;
@@ -80,7 +87,7 @@ class CartService {
       if (stockQuantity < requestedQuantity) {
         return {
           isValid: false,
-          error: `Insufficient stock. Available: ${stockQuantity}, Requested: ${requestedQuantity}`
+          error: `Insufficient stock. Available: ${stockQuantity}, Requested: ${requestedQuantity}`,
         };
       }
 
@@ -91,14 +98,14 @@ class CartService {
           ...variant,
           stock_quantity: stockQuantity,
           totalPrice,
-          name: variantName
-        }
+          name: variantName,
+        },
       };
     } catch (error) {
-      console.error('Error validating product variant:', error);
+      console.error("Error validating product variant:", error);
       return {
         isValid: false,
-        error: 'Error validating product variant'
+        error: "Error validating product variant",
       };
     }
   }
@@ -110,20 +117,29 @@ class CartService {
    */
   static async getOrCreateCart(userId) {
     try {
+      // Check user role before proceeding
+      const user = await User.findOne({ id: userId });
+      if (!user) {
+        throw new Error("User not found");
+      }
+      if (user.role === "admin") {
+        throw new Error("Admins are not allowed to have a cart");
+      }
+
       let cart = await Cart.findOne({ userId });
       if (!cart) {
         cart = new Cart({
           userId,
           items: [],
           totalItems: 0,
-          totalAmount: 0
+          totalAmount: 0,
         });
         await cart.save();
       }
       return cart;
     } catch (error) {
-      console.error('Error getting or creating cart:', error);
-      throw new Error('Failed to access cart');
+      console.error("Error getting or creating cart:", error);
+      throw new Error("Failed to access cart");
     }
   }
 
@@ -137,7 +153,11 @@ class CartService {
     const { productId, variant_id, quantity = 1 } = itemData;
 
     // Validate product variant
-    const validation = await this.validateProductVariant(productId, variant_id, quantity);
+    const validation = await this.validateProductVariant(
+      productId,
+      variant_id,
+      quantity
+    );
     if (!validation.isValid) {
       throw new Error(validation.error);
     }
@@ -149,15 +169,19 @@ class CartService {
 
     // Check if item already exists in cart
     const existingItemIndex = cart.items.findIndex(
-      item => item.productId === productId && item.variant_id === variant_id
+      (item) => item.productId === productId && item.variant_id === variant_id
     );
 
     if (existingItemIndex !== -1) {
       // Update existing item quantity
       const newQuantity = cart.items[existingItemIndex].quantity + quantity;
-      
+
       // Validate total quantity against stock
-      const stockValidation = await this.validateProductVariant(productId, variant_id, newQuantity);
+      const stockValidation = await this.validateProductVariant(
+        productId,
+        variant_id,
+        newQuantity
+      );
       if (!stockValidation.isValid) {
         throw new Error(stockValidation.error);
       }
@@ -165,16 +189,17 @@ class CartService {
       cart.items[existingItemIndex].quantity = newQuantity;
     } else {
       // Add new item to cart
-      const itemName = product.variants && product.variants.length > 0 
-        ? `${product.name} - ${variant.name}` 
-        : variant.name; // For non-variant products, use product name directly
-        
+      const itemName =
+        product.variants && product.variants.length > 0
+          ? `${product.name} - ${variant.name}`
+          : variant.name; // For non-variant products, use product name directly
+
       cart.items.push({
         productId,
         variant_id,
         name: itemName,
         totalprice: variant.totalPrice,
-        quantity
+        quantity,
       });
     }
 
@@ -193,15 +218,15 @@ class CartService {
   static async updateCartItem(userId, productId, variant_id, quantity) {
     const cart = await Cart.findOne({ userId });
     if (!cart) {
-      throw new Error('Cart not found');
+      throw new Error("Cart not found");
     }
 
     const itemIndex = cart.items.findIndex(
-      item => item.productId === productId && item.variant_id === variant_id
+      (item) => item.productId === productId && item.variant_id === variant_id
     );
 
     if (itemIndex === -1) {
-      throw new Error('Item not found in cart');
+      throw new Error("Item not found in cart");
     }
 
     if (quantity === 0) {
@@ -209,7 +234,11 @@ class CartService {
       cart.items.splice(itemIndex, 1);
     } else {
       // Validate new quantity against stock
-      const validation = await this.validateProductVariant(productId, variant_id, quantity);
+      const validation = await this.validateProductVariant(
+        productId,
+        variant_id,
+        quantity
+      );
       if (!validation.isValid) {
         throw new Error(validation.error);
       }
@@ -240,17 +269,23 @@ class CartService {
           }
 
           // Find primary image or first image
-          const primaryImage = product.images.find(img => img.is_primary) || product.images[0];
+          const primaryImage =
+            product.images.find((img) => img.is_primary) || product.images[0];
 
           return {
             ...item.toObject(),
-            image: primaryImage ? {
-              image_url: primaryImage.image_url,
-              alt_text: primaryImage.alt_text || product.name
-            } : null
+            image: primaryImage
+              ? {
+                  image_url: primaryImage.image_url,
+                  alt_text: primaryImage.alt_text || product.name,
+                }
+              : null,
           };
         } catch (error) {
-          console.error(`Error fetching image for product ${item.productId}:`, error);
+          console.error(
+            `Error fetching image for product ${item.productId}:`,
+            error
+          );
           return item; // Return item as-is on error
         }
       })
@@ -258,7 +293,7 @@ class CartService {
 
     return {
       ...cart.toObject(),
-      items: populatedItems
+      items: populatedItems,
     };
   }
 
@@ -270,7 +305,7 @@ class CartService {
   static async clearCart(userId) {
     const cart = await Cart.findOne({ userId });
     if (!cart) {
-      throw new Error('Cart not found');
+      throw new Error("Cart not found");
     }
 
     cart.items = [];
@@ -300,14 +335,14 @@ class CartService {
     }
 
     const validItems = [];
-    
+
     for (const item of cart.items) {
       const validation = await this.validateProductVariant(
-        item.productId, 
-        item.variant_id, 
+        item.productId,
+        item.variant_id,
         item.quantity
       );
-      
+
       if (validation.isValid) {
         validItems.push(item);
       }

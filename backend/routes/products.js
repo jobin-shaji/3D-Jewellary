@@ -799,57 +799,57 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 
-/**
- * @route   POST /api/products/update-prices
- * @desc    Batch update products' totalPrice and latestPriceUpdate
- * @access  Public (safe operation) - accepts optional { productIds: [] }
- */
-router.post('/update-prices', async (req, res) => {
-  try {
-    const { productIds } = req.body || {};
+// /**
+//  * @route   POST /api/products/update-prices
+//  * @desc    Batch update products' totalPrice and latestPriceUpdate
+//  * @access  Public (safe operation) - accepts optional { productIds: [] }
+//  */
+// router.post('/update-prices', async (req, res) => {
+//   try {
+//     const { productIds } = req.body || {};
 
-    const filter = { is_active: true };
-    if (Array.isArray(productIds) && productIds.length) {
-      filter.id = { $in: productIds };
-    }
+//     const filter = { is_active: true };
+//     if (Array.isArray(productIds) && productIds.length) {
+//       filter.id = { $in: productIds };
+//     }
 
-    const products = await Product.find(filter);
+//     const products = await Product.find(filter);
 
-    let updatedCount = 0;
+//     let updatedCount = 0;
 
-    for (const product of products) {
-      try {
-        const result = await computeProductPrice(product);
-        if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
-          // Use the first result (base product or first variant) for the main totalPrice
-          const basePricing = result.data[0];
-          product.totalPrice = basePricing.roundedTotal || Math.round(basePricing.total || 0);
+//     for (const product of products) {
+//       try {
+//         const result = await computeProductPrice(product);
+//         if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
+//           // Use the first result (base product or first variant) for the main totalPrice
+//           const basePricing = result.data[0];
+//           product.totalPrice = basePricing.roundedTotal || Math.round(basePricing.total || 0);
           
-          // Update variant prices if variants exist
-          if (product.variants && product.variants.length > 0) {
-            for (const variant of product.variants) {
-              const variantPricing = result.data.find(item => item.variant_id === variant.variant_id);
-              if (variantPricing) {
-                variant.totalPrice = variantPricing.roundedTotal || Math.round(variantPricing.total || 0);
-              }
-            }
-          }
+//           // Update variant prices if variants exist
+//           if (product.variants && product.variants.length > 0) {
+//             for (const variant of product.variants) {
+//               const variantPricing = result.data.find(item => item.variant_id === variant.variant_id);
+//               if (variantPricing) {
+//                 variant.totalPrice = variantPricing.roundedTotal || Math.round(variantPricing.total || 0);
+//               }
+//             }
+//           }
           
-          product.latestPriceUpdate = new Date();
-          await product.save();
-          updatedCount++;
-        }
-      } catch (innerErr) {
-        console.error('Error computing price for product', product.id, innerErr);
-        // continue with next product
-      }
-    }
+//           product.latestPriceUpdate = new Date();
+//           await product.save();
+//           updatedCount++;
+//         }
+//       } catch (innerErr) {
+//         console.error('Error computing price for product', product.id, innerErr);
+//         // continue with next product
+//       }
+//     }
 
-    return res.json({ success: true, updated: updatedCount });
-  } catch (error) {
-    console.error('Batch update prices error:', error);
-    return res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
+//     return res.json({ success: true, updated: updatedCount });
+//   } catch (error) {
+//     console.error('Batch update prices error:', error);
+//     return res.status(500).json({ success: false, message: 'Server error' });
+//   }
+// });
 
 module.exports = router;

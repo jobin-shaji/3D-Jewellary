@@ -18,6 +18,7 @@ const metalPricesRouter = require('./routes/metals');
 const adminRouter = require('./routes/admin');
 const cartRouter = require('./routes/cart');
 const addressRouter = require('./routes/addresses');
+const pricingRouter = require('./routes/pricing');
 
 const app = express();
 
@@ -48,6 +49,7 @@ mongoose.connect(MONGODB_URI)
 // Mount routers
 app.use('/api/auth', authRouter);
 app.use('/api/metal', metalPricesRouter);
+app.use('/api/pricing', pricingRouter);
 app.use('/api/categories', categories);
 app.use('/api/products', products);
 app.use('/api/admin', adminRouter);

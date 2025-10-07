@@ -27,12 +27,6 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // sku: {
-  //   type: String,
-  //   unique: true,
-  //   sparse: true,
-  //   trim: true
-  // },
   stock_quantity: {
     type: Number,
     default: 0,
@@ -42,10 +36,6 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // featured: {
-  //   type: Boolean,
-  //   default: false
-  // },
   metals: [{
     type: {
       type: String, // e.g., "Gold", "Silver", "Platinum"

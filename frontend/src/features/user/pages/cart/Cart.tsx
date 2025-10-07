@@ -205,7 +205,7 @@ const Cart = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Subtotal ({cart.totalItems} items)</span>
-                  <span>₹{cart.totalAmount.toFixed(2)}</span>
+                  <span>₹{(cart.totalAmount-(cart.totalAmount * 0.03)).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
@@ -218,7 +218,7 @@ const Cart = () => {
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>₹{(cart.totalAmount + 99).toFixed(2)}</span>
+                  <span>₹{(cart.totalAmount + 99)}</span>
                 </div>
                 <Button className="w-full" size="lg" asChild>
                   <Link to="/checkout">Proceed to Checkout</Link>

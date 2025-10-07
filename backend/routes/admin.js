@@ -7,20 +7,8 @@ const router = express.Router();
 // GET /api/admin/stats - Get admin dashboard statistics
 router.get('/stats', async (req, res) => {
   try {
-    // Get total products count
     const totalProducts = await Product.countDocuments();
-    
-    // Get active products count (assuming products with is_active: true are active)
     const activeProducts = await Product.countDocuments({ is_active: true });
-
-    //     const activeProducts = await Product.countDocuments({ 
-    //   $or: [
-    //     { availability: true },
-    //     { availability: { $exists: false } } // Include products where availability is not set
-    //   ]
-    // });
-
-    // Get active products count (assuming products with is_active: true are active)
     const totalUsers = await User.countDocuments();
 
     const stats = {
