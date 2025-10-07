@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
 
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -12,24 +11,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/hooks/use-toast";
 import { ArrowLeft, CreditCard, Shield } from "lucide-react";
+import { useAddresses } from "../../hooks/useAddresses";
+import { useCart } from "../../hooks/useCart";
+import { Address, Cart } from "@/shared/types";
+import ShippingAddressCard from "./ShippingAddressCard";
+import OrderSummary from "../../components/OrderSummary";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  
+  // Address management
+  const { addresses, loading: addressLoading, addAddress } = useAddresses();
+  
+  // Cart management
+  const { cart, loading: cartLoading, fetchCart } = useCart();
   
   const [formData, setFormData] = useState({
-    // Shipping Info
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    
     // Payment Info
     cardNumber: "",
     expiryDate: "",
@@ -40,25 +42,24 @@ const Checkout = () => {
     notes: ""
   });
 
-  // Mock cart data
-  const cartItems = [
-    {
-      id: 1,
-      name: "Diamond Engagement Ring",
-      price: 2499,
-      quantity: 1,
-      image: "/placeholder.svg",
-      customizations: {
-        "Ring Size": "7",
-        "Metal Type": "White Gold"
-      }
-    }
-  ];
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.18; // 18% GST
-  const shipping = 99;
+  // Calculate totals from real cart data
+  const subtotal = cart?.totalAmount || 0;
+  const tax = subtotal * 0.03; // 3% GST for jewelry
+  const shipping = cart && cart.items.length > 0 ? 99 : 0; // No shipping for empty cart
   const total = subtotal + tax + shipping;
+
+  // Fetch cart data on component mount
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  // Set default address when addresses are loaded
+  useEffect(() => {
+    if (addresses.length > 0 && !selectedAddressId) {
+      const defaultAddress = addresses.find(addr => addr.isDefault) || addresses[0];
+      setSelectedAddressId(defaultAddress.id);
+    }
+  }, [addresses, selectedAddressId]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -67,11 +68,70 @@ const Checkout = () => {
     }));
   };
 
+  const handleAddAddress = async (addressData: Omit<Address, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newAddress = await addAddress(addressData);
+      setSelectedAddressId(newAddress.id);
+      setIsAddressDialogOpen(false);
+      toast({
+        title: "Address Added",
+        description: "Your new address has been added successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add address.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+
   const handlePlaceOrder = async () => {
+    // Validate cart has items
+    if (!cart || !cart.items || cart.items.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Your cart is empty. Please add items before checkout.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate address selection
+    if (!selectedAddressId || !selectedAddress) {
+      toast({
+        title: "Address Required",
+        description: "Please select a delivery address before placing your order.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
+      // Include address and payment details in the order
+      const orderData = {
+        address: selectedAddress,
+        paymentMethod,
+        paymentDetails: paymentMethod === "card" ? {
+          cardNumber: formData.cardNumber,
+          expiryDate: formData.expiryDate,
+          cvv: formData.cvv,
+          cardName: formData.cardName
+        } : null,
+        notes: formData.notes,
+        items: cart?.items || [],
+        subtotal,
+        tax,
+        shipping,
+        total
+      };
+
       // Simulate API call
+      console.log("Order data:", orderData);
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
@@ -107,99 +167,39 @@ const Checkout = () => {
 
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Loading State */}
+        {cartLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading your cart...</p>
+          </div>
+        )}
+
+        {/* Empty Cart State */}
+        {!cartLoading && (!cart || !cart.items || cart.items.length === 0) && (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">Your cart is empty.</p>
+            <Button onClick={() => navigate("/products")}>
+              Continue Shopping
+            </Button>
+          </div>
+        )}
+
+        {/* Checkout Form - Only show if cart has items */}
+        {!cartLoading && cart && cart.items && cart.items.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Order Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Shipping Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Shipping Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange("city", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="pincode">PIN Code</Label>
-                    <Input
-                      id="pincode"
-                      value={formData.pincode}
-                      onChange={(e) => handleInputChange("pincode", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Shipping Address */}
+            <ShippingAddressCard
+              addresses={addresses}
+              addressLoading={addressLoading}
+              selectedAddressId={selectedAddressId}
+              isAddressDialogOpen={isAddressDialogOpen}
+              onAddressSelect={setSelectedAddressId}
+              onAddressDialogOpenChange={setIsAddressDialogOpen}
+              onAddAddress={handleAddAddress}
+            />
 
             {/* Payment Information */}
             <Card>
@@ -303,57 +303,11 @@ const Checkout = () => {
 
           {/* Order Summary */}
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-start space-x-3">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                      {item.customizations && (
-                        <div className="mt-1">
-                          {Object.entries(item.customizations).map(([key, value]) => (
-                            <Badge key={key} variant="outline" className="text-xs mr-1">
-                              {key}: {value}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <p className="font-bold text-primary">₹{item.price}</p>
-                    </div>
-                  </div>
-                ))}
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>GST (18%)</span>
-                    <span>₹{tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>₹{shipping.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>₹{total.toFixed(2)}</span>
-                  </div>
-                </div>
-
+            <OrderSummary
+              cart={cart}
+              showCheckoutButton={false}
+              showSecurityMessage={true}
+              customButton={
                 <Button 
                   className="w-full" 
                   size="lg"
@@ -372,14 +326,11 @@ const Checkout = () => {
                     </>
                   )}
                 </Button>
-                
-                <p className="text-xs text-center text-muted-foreground">
-                  Your payment information is secure and encrypted
-                </p>
-              </CardContent>
-            </Card>
+              }
+            />
           </div>
         </div>
+        )}
       </main>
     </div>
   );

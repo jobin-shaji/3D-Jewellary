@@ -247,8 +247,7 @@ class CartService {
       cart.items[itemIndex].quantity = quantity;
     }
 
-    await cart.save();
-    return cart;
+  await cart.save();
   }
 
   /**
@@ -258,14 +257,30 @@ class CartService {
    */
   static async getCart(userId) {
     const cart = await this.getOrCreateCart(userId);
+    let cartChanged = false;
 
-    // Populate cart items with product images
+    // Populate cart items with product images and update price if changed
     const populatedItems = await Promise.all(
-      cart.items.map(async (item) => {
+      cart.items.map(async (item, idx) => {
         try {
           const product = await Product.findOne({ id: item.productId });
           if (!product) {
             return item; // Return item as-is if product not found
+          }
+
+          // Get latest price for this variant or product
+          let latestPrice = 0;
+          if (product.variants && product.variants.length > 0) {
+            const variant = product.variants.find((v) => v.variant_id === item.variant_id);
+            if (variant) latestPrice = variant.totalPrice;
+          } else {
+            latestPrice = product.totalPrice;
+          }
+
+          // If price has changed, update it in the cart
+          if (typeof latestPrice === 'number' && item.totalprice !== latestPrice) {
+            cart.items[idx].totalprice = latestPrice;
+            cartChanged = true;
           }
 
           // Find primary image or first image
@@ -274,6 +289,7 @@ class CartService {
 
           return {
             ...item.toObject(),
+            totalprice: latestPrice || item.totalprice,
             image: primaryImage
               ? {
                   image_url: primaryImage.image_url,
@@ -290,6 +306,11 @@ class CartService {
         }
       })
     );
+
+    // If any price was updated, save the cart to update totalAmount, etc.
+    if (cartChanged) {
+      await cart.save();
+    }
 
     return {
       ...cart.toObject(),

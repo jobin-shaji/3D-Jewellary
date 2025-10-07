@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
-import { Separator } from "@/shared/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,7 @@ import {
 import { Minus, Plus, Trash2, Loader2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/features/user/hooks/useCart";
 import { useAuth } from "@/shared/contexts/auth";
+import { OrderSummary } from "@/features/user/components/OrderSummary";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -151,10 +151,10 @@ const Cart = () => {
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="text-2xl font-bold text-primary">
-                          ₹{typeof item.totalprice === 'number' ? (item.totalprice*item.quantity).toLocaleString() : 'N/A'}
+                          ₹{typeof item.totalprice === 'number' ? (item.totalprice*item.quantity).toLocaleString("en-IN") : 'N/A'}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          ₹{typeof item.totalprice === 'number' ? item.totalprice.toLocaleString() : 'N/A'} each
+                          ₹{typeof item.totalprice === 'number' ? item.totalprice.toLocaleString("en-IN") : 'N/A'} each
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -198,33 +198,9 @@ const Cart = () => {
           </div>
 
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Subtotal ({cart.totalItems} items)</span>
-                  <span>₹{(cart.totalAmount-(cart.totalAmount * 0.03)).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>₹99.00</span> {/* TODO: Calculate actual shipping */}
-                </div>
-                <div className="flex justify-between">
-                  <span>GST (3% included)</span>
-                  <span>₹{(cart.totalAmount * 0.03).toFixed(2)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>₹{(cart.totalAmount + 99)}</span>
-                </div>
-                <Button className="w-full" size="lg" asChild>
-                  <Link to="/checkout">Proceed to Checkout</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <OrderSummary 
+              cart={cart}
+            />
           </div>
         </div>
       </main>

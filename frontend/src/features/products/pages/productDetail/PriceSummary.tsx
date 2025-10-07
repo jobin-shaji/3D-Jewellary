@@ -40,34 +40,21 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
   // Making charges - use variant making price if variant is selected, otherwise product making price
   const makingCharges = selectedVariant?.making_price || product.makingPrice || 0;
   
-  // GST rate changed to 3% for jewelry
-  const gstRate = 0.03;
-  
-  // Calculate total from components
+  // Calculate total from components (now subtotal is the total amount)
   const calculatedPrice = metalCosts + gemstoneCosts + makingCharges;
-  
   // Use DB snapshot when available (authoritative). Client-side compute is only fallback for display while server data loads.
   const snapshotTotal = typeof product.totalPrice === 'number' ? product.totalPrice : null;
-  const effectiveSubtotal = snapshotTotal !== null ? snapshotTotal / (1 + gstRate) : calculatedPrice;
-  const gstAmount = snapshotTotal !== null ? snapshotTotal - (snapshotTotal / (1 + gstRate)) : effectiveSubtotal * gstRate;
-  const finalTotal = snapshotTotal !== null ? snapshotTotal : effectiveSubtotal + gstAmount;
+  const totalAmount = serverData ? serverData.subtotal : (snapshotTotal !== null ? snapshotTotal : calculatedPrice);
 
   // Check if we have detailed pricing data
   const hasDetailedPricing = (metalsToUse && metalsToUse.length > 0) || (product.gemstones && product.gemstones.length > 0);
 
-  // Notify parent component about the calculated price
+  // Notify parent component about the calculated price (now subtotal/totalAmount)
   useEffect(() => {
     if (onPriceCalculated) {
-      onPriceCalculated(finalTotal);
+      onPriceCalculated(totalAmount);
     }
-  }, [finalTotal, onPriceCalculated]);
-
-  // Notify parent component about the calculated price (from backend authoritative data)
-  useEffect(() => {
-    if (onPriceCalculated && serverData && typeof serverData.total === 'number') {
-      onPriceCalculated(serverData.total);
-    }
-  }, [serverData, onPriceCalculated]);
+  }, [totalAmount, onPriceCalculated]);
 
   // Fetch server-side computed price (if available) to get authoritative total and timestamp
   async function fetchServerCompute() {
@@ -208,25 +195,11 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
         
         <Separator />
         
-        {/* Subtotal */}
-        <div className="flex justify-between items-center py-2">
-          <span className="font-medium">Subtotal</span>
-          <span className="font-semibold">₹{(serverData ? serverData.subtotal : effectiveSubtotal).toFixed(2)}</span>
-        </div>
-        
-        {/* GST */}
-        <div className="flex justify-between items-center py-2 border-b border-border/30">
-          <span className="text-sm text-muted-foreground">GST ({(gstRate * 100)}%)</span>
-          <span className="font-medium">₹{(serverData ? serverData.tax : gstAmount).toFixed(2)}</span>
-        </div>
-        
-        <Separator />
-        
-        {/* Final Total */}
+        {/* Total Amount (now shows subtotal) */}
         <div className="flex justify-between items-center py-3 bg-primary/5 rounded-lg px-4">
           <span className="text-lg font-bold">Total Amount</span>
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-primary">₹{(serverData ? serverData.total : finalTotal).toFixed(2)}</span>
+            <span className="text-xl font-bold text-primary">₹{totalAmount.toFixed(2)}</span>
             <span className="text-xs text-muted-foreground px-2 py-1 border rounded">
               {serverData ? 'Server' : 'Client'}
             </span>

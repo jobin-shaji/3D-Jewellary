@@ -1,30 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { apiUrl } from "@/shared/lib/api";
-
-export interface CartItem {
-  productId: string;
-  variant_id: string;
-  name: string;
-  totalprice: number;
-  quantity: number;
-  image?: {
-    image_url: string;
-    alt_text: string;
-  } | null;
-}
-
-export interface Cart {
-  userId: string;
-  items: CartItem[];
-  totalItems: number;
-  totalAmount: number;
-  summary: {
-    totalItems: number;
-    totalAmount: number;
-    itemCount: number;
-  };
-}
+import { Cart, CartItem } from "@/shared/types";
 
 export const useCart = () => {
   const { toast } = useToast();
@@ -214,7 +191,7 @@ export const useCart = () => {
   }, [toast]);
 
   // Get cart count from local state
-  const cartCount = cart?.summary?.itemCount || 0;
+  const cartCount = cart?.totalItems || 0;
 
   // Load cart on mount
   useEffect(() => {

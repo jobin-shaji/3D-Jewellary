@@ -9,7 +9,7 @@ import Products from "@/features/products/pages/Products";
 import ProductDetail from "@/features/products/pages/productDetail/ProductDetail";
 import ProductManagement from "@/features/admin/pages/productManagement/ProductManagement";
 import Cart from "@/features/user/pages/cart/Cart";
-import Checkout from "@/features/user/pages/Checkout";
+import Checkout from "@/features/user/pages/checkout/Checkout";
 import OrderDetail from "@/features/user/pages/OrderDetail";
 import Wishlist from "@/features/user/pages/Wishlist";
 import Login from "@/features/auth/pages/Login";

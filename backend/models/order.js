@@ -1,7 +1,25 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
+  orderNumber: {
+    type: String,
+    unique: true,
+    required: true,
+    default: function() {
+      const year = new Date().getFullYear();
+      const timestamp = Date.now().toString().slice(-6);
+      return `ORD-${year}-${timestamp}`;
+    }
+  },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  shippingAddress: {
+    name: { type: String, required: true },
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    country: { type: String, required: true },
+    phone: { type: String }
+  },
   items: [
     {
       // Full product snapshot at time of order
@@ -66,19 +84,40 @@ const orderSchema = new mongoose.Schema({
       price: { type: Number, required: true }
     }
   ],
+  subtotal: { type: Number, required: true, min: 0 },
+  tax: { type: Number, required: true, min: 0, default: 0 },
+  shippingFee: { type: Number, required: true, min: 0, default: 0 },
   totalPrice: { type: Number, required: true },
+  payment: {
+    method: {
+      type: String,
+      enum: ['credit_card', 'debit_card', 'paypal', 'stripe', 'razorpay', 'bank_transfer'],
+      required: true
+    },
+    transactionId: { type: String },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'failed', 'refunded', 'partially_refunded'],
+      default: 'pending'
+    },
+    paidAt: { type: Date },
+    refundAmount: { type: Number, default: 0, min: 0 }
+  },
   status: {
     type: String,
     enum: ['pending', 'paid', 'shipped', 'completed', 'cancelled'],
     default: 'pending'
   },
-  shippingAddress: {
-    name: { type: String, required: true },
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    postalCode: { type: String, required: true },
-    country: { type: String, required: true },
-    phone: { type: String }
+  orderHistory: [{
+    status: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    updatedBy: { type: String }, // admin user ID or system
+    notes: { type: String, maxlength: 500 }
+  }],
+  notes: {
+    customerNotes: { type: String, maxlength: 500 },
+    adminNotes: { type: String, maxlength: 1000 },
+    specialInstructions: { type: String, maxlength: 300 }
   }
 }, { timestamps: true });
 

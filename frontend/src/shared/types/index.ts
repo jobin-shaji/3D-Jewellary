@@ -93,26 +93,17 @@ export interface Product {
   latestPriceUpdate?: string;
 }
 
-// export interface CartItem {
-//   id: number;
-//   cart_id: number;
-//   product_id: number;
-//   product: Product;
-//   quantity: number;
-//   price: number;
-//   created_at: string;
-// }
-
-// export interface Cart {
-//   id: number;
-//   user_id?: number;
-//   session_id?: string;
-//   items: CartItem[];
-//   total_amount: number;
-//   total_items: number;
-//   created_at: string;
-//   updated_at: string;
-// }
+export interface CartItem {
+  productId: string;
+  variant_id?: string;
+  name: string;
+  totalprice: number;
+  quantity: number;
+  image?: {
+    image_url: string;
+    alt_text: string;
+  };
+}
 
 export interface Address {
   id: string;
@@ -164,3 +155,13 @@ export interface Address {
 //   created_at: string;
 //   updated_at: string;
 // }
+
+export interface Cart {
+  userId: string;
+  items: CartItem[];
+  totalItems: number;
+  totalAmount: number;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: any; // For any extra backend fields (like summary, etc.)
+}

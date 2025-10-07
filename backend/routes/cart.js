@@ -91,15 +91,19 @@ router.patch('/update', authenticateToken, async (req, res) => {
 
     console.log(`Updating cart item - User: ${userId}, Product: ${productId}, Variant: ${variant_id}, New Quantity: ${quantity}`);
 
+
     // Update item using service
-    const updatedCart = await CartService.updateCartItem(userId, productId, variant_id, quantity);
+    await CartService.updateCartItem(userId, productId, variant_id, quantity);
+
+    // Always return the cart using getCart to ensure images are included
+    const cartWithImages = await CartService.getCart(userId);
 
     const action = quantity === 0 ? 'removed from' : 'updated in';
-    console.log(`Item ${action} cart successfully - Total items: ${updatedCart.totalItems}`);
+    console.log(`Item ${action} cart successfully - Total items: ${cartWithImages.totalItems}`);
 
     res.status(200).json({
       message: `Item ${action} cart successfully`,
-      cart: updatedCart
+      cart: cartWithImages
     });
 
   } catch (error) {
