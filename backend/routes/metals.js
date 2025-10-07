@@ -1,7 +1,6 @@
 const express = require('express');
 const Metal = require('../models/metal');
 const router = express.Router();
-const { computeProductPrice } = require('../utils/priceUtils');
 
 // Purity data and helper functions
 const purityData = {

@@ -4,7 +4,7 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const Product = require('../models/product');
 const { authenticateToken } = require('../utils/jwt');
-const { computeProductPrice, computeVariantPrice } = require('../utils/priceUtils');
+const { computeProductPrice} = require('../utils/priceUtils');
 
 const router = express.Router();
 
@@ -119,14 +119,14 @@ router.get('/', async (req, res) => {
                 if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
                   // Use the first result (base product or first variant) for the main totalPrice
                   const basePricing = res.data[0];
-                  p.totalPrice = basePricing.roundedTotal || Math.round(basePricing.total || 0);
+                  p.totalPrice = Math.round(basePricing.subtotal || 0);
                   
                   // Update variant prices if variants exist
                   if (p.variants && p.variants.length > 0) {
                     for (const variant of p.variants) {
                       const variantPricing = res.data.find(item => item.variant_id === variant.variant_id);
                       if (variantPricing) {
-                        variant.totalPrice = variantPricing.roundedTotal || Math.round(variantPricing.total || 0);
+                        variant.totalPrice = Math.round(variantPricing.subtotal || 0);
                       }
                     }
                   }
@@ -208,8 +208,6 @@ router.get('/all',authenticateToken, async (req, res) => {
   }
 });
 
-
-
 /**
  * @route   GET /api/products/:id
  * @desc    Get a single product by ID
@@ -267,7 +265,6 @@ router.get('/:id/full', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 /**
  * @route   POST /api/products
@@ -371,17 +368,38 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // Calculate totalPrice for each variant
-    for (const variant of variants) {
-      try {
-        const priceResult = await computeVariantPrice(variant);
-        if (priceResult.success) {
-          variant.totalPrice = priceResult.data.roundedTotal;
-        } else {
+    // Calculate totalPrice for each variant using computeProductPrice for consistency
+    try {
+      // Build a temporary product object for price calculation
+      const tempProduct = {
+        name,
+        makingPrice,
+        category_id,
+        description,
+        is_active,
+        variants,
+        metals,
+        gemstones,
+        stock_quantity
+      };
+      const priceResult = await computeProductPrice(tempProduct);
+      if (priceResult.success && Array.isArray(priceResult.data)) {
+        for (const variant of variants) {
+          const variantPricing = priceResult.data.find(item => item.variant_id === variant.variant_id);
+          if (variantPricing) {
+            variant.totalPrice = Math.round(variantPricing.subtotal || 0);
+          } else {
+            variant.totalPrice = 0;
+          }
+        }
+      } else {
+        for (const variant of variants) {
           variant.totalPrice = 0;
         }
-      } catch (error) {
-        console.error('Error calculating variant price:', error);
+      }
+    } catch (error) {
+      console.error('Error calculating variant price:', error);
+      for (const variant of variants) {
         variant.totalPrice = 0;
       }
     }
@@ -703,17 +721,33 @@ router.put('/:id', authenticateToken, async (req, res) => {
             }
           }
         }
+      }
 
-        // Calculate totalPrice for the variant
-        try {
-          const priceResult = await computeVariantPrice(variant);
-          if (priceResult.success) {
-            variant.totalPrice = priceResult.data.roundedTotal;
-          } else {
+      // After validation, calculate all variant prices at once using computeProductPrice
+      try {
+        // Build a temporary product object for price calculation
+        const tempProduct = {
+          ...existingProduct.toObject(),
+          ...updateData,
+        };
+        const priceResult = await computeProductPrice(tempProduct);
+        if (priceResult.success && Array.isArray(priceResult.data)) {
+          for (const variant of updateData.variants) {
+            const variantPricing = priceResult.data.find(item => item.variant_id === variant.variant_id);
+            if (variantPricing) {
+              variant.totalPrice = Math.round(variantPricing.subtotal || 0);
+            } else {
+              variant.totalPrice = 0;
+            }
+          }
+        } else {
+          for (const variant of updateData.variants) {
             variant.totalPrice = 0;
           }
-        } catch (error) {
-          console.error('Error calculating variant price:', error);
+        }
+      } catch (error) {
+        console.error('Error calculating variant price:', error);
+        for (const variant of updateData.variants) {
           variant.totalPrice = 0;
         }
       }
@@ -798,7 +832,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-
+module.exports = router;
 // /**
 //  * @route   POST /api/products/update-prices
 //  * @desc    Batch update products' totalPrice and latestPriceUpdate
@@ -852,4 +886,3 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 //   }
 // });
 
-module.exports = router;

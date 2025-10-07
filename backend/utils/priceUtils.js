@@ -16,53 +16,62 @@ function roundRupees(value) {
 async function computeProductPrice(product, options = {}) {
   const taxPercent = typeof options.taxPercent === 'number' ? options.taxPercent : 3;
 
-  // Helper to get latest metal price per gram from DB for given type & purity.
-  async function getPricePerGram(metalType, purity) {
-    if (!metalType) return 0;
+
+  // Helper to get latest metal price per gram from DB for given type & purity, returns both price and purity
+  async function getMetalPriceDetail(metalType, purity) {
+    if (!metalType) return { pricePerGram: 0 };
     try {
       const m = await Metal.findOne({ metal: metalType, purity }).lean();
-      return m ? (m.pricePerGram || 0) : 0;
+      return { pricePerGram: m ? (m.pricePerGram || 0) : 0 };
     } catch (err) {
-      return 0;
+      return { pricePerGram: 0 };
     }
   }
 
-  // Helper to calculate gemstone costs (shared across variants)
-  const calculateGemstoneCosts = () => {
-    let gemstoneCosts = 0;
-    if (Array.isArray(product.gemstones)) {
-      for (const g of product.gemstones) {
-        const price = g.price || 0;
-        const count = g.count || 0;
-        gemstoneCosts += price * count;
-      }
+  // Helper to build detailed metal breakdown
+  const buildMetalDetails = async (metals) => {
+    if (!Array.isArray(metals)) return [];
+    const details = [];
+    for (const metal of metals) {
+      const type = metal.type || metal.Type;
+      const purity = metal.purity;
+      const weight = metal.weight || 0;
+      const { pricePerGram } = await getMetalPriceDetail(type, purity);
+      details.push({
+        type,
+        purity,
+        weight,
+        pricePerGram,
+        totalPrice: weight * pricePerGram
+      });
     }
-    return gemstoneCosts;
+    return details;
   };
 
-  // Helper to calculate metal costs for given metals array
-  const calculateMetalCosts = async (metals) => {
-    let metalCosts = 0;
-    if (Array.isArray(metals)) {
-      for (const metal of metals) {
-        const weight = metal.weight || 0;
-        const pricePerGram = await getPricePerGram(metal.type || metal.Type, metal.purity);
-        metalCosts += weight * pricePerGram;
-      }
-    }
-    return metalCosts;
+  // Helper to build detailed gemstone breakdown
+  const buildGemstoneDetails = (gemstones) => {
+    if (!Array.isArray(gemstones)) return [];
+    return gemstones.map(gem => ({
+      type: gem.type,
+      carat: gem.carat,
+      count: gem.count,
+      totalPrice: (gem.price || 0) * (gem.count || 0)
+    }));
   };
 
   const results = [];
 
   // If product has variants, calculate price for each variant
+
   if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
-    const gemstoneCosts = calculateGemstoneCosts();
-    
+    const gemstoneDetails = buildGemstoneDetails(product.gemstones);
+    const gemstoneCosts = gemstoneDetails.reduce((sum, g) => sum + (g.totalPrice || 0), 0);
+
     for (const variant of product.variants) {
-      const metalCosts = await calculateMetalCosts(variant.metal);
+      const metalDetails = await buildMetalDetails(variant.metal);
+      const metalCosts = metalDetails.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
       const makingCharges = variant.making_price || 0;
-      
+
       const subtotal = metalCosts + gemstoneCosts + makingCharges;
       const tax = subtotal * (taxPercent / 100);
       const total = subtotal + tax;
@@ -70,8 +79,8 @@ async function computeProductPrice(product, options = {}) {
       results.push({
         variant_id: variant.variant_id,
         variant_name: variant.name,
-        metalCosts,
-        gemstoneCosts,
+        metals: metalDetails,
+        gemstones: gemstoneDetails,
         makingCharges,
         subtotal,
         tax,
@@ -81,8 +90,10 @@ async function computeProductPrice(product, options = {}) {
     }
   } else {
     // No variants - calculate for base product
-    const metalCosts = await calculateMetalCosts(product.metals);
-    const gemstoneCosts = calculateGemstoneCosts();
+    const metalDetails = await buildMetalDetails(product.metals);
+    const metalCosts = metalDetails.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+    const gemstoneDetails = buildGemstoneDetails(product.gemstones);
+    const gemstoneCosts = gemstoneDetails.reduce((sum, g) => sum + (g.totalPrice || 0), 0);
     const makingCharges = product.makingPrice || 0;
 
     const subtotal = metalCosts + gemstoneCosts + makingCharges;
@@ -92,8 +103,8 @@ async function computeProductPrice(product, options = {}) {
     results.push({
       variant_id: product.id, // Use product ID as variant ID for non-variant products
       variant_name: product.name,
-      metalCosts,
-      gemstoneCosts,
+      metals: metalDetails,
+      gemstones: gemstoneDetails,
       makingCharges,
       subtotal,
       tax,
@@ -113,47 +124,50 @@ async function computeProductPrice(product, options = {}) {
 // - metal: [{ Type, purity, weight }]
 // - making_price: number
 // - taxPercent: number (optional) - if not provided, defaults to 3
-async function computeVariantPrice(variant, options = {}) {
-  const taxPercent = typeof options.taxPercent === 'number' ? options.taxPercent : 3;
 
-  // Helper to get latest metal price per gram from DB for given type & purity.
-  async function getPricePerGram(metalType, purity) {
-    if (!metalType) return 0;
-    try {
-      const m = await Metal.findOne({ metal: metalType, purity }).lean();
-      return m ? (m.pricePerGram || 0) : 0;
-    } catch (err) {
-      return 0;
-    }
-  }
+// async function computeVariantPrice(variant, options = {}) {
+//   const taxPercent = typeof options.taxPercent === 'number' ? options.taxPercent : 3;
 
-  // Calculate metal costs for variant
-  let metalCosts = 0;
-  if (Array.isArray(variant.metal)) {
-    for (const metal of variant.metal) {
-      const weight = metal.weight || 0;
-      const pricePerGram = await getPricePerGram(metal.Type, metal.purity);
-      metalCosts += weight * pricePerGram;
-    }
-  }
+//   // Helper to get latest metal price per gram from DB for given type & purity.
+//   async function getPricePerGram(metalType, purity) {
+//     if (!metalType) return 0;
+//     try {
+//       const m = await Metal.findOne({ metal: metalType, purity }).lean();
+//       return m ? (m.pricePerGram || 0) : 0;
+//     } catch (err) {
+//       return 0;
+//     }
+//   }
 
-  const makingCharges = variant.making_price || 0;
+//   // Calculate metal costs for variant
+//   let metalCosts = 0;
+//   if (Array.isArray(variant.metal)) {
+//     for (const metal of variant.metal) {
+//       const weight = metal.weight || 0;
+//       const pricePerGram = await getPricePerGram(metal.Type, metal.purity);
+//       metalCosts += weight * pricePerGram;
+//     }
+//   }
 
-  const subtotal = metalCosts + makingCharges;
-  const tax = subtotal * (taxPercent / 100);
-  const total = subtotal + tax;
+//   const makingCharges = variant.making_price || 0;
 
-  return {
-    success: true,
-    data: {
-      metalCosts,
-      makingCharges,
-      subtotal,
-      tax,
-      total,
-      roundedTotal: roundRupees(total),
-    },
-  };
-}
+//   const subtotal = metalCosts + makingCharges;
+//   const tax = subtotal * (taxPercent / 100);
+//   const total = subtotal + tax;
 
-module.exports = { computeProductPrice, computeVariantPrice };
+//   return {
+//     success: true,
+//     data: {
+//       metalCosts,
+//       makingCharges,
+//       subtotal,
+//       tax,
+//       total,
+//       roundedTotal: roundRupees(total),
+//     },
+//   };
+// }
+
+
+// module.exports = { computeProductPrice, computeVariantPrice };
+module.exports = { computeProductPrice };

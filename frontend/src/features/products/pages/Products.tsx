@@ -127,7 +127,7 @@ const Products = () => {
                 <Badge variant="secondary" className="mb-2">
                   {product.category?.name || 'No Category'}
                 </Badge>
-                <p className="text-2xl font-bold text-primary">₹{product.totalPrice}</p>
+                <p className="text-2xl font-bold text-primary">₹{product.totalPrice.toLocaleString("en-IN")}</p>
                 {(() => {
                   // For products with variants, check if at least one variant has stock
                   if (product.variants && product.variants.length > 0) {

@@ -58,14 +58,14 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
   // Notify parent component about the calculated price
   useEffect(() => {
     if (onPriceCalculated) {
-      onPriceCalculated(Math.round(finalTotal));
+      onPriceCalculated(finalTotal);
     }
   }, [finalTotal, onPriceCalculated]);
 
   // Notify parent component about the calculated price (from backend authoritative data)
   useEffect(() => {
-    if (onPriceCalculated && serverData && typeof serverData.roundedTotal === 'number') {
-      onPriceCalculated(serverData.roundedTotal);
+    if (onPriceCalculated && serverData && typeof serverData.total === 'number') {
+      onPriceCalculated(serverData.total);
     }
   }, [serverData, onPriceCalculated]);
 
@@ -73,12 +73,11 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
   async function fetchServerCompute() {
     setLoadingRemote(true);
     try {
-      // Send full product payload with selected variant to backend for authoritative compute
-      // Persist the computed rounded total back to product snapshot
+      // Send product ID with selected variant to backend for authoritative compute
       const resp = await fetch('/api/pricing/compute-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product, selectedVariant, persist: true })
+        body: JSON.stringify({ productId: product.id, selectedVariant })
       });
 
       if (!resp.ok) throw new Error('Server compute failed');
@@ -97,9 +96,8 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
 
         setServerData(currentVariantData);
         setLastUpdated(currentVariantData.lastUpdated || new Date().toISOString());
-        const rounded = typeof currentVariantData.roundedTotal === 'number' ? 
-          currentVariantData.roundedTotal : Math.round(currentVariantData.total || 0);
-        if (onPriceCalculated) onPriceCalculated(rounded);
+        const total = currentVariantData.total;
+        if (onPriceCalculated) onPriceCalculated(total);
       } else {
         // If server returned no data, clear serverData so UI shows zeros
         setServerData(null);
@@ -134,48 +132,68 @@ export const PriceSummary = ({ product, selectedVariant, onPriceCalculated }: Pr
         {/* Component Costs */}
         <div className="space-y-3">
           {/* Metal Costs */}
-          {metalsToUse && metalsToUse.length > 0 && (
-            <>
-              {metalsToUse.map((metal, index) => {
-                const metalPrice = getPrice(metal.type, metal.purity);
-                const currentPrice = metalPrice?.pricePerGram || 0;
-                const metalCost = metal.weight ? metal.weight * currentPrice : 0;
-                
-                return (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground">
-                      {metal.type} {metal.purity} ({metal.weight}g @ ₹{currentPrice.toFixed(2)}/g)
-                    </span>
-                    <span className="font-medium">₹{metalCost.toFixed(2)}</span>
-                  </div>
-                );
-              })}
-            </>
-          )}
+          {(serverData?.metals?.length > 0 ? serverData.metals : (metalsToUse && metalsToUse.length > 0 ? metalsToUse : [])).map((metal, index) => {
+            // Prioritize server data if available
+            if (serverData?.metals?.length > 0) {
+              const serverMetal = serverData.metals[index];
+              return (
+                <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
+                  <span className="text-sm text-muted-foreground">
+                    {serverMetal.type} {serverMetal.purity} ({serverMetal.weight}g @ ₹{serverMetal.pricePerGram.toFixed(2)}/g)
+                  </span>
+                  <span className="font-medium">₹{serverMetal.totalPrice.toFixed(2)}</span>
+                </div>
+              );
+            } else {
+              // Fallback to client-side calculation
+              const metalPrice = getPrice(metal.type, metal.purity);
+              const currentPrice = metalPrice?.pricePerGram || 0;
+              const metalCost = metal.weight ? metal.weight * currentPrice : 0;
+              
+              return (
+                <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
+                  <span className="text-sm text-muted-foreground">
+                    {metal.type} {metal.purity} ({metal.weight}g @ ₹{currentPrice.toFixed(2)}/g)
+                  </span>
+                  <span className="font-medium">₹{metalCost.toFixed(2)}</span>
+                </div>
+              );
+            }
+          })}
           
           {/* Gemstone Costs */}
-          {product.gemstones && product.gemstones.length > 0 && (
-            <>
-              {product.gemstones.map((gemstone, index) => {
-                const gemstoneCost = gemstone.price && gemstone.count ? gemstone.price * gemstone.count : 0;
-                
-                return (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground">
-                      {gemstone.type} ({gemstone.carat}ct) x{gemstone.count}
-                    </span>
-                    <span className="font-medium">₹{gemstoneCost.toFixed(2)}</span>
-                  </div>
-                );
-              })}
-            </>
-          )}
+          {(serverData?.gemstones?.length > 0 ? serverData.gemstones : (product.gemstones && product.gemstones.length > 0 ? product.gemstones : [])).map((gemstone, index) => {
+            // Prioritize server data if available
+            if (serverData?.gemstones?.length > 0) {
+              const serverGemstone = serverData.gemstones[index];
+              return (
+                <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
+                  <span className="text-sm text-muted-foreground">
+                    {serverGemstone.type} ({serverGemstone.carat}ct) x{serverGemstone.count}
+                  </span>
+                  <span className="font-medium">₹{serverGemstone.totalPrice.toFixed(2)}</span>
+                </div>
+              );
+            } else {
+              // Fallback to client-side calculation
+              const gemstoneCost = gemstone.price && gemstone.count ? gemstone.price * gemstone.count : 0;
+              
+              return (
+                <div key={index} className="flex justify-between items-center py-2 border-b border-border/30">
+                  <span className="text-sm text-muted-foreground">
+                    {gemstone.type} ({gemstone.carat}ct) x{gemstone.count}
+                  </span>
+                  <span className="font-medium">₹{gemstoneCost.toFixed(2)}</span>
+                </div>
+              );
+            }
+          })}
           
           {/* Making Charges */}
-          {makingCharges > 0 && (
+          {(serverData?.makingCharges > 0 || makingCharges > 0) && (
             <div className="flex justify-between items-center py-2 border-b border-border/30">
               <span className="text-sm text-muted-foreground">Making Charges</span>
-              <span className="font-medium">₹{makingCharges.toFixed(2)}</span>
+              <span className="font-medium">₹{(serverData?.makingCharges || makingCharges).toFixed(2)}</span>
             </div>
           )}
           
