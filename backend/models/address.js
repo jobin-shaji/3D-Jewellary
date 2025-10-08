@@ -32,11 +32,12 @@ const addressSchema = new mongoose.Schema({
     trim: true,
     maxlength: 50
   },
-  company: {
-    type: String,
-    trim: true,
-    maxlength: 100
-  },
+  // remove if not needed
+  // company: {
+  //   type: String,
+  //   trim: true,
+  //   maxlength: 100
+  // },
   phone: {
     type: String,
     required: true,

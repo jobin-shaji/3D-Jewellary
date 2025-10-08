@@ -1,6 +1,7 @@
 const express = require('express');
 const Product = require('../models/product');
 const User = require('../models/user');
+const OrderService = require('../services/orderService');
 const { authenticateToken } = require('../utils/jwt');
 const router = express.Router();
 
@@ -11,12 +12,19 @@ router.get('/stats', async (req, res) => {
     const activeProducts = await Product.countDocuments({ is_active: true });
     const totalUsers = await User.countDocuments();
 
+    // Get real order statistics
+    const orderStats = await OrderService.getOrderStats();
+
     const stats = {
       totalProducts,
       activeProducts,
       totalUsers,
-      // Mock data for users and orders as requested
-      totalOrders: 189
+      totalOrders: orderStats.totalOrders,
+      pendingOrders: orderStats.pendingOrders,
+      completedOrders: orderStats.completedOrders,
+      cancelledOrders: orderStats.cancelledOrders,
+      totalRevenue: orderStats.totalRevenue,
+      recentOrders: orderStats.recentOrders
     };
 
     res.json(stats);
@@ -126,6 +134,147 @@ router.put('/users/:id/change-role', authenticateToken, async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to change user role',
       message: error.message 
+    });
+  }
+});
+
+// GET /api/admin/orders - Get all orders for admin
+router.get('/orders', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin role required.' });
+    }
+
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      userId,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      startDate,
+      endDate
+    } = req.query;
+
+    console.log('Admin fetching all orders with filters:', { status, userId, startDate, endDate });
+
+    const result = await OrderService.getAllOrders({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      status,
+      userId,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate
+    });
+
+    res.status(200).json({
+      message: 'Orders fetched successfully',
+      orders: result.orders,
+      pagination: result.pagination
+    });
+
+  } catch (error) {
+    console.error('Error fetching admin orders:', error);
+    res.status(500).json({
+      error: 'Failed to fetch orders',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/admin/orders/:orderId - Get specific order details for admin
+router.get('/orders/:orderId', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin role required.' });
+    }
+
+    const { orderId } = req.params;
+
+    console.log(`Admin fetching order details: ${orderId}`);
+
+    // Admin can view any order without userId restriction
+    const order = await OrderService.getOrderById(orderId);
+
+    res.status(200).json({
+      message: 'Order fetched successfully',
+      order
+    });
+
+  } catch (error) {
+    console.error('Error fetching order for admin:', error);
+    
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        message: 'Order not found'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to fetch order details',
+      message: error.message
+    });
+  }
+});
+
+// PUT /api/admin/orders/:orderId/status - Update order status
+router.put('/orders/:orderId/status', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin role required.' });
+    }
+
+    const { orderId } = req.params;
+    const { status, notes } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        message: 'Status is required'
+      });
+    }
+
+    console.log(`Admin updating order ${orderId} status to: ${status}`);
+
+    const updatedOrder = await OrderService.updateOrderStatus(
+      orderId,
+      status,
+      req.user.id,
+      notes || `Status updated by admin ${req.user.name || req.user.id}`
+    );
+
+    res.status(200).json({
+      message: 'Order status updated successfully',
+      order: {
+        orderId: updatedOrder.orderId,
+        status: updatedOrder.status,
+        updatedAt: updatedOrder.updatedAt,
+        orderHistory: updatedOrder.orderHistory
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        message: 'Order not found'
+      });
+    }
+
+    if (error.message.includes('Invalid')) {
+      return res.status(400).json({
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to update order status',
+      message: error.message
     });
   }
 });

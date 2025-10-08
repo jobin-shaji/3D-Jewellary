@@ -13,6 +13,7 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import { useAddresses } from "../../hooks/useAddresses";
 import { useCart } from "../../hooks/useCart";
+import { useOrders } from "../../hooks/useOrders";
 import { Address, Cart } from "@/shared/types";
 import ShippingAddressCard from "./ShippingAddressCard";
 import OrderSummary from "../../components/OrderSummary";
@@ -30,6 +31,9 @@ const Checkout = () => {
   
   // Cart management
   const { cart, loading: cartLoading, fetchCart } = useCart();
+  
+  // Order management
+  const { createOrder } = useOrders();
   
   const [formData, setFormData] = useState({
     // Payment Info
@@ -112,7 +116,7 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // Include address and payment details in the order
+      // Prepare order data for the API
       const orderData = {
         address: selectedAddress,
         paymentMethod,
@@ -123,30 +127,25 @@ const Checkout = () => {
           cardName: formData.cardName
         } : null,
         notes: formData.notes,
-        items: cart?.items || [],
+        items: cart.items,
         subtotal,
         tax,
         shipping,
         total
       };
 
-      // Simulate API call
-      console.log("Order data:", orderData);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log("Creating order with data:", orderData);
       
-      toast({
-        title: "Order Placed Successfully!",
-        description: "Your order has been confirmed. Redirecting to order details...",
-      });
+      // Create the actual order using the API
+      const createdOrder = await createOrder(orderData);
       
-      // Redirect to order confirmation
-      navigate("/orders/12345");
-    } catch (error) {
-      toast({
-        title: "Payment Failed",
-        description: "There was an error processing your payment. Please try again.",
-        variant: "destructive"
-      });
+      // Redirect to order confirmation page with the real order ID
+      navigate(`/order-confirmation/${createdOrder.orderId}`);
+      
+    } catch (error: any) {
+      console.error("Order creation failed:", error);
+      // Error handling is already done in the useOrders hook
+      // The toast notification will be shown from there
     } finally {
       setIsProcessing(false);
     }

@@ -2,26 +2,41 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { apiUrl } from "@/shared/lib/api";
 import { Cart, CartItem } from "@/shared/types";
+import { useAuth } from "@/shared/contexts/auth";
 
 export const useCart = () => {
   const { toast } = useToast();
+  const { user, isLoggedIn } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Get auth token
   const getToken = () => localStorage.getItem('token');
+  
+  // Check if user is admin - admins don't have carts
+  const isAdmin = user?.role === 'admin';
+  
+  // Additional safety check - don't make any cart calls if user is admin
+  const shouldSkipCartCalls = !isLoggedIn || isAdmin || !user;
 
   // Fetch cart data
   const fetchCart = useCallback(async () => {
     const token = getToken();
-    if (!token) return;
+    
+    // Debug logging
+    console.log('useCart - fetchCart called:', { token: !!token, isAdmin, user });
+    
+    if (!token || isAdmin) {
+      console.log('useCart - Skipping cart fetch for admin or unauthenticated user');
+      return; // Don't fetch cart for admin users
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-  const response = await fetch(apiUrl('/api/cart'), {
+      const response = await fetch(apiUrl('/api/cart'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -41,15 +56,15 @@ export const useCart = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin, user]);
 
   // Get cart item count (for header badge)
   const getCartCount = useCallback(async () => {
     const token = getToken();
-    if (!token) return 0;
+    if (!token || isAdmin) return 0; // Don't fetch cart count for admin users
 
     try {
-  const response = await fetch(apiUrl('/api/cart/count'), {
+      const response = await fetch(apiUrl('/api/cart/count'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -67,7 +82,7 @@ export const useCart = () => {
       console.error('Error getting cart count:', err);
       return 0;
     }
-  }, []);
+  }, [isAdmin]);
 
   // Add item to cart
   const addToCart = useCallback(async (productId: string, variantId: string, quantity: number = 1) => {
@@ -76,6 +91,15 @@ export const useCart = () => {
       toast({
         title: "Authentication Required",
         description: "Please login to add items to cart.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (isAdmin) {
+      toast({
+        title: "Action Not Available",
+        description: "Admin users cannot add items to cart.",
         variant: "destructive",
       });
       return false;
@@ -114,12 +138,12 @@ export const useCart = () => {
       });
       return false;
     }
-  }, [toast]);
+  }, [toast, isAdmin]);
 
   // Update cart item quantity
   const updateCartItem = useCallback(async (productId: string, variantId: string, quantity: number) => {
     const token = getToken();
-    if (!token) return false;
+    if (!token || isAdmin) return false;
 
     try {
   const response = await fetch(apiUrl('/api/cart/update'), {
@@ -154,12 +178,12 @@ export const useCart = () => {
       });
       return false;
     }
-  }, [toast]);
+  }, [toast, isAdmin]);
 
   // Clear cart
   const clearCart = useCallback(async () => {
     const token = getToken();
-    if (!token) return false;
+    if (!token || isAdmin) return false;
 
     try {
   const response = await fetch(apiUrl('/api/cart/clear'), {
@@ -188,15 +212,21 @@ export const useCart = () => {
       });
       return false;
     }
-  }, [toast]);
+  }, [toast, isAdmin]);
 
-  // Get cart count from local state
-  const cartCount = cart?.totalItems || 0;
+  // Get cart count from local state - return 0 for admin users
+  const cartCount = isAdmin ? 0 : (cart?.totalItems || 0);
 
-  // Load cart on mount
+  // Load cart on mount - only when user data is available
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+    // Only fetch cart when we have user data and user is not admin
+    if (user && !isAdmin) {
+      console.log('useCart - useEffect triggering fetchCart for non-admin user');
+      fetchCart();
+    } else {
+      console.log('useCart - useEffect skipping fetchCart:', { user: !!user, isAdmin });
+    }
+  }, [fetchCart, user, isAdmin]);
 
   return {
     cart,

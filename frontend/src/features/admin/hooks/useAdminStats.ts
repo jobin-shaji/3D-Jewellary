@@ -7,6 +7,24 @@ export interface DashboardStats {
   totalOrders: number;
   totalUsers: number;
   activeProducts: number;
+  pendingOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  totalRevenue: number;
+  recentOrders: Array<{
+    orderId: string;
+    userId: string;
+    totalPrice: number;
+    status: string;
+    createdAt: string;
+    shippingAddress: {
+      name: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      country: string;
+    };
+  }>;
 }
 
 export const useAdminStats = () => {
@@ -14,7 +32,12 @@ export const useAdminStats = () => {
     totalProducts: 0,
     totalOrders: 0,
     totalUsers: 0,
-    activeProducts: 0
+    activeProducts: 0,
+    pendingOrders: 0,
+    completedOrders: 0,
+    cancelledOrders: 0,
+    totalRevenue: 0,
+    recentOrders: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +64,12 @@ export const useAdminStats = () => {
         totalProducts: 0,
         totalOrders: 0,
         totalUsers: 0,
-        activeProducts: 0
+        activeProducts: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
+        cancelledOrders: 0,
+        totalRevenue: 0,
+        recentOrders: []
       });
     } finally {
       setLoading(false);

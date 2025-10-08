@@ -85,7 +85,6 @@ const AdminDashboard = () => {
             <TabsContent value="overview" className="space-y-6">
               <OverviewTab 
                 stats={stats}
-                recentOrders={getRecentOrders()}
                 metalPrices={metalPrices}
                 metalPricesLoading={metalPricesLoading}
                 refreshPrices={refreshPrices}

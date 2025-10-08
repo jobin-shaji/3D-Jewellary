@@ -2,36 +2,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Package, Users, ShoppingCart, Eye, RefreshCw, Loader2 } from "lucide-react";
+import { Package, Users, ShoppingCart, Eye, RefreshCw, Loader2, Clock, CheckCircle, XCircle, IndianRupee } from "lucide-react";
 import { StatsCard } from "../shared/StatsCard";
 import { MetalPriceCard } from "../shared/MetalPriceCard";
 import { type MetalPrice } from "@/shared/hooks/useMetalPrices";
 import { type DashboardStats } from "@/features/admin/hooks/useAdminStats";
 
-interface Order {
-  id: string;
-  customer: string;
-  total: number;
-  status: string;
-  date: string;
-}
-
 interface OverviewTabProps {
   stats: DashboardStats;
-  recentOrders: Order[];
   metalPrices: MetalPrice[];
   metalPricesLoading: boolean;
   refreshPrices: () => void;
   loading: boolean;
 }
 
-export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoading, refreshPrices, loading }: OverviewTabProps) => {
+export const OverviewTab = ({ stats, metalPrices, metalPricesLoading, refreshPrices, loading }: OverviewTabProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "bg-green-500";
-      case "processing": return "bg-yellow-500";
-      case "shipped": return "bg-blue-500";
-      default: return "bg-gray-500";
+      case "pending": return "bg-yellow-100 text-yellow-800";
+      case "paid": return "bg-blue-100 text-blue-800";
+      case "shipped": return "bg-purple-100 text-purple-800";
+      case "completed": return "bg-green-100 text-green-800";
+      case "cancelled": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -77,6 +70,34 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
           value={stats.totalOrders}
           description="Orders processed"
           icon={ShoppingCart}
+        />
+      </div>
+
+      {/* Order Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Pending Orders"
+          value={stats.pendingOrders}
+          description="Awaiting processing"
+          icon={Clock}
+        />
+        <StatsCard
+          title="Completed Orders"
+          value={stats.completedOrders}
+          description="Successfully delivered"
+          icon={CheckCircle}
+        />
+        <StatsCard
+          title="Cancelled Orders"
+          value={stats.cancelledOrders}
+          description="Orders cancelled"
+          icon={XCircle}
+        />
+        <StatsCard
+          title="Total Revenue"
+          value={formatPrice(stats.totalRevenue)}
+          description="Total earnings"
+          icon={IndianRupee}
         />
       </div>
 
@@ -136,24 +157,32 @@ export const OverviewTab = ({ stats, recentOrders, metalPrices, metalPricesLoadi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>{formatPrice(order.total)}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{order.date}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
+              {stats.recentOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No recent orders found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                stats.recentOrders.map((order) => (
+                  <TableRow key={order.orderId}>
+                    <TableCell className="font-medium">{order.orderId}</TableCell>
+                    <TableCell>{order.shippingAddress.name}</TableCell>
+                    <TableCell>{formatPrice(order.totalPrice)}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(order.createdAt).toLocaleDateString('en-IN')}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
