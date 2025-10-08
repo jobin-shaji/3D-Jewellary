@@ -280,19 +280,29 @@ class OrderService {
         throw new Error('Invalid order status');
       }
 
-      order.status = newStatus;
-      order.orderHistory.push({
-        status: newStatus,
-        timestamp: new Date(),
-        updatedBy,
-        notes
-      });
-
-      await order.save();
+      // Use findOneAndUpdate to avoid validation issues with existing orders
+      const updatedOrder = await Order.findOneAndUpdate(
+        { orderId },
+        {
+          $set: { status: newStatus },
+          $push: {
+            orderHistory: {
+              status: newStatus,
+              timestamp: new Date(),
+              updatedBy,
+              notes
+            }
+          }
+        },
+        { 
+          new: true, 
+          runValidators: false // Skip validation to avoid issues with missing state field
+        }
+      );
       
       console.log(`Order ${orderId} status updated to ${newStatus} by ${updatedBy}`);
       
-      return order;
+      return updatedOrder;
 
     } catch (error) {
       console.error('Error updating order status:', error);

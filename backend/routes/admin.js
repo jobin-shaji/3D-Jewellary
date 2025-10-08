@@ -249,12 +249,7 @@ router.put('/orders/:orderId/status', authenticateToken, async (req, res) => {
 
     res.status(200).json({
       message: 'Order status updated successfully',
-      order: {
-        orderId: updatedOrder.orderId,
-        status: updatedOrder.status,
-        updatedAt: updatedOrder.updatedAt,
-        orderHistory: updatedOrder.orderHistory
-      }
+      order: updatedOrder
     });
 
   } catch (error) {

@@ -196,7 +196,7 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
                     filteredOrders.map((order, idx) => (
                       <TableRow key={order.orderId || `order-row-${idx}`}>
                         <TableCell className="font-medium">{order.orderId}</TableCell>
-                        <TableCell>{order.shippingAddress.name}</TableCell>
+                        <TableCell>{order.shippingAddress?.name || 'N/A'}</TableCell>
                         <TableCell>{formatPrice(order.totalPrice)}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(order.status)}>
@@ -209,7 +209,16 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
                             <Button variant="ghost" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Dialog>
+                            <Dialog 
+                              open={statusDialog.open && statusDialog.orderId === order.orderId}
+                              onOpenChange={(open) => {
+                                if (!open) {
+                                  setStatusDialog({ open: false, orderId: '', currentStatus: '' });
+                                  setNewStatus('');
+                                  setStatusNotes('');
+                                }
+                              }}
+                            >
                               <DialogTrigger asChild>
                                 <Button 
                                   variant="outline" 
