@@ -55,7 +55,7 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-800";
-      case "paid": return "bg-blue-100 text-blue-800";
+      case "placed": return "bg-blue-100 text-blue-800";
       case "shipped": return "bg-purple-100 text-purple-800";  
       case "completed": return "bg-green-100 text-green-800";
       case "cancelled": return "bg-red-100 text-red-800";
@@ -144,7 +144,7 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="placed">placed</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -251,7 +251,7 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
                                       </SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="paid">Paid</SelectItem>
+                                        <SelectItem value="placed">placed</SelectItem>
                                         <SelectItem value="shipped">Shipped</SelectItem>
                                         <SelectItem value="completed">Completed</SelectItem>
                                         <SelectItem value="cancelled">Cancelled</SelectItem>

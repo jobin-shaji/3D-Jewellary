@@ -106,11 +106,11 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'paid', 'shipped', 'completed', 'cancelled'],
-    default: 'pending'
+    enum: ['placed', 'shipped', 'completed', 'cancelled'],
+    default: 'placed'
   },
   orderHistory: [{
-    status: { type: String, required: true },
+    status: { type: String, required: true, enum: ['placed', 'shipped', 'completed', 'cancelled'] },
     timestamp: { type: Date, default: Date.now },
     updatedBy: { type: String }, // admin user ID or system
     notes: { type: String, maxlength: 500 }

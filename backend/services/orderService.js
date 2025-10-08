@@ -62,16 +62,16 @@ class OrderService {
         totalPrice: parseFloat(total) || 0,
         payment: {
           method: this.mapPaymentMethod(paymentMethod),
-          paymentStatus: 'completed', // Default to paid as requested
+          paymentStatus: 'pending',
           paidAt: new Date(),
           transactionId: `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         },
-        status: 'paid', // Default to paid since payment is completed
+        status: 'placed',
         orderHistory: [{
-          status: 'paid',
+          status: 'placed',
           timestamp: new Date(),
           updatedBy: 'system',
-          notes: 'Order created and payment completed'
+          notes: 'Order created'
         }],
         notes: {
           customerNotes: notes || '',
@@ -275,7 +275,7 @@ class OrderService {
       }
 
       // Validate status transition
-      const validStatuses = ['pending', 'paid', 'shipped', 'completed', 'cancelled'];
+      const validStatuses = ['placed', 'shipped', 'completed', 'cancelled'];
       if (!validStatuses.includes(newStatus)) {
         throw new Error('Invalid order status');
       }
@@ -376,14 +376,15 @@ class OrderService {
    */
   static async getOrderStats() {
     try {
+
       const totalOrders = await Order.countDocuments();
-      const pendingOrders = await Order.countDocuments({ status: 'pending' });
+      const placedOrders = await Order.countDocuments({ status: 'placed' });
       const completedOrders = await Order.countDocuments({ status: 'completed' });
       const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
 
-      // Calculate total revenue from completed orders
+      // Calculate total revenue from shipped and completed orders
       const revenueResult = await Order.aggregate([
-        { $match: { status: { $in: ['paid', 'shipped', 'completed'] } } },
+        { $match: { status: { $in: ['shipped', 'completed'] } } },
         { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } }
       ]);
 
@@ -397,7 +398,7 @@ class OrderService {
 
       return {
         totalOrders,
-        pendingOrders,
+        placedOrders,
         completedOrders,
         cancelledOrders,
         totalRevenue,

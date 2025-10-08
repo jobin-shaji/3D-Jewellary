@@ -54,7 +54,7 @@ const OrderConfirmation = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800';
+      case 'placed': return 'bg-green-100 text-green-800';
       case 'shipped': return 'bg-blue-100 text-blue-800';
       case 'completed': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
@@ -64,7 +64,7 @@ const OrderConfirmation = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'paid': return <CheckCircle className="h-4 w-4" />;
+      case 'placed': return <CheckCircle className="h-4 w-4" />;
       case 'shipped': return <Truck className="h-4 w-4" />;
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       default: return <Package className="h-4 w-4" />;

@@ -29,7 +29,7 @@ const Orders = () => {
         return "bg-green-100 text-green-800";
       case "shipped":
         return "bg-blue-100 text-blue-800";
-      case "paid":
+      case "placed":
         return "bg-yellow-100 text-yellow-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
@@ -83,7 +83,7 @@ const Orders = () => {
               <SelectContent>
                 <SelectItem value="all">All Orders</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="placed">placed</SelectItem>
                 <SelectItem value="shipped">Shipped</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -165,7 +165,7 @@ const Orders = () => {
                               View Details
                             </Link>
                           </Button>
-                          {(order.status === 'pending' || order.status === 'paid') && null}
+                          {(order.status === 'pending' || order.status === 'placed') && null}
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">

@@ -157,7 +157,7 @@ export interface Cart {
 //   shipping_amount: number;
 //   shipping_address: Address;
 //   billing_address: Address;
-//   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+//   payment_status: 'pending' | 'placed' | 'failed' | 'refunded';
 //   payment_method?: string;
 //   payment_id?: string;
 //   notes?: string;

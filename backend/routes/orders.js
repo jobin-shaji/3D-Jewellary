@@ -167,7 +167,7 @@ router.get('/:orderId', authenticateToken, async (req, res) => {
 
 /**
  * @route   PUT /api/orders/:orderId/cancel
- * @desc    Cancel an order (if it's still pending/paid)
+ * @desc    Cancel an order (if it's still placed/shipped)
  * @access  Private (Authenticated users only)
  */
 router.put('/:orderId/cancel', authenticateToken, async (req, res) => {
@@ -188,7 +188,7 @@ router.put('/:orderId/cancel', authenticateToken, async (req, res) => {
     }
 
     // Check if order can be cancelled
-    if (!['pending', 'paid'].includes(order.status)) {
+    if (!['shipped', 'placed'].includes(order.status)) {
       return res.status(400).json({
         message: 'Order cannot be cancelled at this stage'
       });
