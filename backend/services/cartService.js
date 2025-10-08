@@ -258,63 +258,95 @@ class CartService {
   static async getCart(userId) {
     const cart = await this.getOrCreateCart(userId);
     let cartChanged = false;
+    const validItems = [];
 
-    // Populate cart items with product images and update price if changed
-    const populatedItems = await Promise.all(
-      cart.items.map(async (item, idx) => {
-        try {
-          const product = await Product.findOne({ id: item.productId });
-          if (!product) {
-            return item; // Return item as-is if product not found
-          }
-
-          // Get latest price for this variant or product
-          let latestPrice = 0;
-          if (product.variants && product.variants.length > 0) {
-            const variant = product.variants.find((v) => v.variant_id === item.variant_id);
-            if (variant) latestPrice = variant.totalPrice;
-          } else {
-            latestPrice = product.totalPrice;
-          }
-
-          // If price has changed, update it in the cart
-          if (typeof latestPrice === 'number' && item.totalprice !== latestPrice) {
-            cart.items[idx].totalprice = latestPrice;
-            cartChanged = true;
-          }
-
-          // Find primary image or first image
-          const primaryImage =
-            product.images.find((img) => img.is_primary) || product.images[0];
-
-          return {
-            ...item.toObject(),
-            totalprice: latestPrice || item.totalprice,
-            image: primaryImage
-              ? {
-                  image_url: primaryImage.image_url,
-                  alt_text: primaryImage.alt_text || product.name,
-                }
-              : null,
-          };
-        } catch (error) {
-          console.error(
-            `Error fetching image for product ${item.productId}:`,
-            error
-          );
-          return item; // Return item as-is on error
+    // Process each cart item and check if product is still active
+    for (let idx = 0; idx < cart.items.length; idx++) {
+      const item = cart.items[idx];
+      try {
+        // Only fetch active products - treat inactive products same as deleted
+        const product = await Product.findOne({ 
+          id: item.productId,
+          is_active: true 
+        });
+        
+        if (!product) {
+          // Product is deleted or inactive - skip this item (will be removed from cart)
+          console.log(`Removing cart item for deleted/inactive product: ${item.productId}`);
+          cartChanged = true;
+          continue;
         }
-      })
-    );
 
-    // If any price was updated, save the cart to update totalAmount, etc.
+        // Validate that the specific variant is still available
+        const validation = await this.validateProductVariant(
+          item.productId,
+          item.variant_id,
+          item.quantity
+        );
+
+        if (!validation.isValid) {
+          // Variant is no longer available or insufficient stock - skip this item
+          console.log(`Removing cart item for unavailable variant: ${item.productId}/${item.variant_id} - ${validation.error}`);
+          cartChanged = true;
+          continue;
+        }
+
+        // Get latest price for this variant or product
+        let latestPrice = 0;
+        if (product.variants && product.variants.length > 0) {
+          const variant = product.variants.find((v) => v.variant_id === item.variant_id);
+          if (variant) latestPrice = variant.totalPrice;
+        } else {
+          latestPrice = product.totalPrice;
+        }
+
+        // If price has changed, update it in the cart
+        if (typeof latestPrice === 'number' && item.totalprice !== latestPrice) {
+          cart.items[idx].totalprice = latestPrice;
+          cartChanged = true;
+        }
+
+        // Find primary image or first image
+        const primaryImage =
+          product.images.find((img) => img.is_primary) || product.images[0];
+
+        const populatedItem = {
+          ...item.toObject(),
+          totalprice: latestPrice || item.totalprice,
+          image: primaryImage
+            ? {
+                image_url: primaryImage.image_url,
+                alt_text: primaryImage.alt_text || product.name,
+              }
+            : null,
+        };
+
+        validItems.push(populatedItem);
+      } catch (error) {
+        console.error(
+          `Error processing cart item for product ${item.productId}:`,
+          error
+        );
+        // On error, remove the item to be safe
+        cartChanged = true;
+      }
+    }
+
+    // If cart changed (items removed or prices updated), update the cart in database
     if (cartChanged) {
+      cart.items = cart.items.filter((item) => {
+        // Keep only items that are in validItems
+        return validItems.some(validItem => 
+          validItem.productId === item.productId && 
+          validItem.variant_id === item.variant_id
+        );
+      });
       await cart.save();
     }
 
     return {
       ...cart.toObject(),
-      items: populatedItems,
+      items: validItems,
     };
   }
 
@@ -366,6 +398,8 @@ class CartService {
 
       if (validation.isValid) {
         validItems.push(item);
+      } else {
+        console.log(`Cleaning up cart item: ${item.productId}/${item.variant_id} - ${validation.error}`);
       }
     }
 

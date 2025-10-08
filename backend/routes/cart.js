@@ -224,7 +224,9 @@ router.get('/count', authenticateToken, async (req, res) => {
 
 /**
  * @route   POST /api/cart/cleanup
- * @desc    Remove unavailable items from cart (utility endpoint)
+ * @desc    remove unavailable items from cart (primarily for admin/support use)
+ * @note    Cart cleanup now happens automatically during GET /api/cart calls
+ *      so not currently used
  * @access  Private (Authenticated users only)
  */
 router.post('/cleanup', authenticateToken, async (req, res) => {
