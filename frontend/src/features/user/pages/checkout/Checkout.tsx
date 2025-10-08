@@ -10,7 +10,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/hooks/use-toast";
-import { ArrowLeft, CreditCard, Shield } from "lucide-react";
+import { ArrowLeft, CreditCard } from "lucide-react";
 import { useAddresses } from "../../hooks/useAddresses";
 import { useCart } from "../../hooks/useCart";
 import { Address, Cart } from "@/shared/types";
@@ -305,28 +305,8 @@ const Checkout = () => {
           <div>
             <OrderSummary
               cart={cart}
-              showCheckoutButton={false}
-              showSecurityMessage={true}
-              customButton={
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handlePlaceOrder}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="h-4 w-4 mr-2" />
-                      Place Order - ₹{total.toFixed(2)}
-                    </>
-                  )}
-                </Button>
-              }
+              onPlaceOrder={handlePlaceOrder}
+              isProcessing={isProcessing}
             />
           </div>
         </div>

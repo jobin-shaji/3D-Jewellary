@@ -93,18 +93,6 @@ export interface Product {
   latestPriceUpdate?: string;
 }
 
-export interface CartItem {
-  productId: string;
-  variant_id?: string;
-  name: string;
-  totalprice: number;
-  quantity: number;
-  image?: {
-    image_url: string;
-    alt_text: string;
-  };
-}
-
 export interface Address {
   id: string;
   userId: string;
@@ -122,6 +110,28 @@ export interface Address {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CartItem {
+  productId: string;
+  variant_id?: string;
+  name: string;
+  totalprice: number;
+  quantity: number;
+  image?: {
+    image_url: string;
+    alt_text: string;
+  };
+}
+
+export interface Cart {
+  userId: string;
+  items: CartItem[];
+  totalItems: number;
+  totalAmount: number;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: any; // For any extra backend fields (like summary, etc.)
 }
 
 // export interface OrderItem {
@@ -155,13 +165,3 @@ export interface Address {
 //   created_at: string;
 //   updated_at: string;
 // }
-
-export interface Cart {
-  userId: string;
-  items: CartItem[];
-  totalItems: number;
-  totalAmount: number;
-  createdAt?: string;
-  updatedAt?: string;
-  [key: string]: any; // For any extra backend fields (like summary, etc.)
-}

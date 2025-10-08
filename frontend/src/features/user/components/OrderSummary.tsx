@@ -1,26 +1,27 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
 import { Cart } from "@/shared/types";
-import { ReactNode } from "react";
+import { Shield } from "lucide-react";
 
 interface OrderSummaryProps {
   cart: Cart | null;
-  showCheckoutButton?: boolean;
-  checkoutPath?: string;
-  customButton?: ReactNode;
-  showSecurityMessage?: boolean;
+  // Optional checkout handlers for checkout page
+  onPlaceOrder?: () => void;
+  isProcessing?: boolean;
 }
 
 
 export const OrderSummary = ({ 
   cart,
-  showCheckoutButton = true, 
-  checkoutPath = "/checkout",
-  customButton,
-  showSecurityMessage = false
+  onPlaceOrder,
+  isProcessing = false
 }: OrderSummaryProps) => {
+  const location = useLocation();
+  
+  // Auto-detect context based on current route
+  const isCheckoutPage = location.pathname.includes('/checkout');
   if (!cart) {
     return (
       <Card>
@@ -34,7 +35,7 @@ export const OrderSummary = ({
     );
   }
 
-  const { items, totalAmount, totalItems } = cart;
+  const { items, totalAmount } = cart;
   const subtotal = totalAmount;
   const gst = subtotal * 0.03;
   const shipping = 99.00; // TODO: Calculate actual shipping
@@ -80,17 +81,36 @@ export const OrderSummary = ({
           <span>₹{total.toLocaleString("en-IN")}</span>
         </div>
         
-        {/* Custom button (for checkout page) or default checkout button (for cart page) */}
-        {customButton ? (
-          customButton
-        ) : showCheckoutButton ? (
+        {/* Auto-detect button based on context */}
+        {isCheckoutPage && onPlaceOrder ? (
+          // Checkout page: Show place order button
+          <Button 
+            className="w-full" 
+            size="lg"
+            onClick={onPlaceOrder}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <Shield className="h-4 w-4 mr-2" />
+                Place Order - ₹{total.toFixed(2)}
+              </>
+            )}
+          </Button>
+        ) : !isCheckoutPage ? (
+          // Cart page: Show proceed to checkout button
           <Button className="w-full" size="lg" asChild>
-            <Link to={checkoutPath}>Proceed to Checkout</Link>
+            <Link to="/checkout">Proceed to Checkout</Link>
           </Button>
         ) : null}
         
-        {/* Optional security message */}
-        {showSecurityMessage && (
+        {/* Show security message on checkout page */}
+        {isCheckoutPage && (
           <p className="text-xs text-center text-muted-foreground">
             Your payment information is secure and encrypted
           </p>
