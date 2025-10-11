@@ -111,9 +111,6 @@ const ShippingAddressCard: React.FC<ShippingAddressCardProps> = ({
                             <p className="text-sm text-muted-foreground">
                               {address.city}, {address.state} {address.postalCode}
                             </p>
-                            <p className="text-sm text-muted-foreground">
-                              {address.country}
-                            </p>
                           </div>
                         </div>
                       </Card>

@@ -10,7 +10,7 @@ import ProductDetail from "@/features/products/pages/productDetail/ProductDetail
 import ProductManagement from "@/features/admin/pages/productManagement/ProductManagement";
 import Cart from "@/features/user/pages/cart/Cart";
 import Checkout from "@/features/user/pages/checkout/Checkout";
-import OrderConfirmation from "@/features/user/pages/orderDetails";
+import OrderDetails from "@/features/user/pages/orderDetails";
 import Wishlist from "@/features/user/pages/Wishlist";
 import Login from "@/features/auth/pages/Login";
 import Register from "@/features/auth/pages/Register";
@@ -37,8 +37,8 @@ const App = () => (
               <Route path="/products/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
-              <Route path="/orders/:orderId" element={<OrderConfirmation />} />
+              <Route path="/order-confirmation/:orderId" element={<OrderDetails />} />
+              <Route path="/orders/:orderId" element={<OrderDetails />} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />

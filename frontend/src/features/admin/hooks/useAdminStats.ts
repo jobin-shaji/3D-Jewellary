@@ -8,6 +8,7 @@ export interface DashboardStats {
   totalUsers: number;
   activeProducts: number;
   pendingOrders: number;
+  placedOrders: number;
   completedOrders: number;
   cancelledOrders: number;
   totalRevenue: number;
@@ -34,6 +35,7 @@ export const useAdminStats = () => {
     totalUsers: 0,
     activeProducts: 0,
     pendingOrders: 0,
+    placedOrders: 0,
     completedOrders: 0,
     cancelledOrders: 0,
     totalRevenue: 0,
@@ -66,6 +68,7 @@ export const useAdminStats = () => {
         totalUsers: 0,
         activeProducts: 0,
         pendingOrders: 0,
+        placedOrders: 0,
         completedOrders: 0,
         cancelledOrders: 0,
         totalRevenue: 0,

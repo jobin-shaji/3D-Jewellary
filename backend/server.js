@@ -1,8 +1,3 @@
-// const validator = require('validator');
-// const bcrypt = require('bcrypt');
-// const cloudinary = require('cloudinary').v2;
-// const multer = require('multer');
-// const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -20,6 +15,8 @@ const cartRouter = require('./routes/cart');
 const addressRouter = require('./routes/addresses');
 const ordersRouter = require('./routes/orders');
 const pricingRouter = require('./routes/pricing');
+const paymentsRouter = require('./routes/payments');
+const usersRouter = require('./routes/users');
 
 const app = express();
 
@@ -57,6 +54,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/addresses', addressRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/payments', paymentsRouter);
+app.use('/api/users', usersRouter);
 
 // Mount routers for existing routes
 app.get('/api/test', (req, res) => {

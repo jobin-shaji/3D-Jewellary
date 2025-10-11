@@ -21,6 +21,7 @@ export const OverviewTab = ({ stats, metalPrices, metalPricesLoading, refreshPri
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-800";
       case "placed": return "bg-blue-100 text-blue-800";
+      case "placed": return "bg-blue-100 text-blue-800";
       case "shipped": return "bg-purple-100 text-purple-800";
       case "completed": return "bg-green-100 text-green-800";
       case "cancelled": return "bg-red-100 text-red-800";
@@ -78,8 +79,14 @@ export const OverviewTab = ({ stats, metalPrices, metalPricesLoading, refreshPri
         <StatsCard
           title="Pending Orders"
           value={stats.pendingOrders}
-          description="Awaiting processing"
+          description="Awaiting payment"
           icon={Clock}
+        />
+        <StatsCard
+          title="Placed Orders"
+          value={stats.placedOrders}
+          description="Awaiting processing"
+          icon={Package}
         />
         <StatsCard
           title="Completed Orders"

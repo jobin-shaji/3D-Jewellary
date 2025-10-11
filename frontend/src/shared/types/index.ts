@@ -6,8 +6,10 @@ export interface User {
   name: string;
   phone?: string;
   role: UserRole;
+  authProvider: 'local' | 'google';
   isActive: boolean;
   createdAt: string;
+  updatedAt?: string;
   // isVerified: boolean;
 }
 
@@ -105,7 +107,6 @@ export interface Address {
   city: string;
   state: string;
   postalCode: string;
-  country: string;
   isDefault: boolean;
   isActive: boolean;
   createdAt: string;
@@ -134,34 +135,74 @@ export interface Cart {
   [key: string]: any; // For any extra backend fields (like summary, etc.)
 }
 
-// export interface OrderItem {
-//   id: number;
-//   order_id: number;
-//   product_id: number;
-//   product: Product;
-//   quantity: number;
-//   price: number;
-//   product_name: string;
-//   product_sku?: string;
-//   customizations?: Record<string, string | number>;
-//   created_at: string;
-// }
+// Order related types
+export interface OrderItem {
+  product: {
+    id: string;
+    name: string;
+    description: string;
+    category_id: number;
+    makingPrice: number;
+    metals: any[];
+    gemstones: any[];
+    images: any[];
+    model_3d_url: string;
+    certificates: any[];
+    totalPrice: number;
+  };
+  variant: {
+    variant_id: string;
+    name: string;
+    making_price: number;
+    metal: any[];
+    totalPrice: number;
+  } | null;
+  quantity: number;
+  price: number;
+}
 
-// export interface Order {
-//   id: number;
-//   user_id: number;
-//   order_number: string;
-//   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-//   total_amount: number;
-//   tax_amount: number;
-//   shipping_amount: number;
-//   shipping_address: Address;
-//   billing_address: Address;
-//   payment_status: 'pending' | 'placed' | 'failed' | 'refunded';
-//   payment_method?: string;
-//   payment_id?: string;
-//   notes?: string;
-//   items: OrderItem[];
-//   created_at: string;
-//   updated_at: string;
-// }
+export interface OrderPayment {
+  method: string;
+  transactionId?: string;
+  paymentStatus: string;
+  paidAt?: string;
+  refundAmount: number;
+}
+
+export interface OrderHistoryEntry {
+  status: string;
+  timestamp: string;
+  updatedBy: string;
+  notes?: string;
+}
+
+export interface OrderNotes {
+  customerNotes?: string;
+  adminNotes?: string;
+  specialInstructions?: string;
+}
+
+export interface Order {
+  orderId: string;
+  userId: string;
+  shippingAddress: {
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+  };
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  shippingFee: number;
+  totalPrice: number;
+  payment: OrderPayment;
+  status: string;
+  orderHistory: OrderHistoryEntry[];
+  notes: OrderNotes;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,69 +1,7 @@
 import { useState, useCallback } from 'react';
 import { apiUrl } from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/use-toast';
-
-interface Order {
-  orderId: string;
-  userId: string;
-  shippingAddress: {
-    name: string;
-    street: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    phone?: string;
-  };
-  items: Array<{
-    product: {
-      id: string;
-      name: string;
-      description: string;
-      category_id: number;
-      makingPrice: number;
-      metals: any[];
-      gemstones: any[];
-      images: any[];
-      model_3d_url: string;
-      certificates: any[];
-      totalPrice: number;
-    };
-    variant: {
-      variant_id: string;
-      name: string;
-      making_price: number;
-      metal: any[];
-      totalPrice: number;
-    } | null;
-    quantity: number;
-    price: number;
-  }>;
-  subtotal: number;
-  tax: number;
-  shippingFee: number;
-  totalPrice: number;
-  payment: {
-    method: string;
-    transactionId?: string;
-    paymentStatus: string;
-    paidAt?: string;
-    refundAmount: number;
-  };
-  status: string;
-  orderHistory: Array<{
-    status: string;
-    timestamp: string;
-    updatedBy: string;
-    notes?: string;
-  }>;
-  notes: {
-    customerNotes?: string;
-    adminNotes?: string;
-    specialInstructions?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import { Order } from '@/shared/types';
 
 interface CreateOrderData {
   address: any;
@@ -114,9 +52,9 @@ export const useOrders = () => {
   const getToken = () => localStorage.getItem('token');
 
   /**
-   * Create a new order
+   * Create a payment order (Razorpay integration)
    */
-  const createOrder = useCallback(async (orderData: CreateOrderData) => {
+  const createPaymentOrder = useCallback(async (orderData: CreateOrderData) => {
     const token = getToken();
     if (!token) {
       throw new Error('Authentication required');
@@ -126,7 +64,7 @@ export const useOrders = () => {
     setError(null);
     
     try {
-      const response = await fetch(apiUrl('/api/orders'), {
+      const response = await fetch(apiUrl('/api/payments/create-order'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,23 +76,16 @@ export const useOrders = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to create order');
+        throw new Error(data.message || 'Failed to create payment order');
       }
       
-      if (data.order) {
-        toast({
-          title: "Order Placed Successfully!",
-          description: `Order ${data.order.orderId} has been created.`,
-        });
-        
-        return data.order;
-      }
+      return data.order; // Returns { orderId, razorpayOrderId, amount, currency, etc. }
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create order';
+      const errorMessage = err.message || 'Failed to create payment order';
       setError(errorMessage);
       
       toast({
-        title: "Order Failed",
+        title: "Order Creation Failed",
         description: errorMessage,
         variant: "destructive"
       });
@@ -165,6 +96,63 @@ export const useOrders = () => {
     }
   }, [toast]);
 
+  /**
+   * Verify payment after successful Razorpay payment
+   */
+  const verifyPayment = useCallback(async (paymentData: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    orderId: string;
+  }) => {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(apiUrl('/api/payments/verify'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(paymentData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Payment verification failed');
+      }
+      
+      if (data.success) {
+        toast({
+          title: "Payment Successful!",
+          description: `Order ${paymentData.orderId} has been placed successfully.`,
+        });
+        
+        return data;
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'Payment verification failed';
+      setError(errorMessage);
+      
+      toast({
+        title: "Payment Verification Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+  
   /**
    * Fetch user orders with pagination and filtering
    */
@@ -351,7 +339,8 @@ export const useOrders = () => {
     error,
     
     // Actions
-    createOrder,
+    createPaymentOrder, // New Razorpay method
+    verifyPayment, // New payment verification
     fetchOrders,
     fetchOrderById,
     cancelOrder,

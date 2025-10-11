@@ -64,7 +64,28 @@ export const useProducts = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    
+    // Set up periodic refresh every 5 minutes to catch price updates
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing products for price updates...');
+      fetchProducts();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    // Refresh when user returns to tab (in case admin updated prices)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Tab became visible, refreshing products...');
+        fetchProducts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchProducts]);
 
   return {
     products,

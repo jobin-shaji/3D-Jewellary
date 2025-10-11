@@ -6,9 +6,11 @@ const router = express.Router();
 
 /**
  * @route   POST /api/orders
- * @desc    Create a new order from checkout
+ * @desc    Create a new order from checkout (DEPRECATED - Use /api/payments/create-order instead)
  * @access  Private (Authenticated users only)
+ * @deprecated This route is deprecated. Use /api/payments/create-order for all orders with Razorpay integration
  */
+/* COMMENTED OUT - All orders now go through Razorpay payment flow
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -87,6 +89,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
   }
 });
+*/
 
 /**
  * @route   GET /api/orders
@@ -188,7 +191,7 @@ router.put('/:orderId/cancel', authenticateToken, async (req, res) => {
     }
 
     // Check if order can be cancelled
-    if (!['shipped', 'placed'].includes(order.status)) {
+    if (!['pending', 'placed', 'shipped'].includes(order.status)) {
       return res.status(400).json({
         message: 'Order cannot be cancelled at this stage'
       });

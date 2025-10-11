@@ -144,7 +144,7 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="placed">placed</SelectItem>
+                  <SelectItem value="placed">Placed</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -251,7 +251,7 @@ export const OrdersTab = ({ orders: legacyOrders }: OrdersTabProps) => {
                                       </SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="placed">placed</SelectItem>
+                                        <SelectItem value="placed">Placed</SelectItem>
                                         <SelectItem value="shipped">Shipped</SelectItem>
                                         <SelectItem value="completed">Completed</SelectItem>
                                         <SelectItem value="cancelled">Cancelled</SelectItem>

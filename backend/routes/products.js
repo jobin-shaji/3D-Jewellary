@@ -368,7 +368,8 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // Calculate totalPrice for each variant using computeProductPrice for consistency
+    // Calculate prices using computeProductPrice for consistency
+    let baseTotalPrice = 0;
     try {
       // Build a temporary product object for price calculation
       const tempProduct = {
@@ -384,23 +385,36 @@ router.post('/', authenticateToken, async (req, res) => {
       };
       const priceResult = await computeProductPrice(tempProduct);
       if (priceResult.success && Array.isArray(priceResult.data)) {
-        for (const variant of variants) {
-          const variantPricing = priceResult.data.find(item => item.variant_id === variant.variant_id);
-          if (variantPricing) {
-            variant.totalPrice = Math.round(variantPricing.subtotal || 0);
-          } else {
-            variant.totalPrice = 0;
+        // If there are variants, calculate prices for each variant
+        if (variants && variants.length > 0) {
+          for (const variant of variants) {
+            const variantPricing = priceResult.data.find(item => item.variant_id === variant.variant_id);
+            if (variantPricing) {
+              variant.totalPrice = Math.round(variantPricing.subtotal || 0);
+            } else {
+              variant.totalPrice = 0;
+            }
+          }
+        } else {
+          // For base products (no variants), set the base totalPrice
+          if (priceResult.data.length > 0) {
+            baseTotalPrice = Math.round(priceResult.data[0].subtotal || 0);
+            console.log('✅ Base product price calculated:', baseTotalPrice);
           }
         }
       } else {
-        for (const variant of variants) {
-          variant.totalPrice = 0;
+        if (variants && variants.length > 0) {
+          for (const variant of variants) {
+            variant.totalPrice = 0;
+          }
         }
       }
     } catch (error) {
-      console.error('Error calculating variant price:', error);
-      for (const variant of variants) {
-        variant.totalPrice = 0;
+      console.error('Error calculating prices:', error);
+      if (variants && variants.length > 0) {
+        for (const variant of variants) {
+          variant.totalPrice = 0;
+        }
       }
     }
 
@@ -414,7 +428,8 @@ router.post('/', authenticateToken, async (req, res) => {
       variants,
       metals,
       gemstones,
-      stock_quantity
+      stock_quantity,
+      totalPrice: baseTotalPrice // Add calculated base price
     });
 
     await product.save();
@@ -749,6 +764,27 @@ router.put('/:id', authenticateToken, async (req, res) => {
         console.error('Error calculating variant price:', error);
         for (const variant of updateData.variants) {
           variant.totalPrice = 0;
+        }
+      }
+    } else {
+      // For base products (no variants), calculate totalPrice
+      if (updateData.metals || updateData.makingPrice || updateData.gemstones) {
+        try {
+          // Build a temporary product object for price calculation
+          const tempProduct = {
+            ...existingProduct.toObject(),
+            ...updateData,
+          };
+          const priceResult = await computeProductPrice(tempProduct);
+          if (priceResult.success && priceResult.data && priceResult.data.length > 0) {
+            updateData.totalPrice = Math.round(priceResult.data[0].subtotal || 0);
+            console.log('✅ Base product price recalculated:', updateData.totalPrice);
+          } else {
+            console.log('⚠️ Price calculation returned no data, keeping existing price');
+          }
+        } catch (error) {
+          console.error('Error calculating base product price:', error);
+          // Keep existing price on error
         }
       }
     }

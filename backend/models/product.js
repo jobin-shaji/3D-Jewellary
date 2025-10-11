@@ -174,8 +174,7 @@ const productSchema = new mongoose.Schema({
       }
     }],
     default: []
-  }
-  ,
+  },
   // Computed total price snapshot and last update timestamp
   totalPrice: {
     type: Number,

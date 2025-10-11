@@ -63,15 +63,15 @@ class OrderService {
         payment: {
           method: this.mapPaymentMethod(paymentMethod),
           paymentStatus: 'pending',
-          paidAt: new Date(),
-          transactionId: `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          paidAt: null,
+          transactionId: null
         },
-        status: 'placed',
+        status: 'pending',
         orderHistory: [{
-          status: 'placed',
+          status: 'pending',
           timestamp: new Date(),
           updatedBy: 'system',
-          notes: 'Order created'
+          notes: 'Order created - awaiting payment'
         }],
         notes: {
           customerNotes: notes || '',
@@ -82,8 +82,8 @@ class OrderService {
 
       await order.save();
 
-      // Clear the user's cart after successful order creation
-      await CartService.clearCart(userId);
+      // Note: Cart will be cleared after successful payment verification
+      // Don't clear cart here as payment might fail
 
       console.log(`Order created successfully: ${order.orderId} for user ${userId}`);
       
@@ -275,7 +275,7 @@ class OrderService {
       }
 
       // Validate status transition
-      const validStatuses = ['placed', 'shipped', 'completed', 'cancelled'];
+      const validStatuses = ['pending', 'placed', 'shipped', 'completed', 'cancelled'];
       if (!validStatuses.includes(newStatus)) {
         throw new Error('Invalid order status');
       }
@@ -378,6 +378,7 @@ class OrderService {
     try {
 
       const totalOrders = await Order.countDocuments();
+      const pendingOrders = await Order.countDocuments({ status: 'pending' });
       const placedOrders = await Order.countDocuments({ status: 'placed' });
       const completedOrders = await Order.countDocuments({ status: 'completed' });
       const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
@@ -398,6 +399,7 @@ class OrderService {
 
       return {
         totalOrders,
+        pendingOrders,
         placedOrders,
         completedOrders,
         cancelledOrders,
@@ -408,6 +410,137 @@ class OrderService {
     } catch (error) {
       console.error('Error fetching order statistics:', error);
       throw new Error('Failed to fetch order statistics');
+    }
+  }
+
+  /**
+   * Update payment status for an order
+   * @param {string} orderId - Order ID
+   * @param {string} paymentStatus - New payment status
+   * @param {string} notes - Optional notes
+   * @returns {Object} - Updated order
+   */
+  static async updatePaymentStatus(orderId, paymentStatus, notes = '') {
+    try {
+      const order = await Order.findOne({ orderId });
+      
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Validate payment status
+      const validPaymentStatuses = ['pending', 'processing', 'completed', 'failed', 'refunded', 'partially_refunded'];
+      if (!validPaymentStatuses.includes(paymentStatus)) {
+        throw new Error('Invalid payment status');
+      }
+
+      // Update payment status
+      const updatedOrder = await Order.findOneAndUpdate(
+        { orderId },
+        {
+          $set: { 
+            'payment.paymentStatus': paymentStatus,
+            'payment.paidAt': paymentStatus === 'completed' ? new Date() : order.payment.paidAt
+          },
+          $push: {
+            orderHistory: {
+              status: `payment_${paymentStatus}`,
+              timestamp: new Date(),
+              updatedBy: 'system',
+              notes: notes || `Payment status updated to ${paymentStatus}`
+            }
+          }
+        },
+        { 
+          new: true, 
+          runValidators: false
+        }
+      );
+      
+      console.log(`Order ${orderId} payment status updated to ${paymentStatus}`);
+      
+      return updatedOrder;
+
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      throw new Error(`Failed to update payment status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Handle successful payment completion
+   * @param {string} orderId - Order ID
+   * @param {string} paymentId - Razorpay payment ID
+   * @param {Object} paymentDetails - Additional payment details
+   * @returns {Object} - Updated order
+   */
+  static async handlePaymentSuccess(orderId, paymentId, paymentDetails = {}) {
+    try {
+      // Update payment status to completed
+      await this.updatePaymentStatus(
+        orderId,
+        'completed',
+        `Payment successful. Payment ID: ${paymentId}`
+      );
+
+      // Update order status to placed
+      const updatedOrder = await this.updateOrderStatus(
+        orderId,
+        'placed',
+        'system',
+        'Payment completed successfully'
+      );
+
+      // Update transaction ID if not already set
+      if (paymentId) {
+        await Order.findOneAndUpdate(
+          { orderId },
+          { 'payment.transactionId': paymentId }
+        );
+      }
+
+      // Clear the user's cart after successful payment
+      const order = await Order.findOne({ orderId });
+      if (order) {
+        const CartService = require('./cartService');
+        await CartService.clearCart(order.userId);
+        console.log(`Cart cleared for user: ${order.userId} after successful payment`);
+      }
+
+      console.log(`Payment success handled for order: ${orderId}`);
+      return updatedOrder;
+
+    } catch (error) {
+      console.error('Error handling payment success:', error);
+      throw new Error(`Failed to handle payment success: ${error.message}`);
+    }
+  }
+
+  /**
+   * Handle failed payment
+   * @param {string} orderId - Order ID
+   * @param {string} reason - Failure reason
+   * @returns {Object} - Updated order
+   */
+  static async handlePaymentFailure(orderId, reason = 'Payment failed') {
+    try {
+      // Update payment status to failed
+      await this.updatePaymentStatus(orderId, 'failed', reason);
+
+      // Update order status to cancelled
+      const updatedOrder = await this.updateOrderStatus(
+        orderId,
+        'cancelled',
+        'system',
+        `Order cancelled due to payment failure: ${reason}`
+      );
+
+      console.log(`Payment failure handled for order: ${orderId}`);
+      return updatedOrder;
+
+    } catch (error) {
+      console.error('Error handling payment failure:', error);
+      throw new Error(`Failed to handle payment failure: ${error.message}`);
     }
   }
 }

@@ -161,7 +161,8 @@ router.post('/google', async (req, res) => {
       user = new User({
         name: googleUser.name,
         email: googleUser.email,
-        password: 'google-oauth-user' // Placeholder password for Google users
+        password: 'google-oauth-user', // Placeholder password for Google users
+        authProvider: 'google'
       });
 
       await user.save();
@@ -179,6 +180,7 @@ router.post('/google', async (req, res) => {
         email: user.email,
         role: user.role,
         isActive: user.isActive,
+        authProvider: user.authProvider,
         createdAt: user.createdAt,
       }
     });

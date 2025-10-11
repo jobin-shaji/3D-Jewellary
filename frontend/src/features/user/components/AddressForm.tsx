@@ -24,7 +24,6 @@ interface AddressFormData {
   city: string;
   state: string;
   postalCode: string;
-  country: string;
   isDefault: boolean;
   isActive: boolean;
 }
@@ -56,7 +55,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
     city: '',
     state: '',
     postalCode: '',
-    country: 'India',
     isDefault: false,
     isActive: true
   });
@@ -75,7 +73,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
         city: address.city,
         state: address.state,
         postalCode: address.postalCode,
-        country: address.country,
         isDefault: address.isDefault,
         isActive: address.isActive
       });
@@ -93,7 +90,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.state.trim()) newErrors.state = 'State is required';
     if (!formData.postalCode.trim()) newErrors.postalCode = 'Postal code is required';
-    if (!formData.country.trim()) newErrors.country = 'Country is required';
 
     // Phone validation (Indian format)
     if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
@@ -252,27 +248,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
               />
               {errors.postalCode && <p className="text-sm text-red-500">{errors.postalCode}</p>}
             </div>
-          </div>
-
-          {/* Country */}
-          <div className="space-y-2">
-            <Label htmlFor="country">Country *</Label>
-            <Select
-              value={formData.country}
-              onValueChange={(value) => handleInputChange('country', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="India">India</SelectItem>
-                <SelectItem value="United States">United States</SelectItem>
-                <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                <SelectItem value="Canada">Canada</SelectItem>
-                <SelectItem value="Australia">Australia</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.country && <p className="text-sm text-red-500">{errors.country}</p>}
           </div>
 
           {/* Default Address Checkbox */}

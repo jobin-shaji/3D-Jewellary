@@ -192,6 +192,63 @@ const OrderConfirmation = () => {
               </CardContent>
             </Card>
 
+            {/* Payment Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Payment Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Payment Method</p>
+                    <p className="font-semibold">
+                      {currentOrder.payment.method === 'razorpay' ? 'Razorpay (Online Payment)' : 
+                       currentOrder.payment.method === 'credit_card' ? 'Credit Card' :
+                       currentOrder.payment.method === 'debit_card' ? 'Debit Card' :
+                       currentOrder.payment.method === 'bank_transfer' ? 'Bank Transfer' :
+                       currentOrder.payment.method.charAt(0).toUpperCase() + currentOrder.payment.method.slice(1)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Payment Status</p>
+                    <Badge className={`${
+                      currentOrder.payment.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                      currentOrder.payment.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      currentOrder.payment.paymentStatus === 'processing' ? 'bg-blue-100 text-blue-800' :
+                      currentOrder.payment.paymentStatus === 'failed' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      <CreditCard className="h-3 w-3 mr-1" />
+                      {currentOrder.payment.paymentStatus.charAt(0).toUpperCase() + currentOrder.payment.paymentStatus.slice(1)}
+                    </Badge>
+                  </div>
+                  {currentOrder.payment.transactionId && (
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-muted-foreground">Transaction ID</p>
+                      <p className="font-mono text-sm break-all">{currentOrder.payment.transactionId}</p>
+                    </div>
+                  )}
+                  {currentOrder.payment.paidAt && (
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-muted-foreground">Payment Date</p>
+                      <p className="text-sm">
+                        {new Date(currentOrder.payment.paidAt).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Shipping Address */}
             <Card>
               <CardHeader>

@@ -148,7 +148,6 @@ const AddressesTab = () => {
                               <p>
                                 {address.city}, {address.state} {address.postalCode}
                               </p>
-                              <p>{address.country}</p>
                             </div>
                           </div>
                           <div className="flex flex-col gap-2">

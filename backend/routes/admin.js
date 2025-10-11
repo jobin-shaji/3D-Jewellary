@@ -21,6 +21,7 @@ router.get('/stats', async (req, res) => {
       totalUsers,
       totalOrders: orderStats.totalOrders,
       pendingOrders: orderStats.pendingOrders,
+      placedOrders: orderStats.placedOrders,
       completedOrders: orderStats.completedOrders,
       cancelledOrders: orderStats.cancelledOrders,
       totalRevenue: orderStats.totalRevenue,

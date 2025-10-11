@@ -14,6 +14,7 @@ import { ArrowLeft, CreditCard } from "lucide-react";
 import { useAddresses } from "../../hooks/useAddresses";
 import { useCart } from "../../hooks/useCart";
 import { useOrders } from "../../hooks/useOrders";
+import { useRazorpay } from "../../hooks/useRazorpay";
 import { Address, Cart } from "@/shared/types";
 import ShippingAddressCard from "./ShippingAddressCard";
 import OrderSummary from "../../components/OrderSummary";
@@ -22,7 +23,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   
@@ -33,15 +34,12 @@ const Checkout = () => {
   const { cart, loading: cartLoading, fetchCart } = useCart();
   
   // Order management
-  const { createOrder } = useOrders();
+  const { createPaymentOrder, verifyPayment } = useOrders();
+  
+  // Razorpay integration
+  const { openRazorpay } = useRazorpay();
   
   const [formData, setFormData] = useState({
-    // Payment Info
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    cardName: "",
-    
     // Order Notes
     notes: ""
   });
@@ -119,13 +117,7 @@ const Checkout = () => {
       // Prepare order data for the API
       const orderData = {
         address: selectedAddress,
-        paymentMethod,
-        paymentDetails: paymentMethod === "card" ? {
-          cardNumber: formData.cardNumber,
-          expiryDate: formData.expiryDate,
-          cvv: formData.cvv,
-          cardName: formData.cardName
-        } : null,
+        paymentMethod: 'razorpay',
         notes: formData.notes,
         items: cart.items,
         subtotal,
@@ -134,18 +126,74 @@ const Checkout = () => {
         total
       };
 
-      console.log("Creating order with data:", orderData);
+      console.log("Creating payment order with data:", orderData);
       
-      // Create the actual order using the API
-      const createdOrder = await createOrder(orderData);
+      // Step 1: Create payment order (creates order + Razorpay order)
+      const paymentOrder = await createPaymentOrder(orderData);
       
-      // Redirect to order confirmation page with the real order ID
-      navigate(`/order-confirmation/${createdOrder.orderId}`);
+      console.log("Payment order created:", paymentOrder);
+      
+      // Step 2: Open Razorpay checkout
+      await openRazorpay({
+        orderId: paymentOrder.orderId,
+        razorpayOrderId: paymentOrder.razorpayOrderId,
+        amount: paymentOrder.amount,
+        currency: paymentOrder.currency || 'INR',
+        userDetails: {
+          name: selectedAddress.firstName + ' ' + selectedAddress.lastName,
+          email: '', // Add user email if available
+          contact: selectedAddress.phone
+        },
+        onSuccess: async (response) => {
+          try {
+            console.log("Payment successful, verifying:", response);
+            
+            // Step 3: Verify payment
+            await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: response.orderId
+            });
+            
+            // Step 4: Redirect to success page
+            navigate(`/order-confirmation/${response.orderId}`);
+            
+          } catch (verifyError) {
+            console.error("Payment verification failed:", verifyError);
+            toast({
+              title: "Payment Verification Failed",
+              description: "Your payment was processed but verification failed. Please contact support.",
+              variant: "destructive"
+            });
+          }
+        },
+        onFailure: (error) => {
+          console.error("Payment failed:", error);
+          
+          let errorMessage = "Payment failed. Please try again.";
+          
+          if (error.error && error.error.code === 'PAYMENT_CANCELLED') {
+            errorMessage = "Payment was cancelled.";
+          } else if (error.error && error.error.description) {
+            errorMessage = error.error.description;
+          }
+          
+          toast({
+            title: "Payment Failed",
+            description: errorMessage,
+            variant: "destructive"
+          });
+        }
+      });
       
     } catch (error: any) {
       console.error("Order creation failed:", error);
-      // Error handling is already done in the useOrders hook
-      // The toast notification will be shown from there
+      toast({
+        title: "Order Creation Failed",
+        description: error.message || "Failed to create order. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -209,79 +257,43 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>Payment Method</Label>
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="card">Credit/Debit Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="netbanking">Net Banking</SelectItem>
-                      <SelectItem value="cod">Cash on Delivery</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {paymentMethod === "card" && (
-                  <>
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={formData.cardNumber}
-                        onChange={(e) => handleInputChange("cardNumber", e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="expiryDate">Expiry Date</Label>
-                        <Input
-                          id="expiryDate"
-                          placeholder="MM/YY"
-                          value={formData.expiryDate}
-                          onChange={(e) => handleInputChange("expiryDate", e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          placeholder="123"
-                          value={formData.cvv}
-                          onChange={(e) => handleInputChange("cvv", e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="cardName">Name on Card</Label>
-                      <Input
-                        id="cardName"
-                        value={formData.cardName}
-                        onChange={(e) => handleInputChange("cardName", e.target.value)}
-                        required
-                      />
-                    </div>
-                  </>
-                )}
-
-                {paymentMethod === "upi" && (
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="upiId">UPI ID</Label>
-                    <Input
-                      id="upiId"
-                      placeholder="yourname@upi"
-                      required
-                    />
+                    <Label className="text-base font-medium">Payment Method</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      You'll be redirected to Razorpay for secure payment processing
+                    </p>
                   </div>
-                )}
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="border rounded-lg p-3 text-center">
+                      <div className="text-sm font-medium">Credit/Debit Cards</div>
+                      <div className="text-xs text-muted-foreground">Visa, Mastercard, RuPay</div>
+                    </div>
+                    <div className="border rounded-lg p-3 text-center">
+                      <div className="text-sm font-medium">UPI</div>
+                      <div className="text-xs text-muted-foreground">GPay, PhonePe, Paytm</div>
+                    </div>
+                    <div className="border rounded-lg p-3 text-center">
+                      <div className="text-sm font-medium">Net Banking</div>
+                      <div className="text-xs text-muted-foreground">All major banks</div>
+                    </div>
+                    <div className="border rounded-lg p-3 text-center">
+                      <div className="text-sm font-medium">Wallets</div>
+                      <div className="text-xs text-muted-foreground">Paytm, MobiKwik</div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">Secure Payment</span>
+                    </div>
+                    <p className="text-xs text-blue-700 mt-1">
+                      All payments are processed securely through Razorpay with 256-bit SSL encryption
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

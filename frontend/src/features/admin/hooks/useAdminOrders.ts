@@ -1,71 +1,10 @@
 import { useState, useCallback } from 'react';
 import { apiUrl } from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/use-toast';
-
-interface AdminOrder {
-  orderId: string;
-  userId: string;
-  shippingAddress: {
-    name: string;
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
-    phone?: string;
-  };
-  items: Array<{
-    product: {
-      id: string;
-      name: string;
-      description: string;
-      category_id: number;
-      makingPrice: number;
-      metals: any[];
-      gemstones: any[];
-      images: any[];
-      model_3d_url: string;
-      certificates: any[];
-      totalPrice: number;
-    };
-    variant: {
-      variant_id: string;
-      name: string;
-      making_price: number;
-      metal: any[];
-      totalPrice: number;
-    } | null;
-    quantity: number;
-    price: number;
-  }>;
-  subtotal: number;
-  tax: number;
-  shippingFee: number;
-  totalPrice: number;
-  payment: {
-    method: string;
-    transactionId?: string;
-    paymentStatus: string;
-    paidAt?: string;
-    refundAmount: number;
-  };
-  status: string;
-  orderHistory: Array<{
-    status: string;
-    timestamp: string;
-    updatedBy: string;
-    notes?: string;
-  }>;
-  notes: {
-    customerNotes?: string;
-    adminNotes?: string;
-    specialInstructions?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import { Order } from '@/shared/types';
 
 interface AdminOrdersResponse {
-  orders: AdminOrder[];
+  orders: Order[];
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -87,8 +26,8 @@ interface UseAdminOrdersOptions {
 }
 
 export const useAdminOrders = () => {
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [currentOrder, setCurrentOrder] = useState<AdminOrder | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     currentPage: 1,

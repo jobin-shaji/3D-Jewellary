@@ -73,13 +73,6 @@ const addressSchema = new mongoose.Schema({
     trim: true,
     maxlength: 20
   },
-  country: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100,
-    default: 'India'
-  },
   isDefault: {
     type: Boolean,
     default: false

@@ -15,7 +15,7 @@ const Products = () => {
   const [wishlistedItems, setWishlistedItems] = useState<string[]>([]);
   
   // Use the centralized products hook instead of duplicate logic
-  const { products, loading, error } = useProducts();
+  const { products, loading, error, fetchProducts } = useProducts();
 
   const filteredProducts = products.filter(product => {
     if (category && product.category?.name.toLowerCase() !== category.toLowerCase()) return false;
@@ -80,7 +80,20 @@ const Products = () => {
     <div className="min-h-screen flex flex-col">
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">{getTitle()}</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">{getTitle()}</h1>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              console.log('Refreshing products...');
+              fetchProducts();
+            }}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Refresh
+          </Button>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (

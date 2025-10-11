@@ -51,12 +51,11 @@ router.post('/', authenticateToken, async (req, res) => {
       city,
       state,
       postalCode,
-      country,
       isDefault
     } = req.body;
 
     // Validation
-    if (!title || !firstName || !lastName || !phone || !addressLine1 || !city || !state || !postalCode || !country) {
+    if (!title || !firstName || !lastName || !phone || !addressLine1 || !city || !state || !postalCode) {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
@@ -79,7 +78,6 @@ router.post('/', authenticateToken, async (req, res) => {
       city,
       state,
       postalCode,
-      country,
       isDefault: isDefault || false,
       isActive: true
     });
@@ -111,7 +109,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       city,
       state,
       postalCode,
-      country,
       isDefault
     } = req.body;
 
@@ -143,7 +140,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (city !== undefined) address.city = city;
     if (state !== undefined) address.state = state;
     if (postalCode !== undefined) address.postalCode = postalCode;
-    if (country !== undefined) address.country = country;
     if (isDefault !== undefined) address.isDefault = isDefault;
 
     await address.save();
