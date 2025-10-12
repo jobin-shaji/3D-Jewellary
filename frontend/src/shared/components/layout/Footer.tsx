@@ -58,9 +58,7 @@ export const Footer = () => {
               <Link to="/products?category=bracelets" className="block text-muted-foreground hover:text-foreground transition-colors">
                 Bracelets
               </Link>
-              <Link to="/products?featured=true" className="block text-muted-foreground hover:text-foreground transition-colors">
-                Featured Items
-              </Link>
+              {/* Removed 'Featured Items' as per India-only / real category navigation requirement */}
             </div>
           </div>
 

@@ -1,82 +1,11 @@
 const express = require('express');
-const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const Product = require('../models/product');
 const { authenticateToken } = require('../utils/jwt');
 const { computeProductPrice} = require('../utils/priceUtils');
+const { uploadImage, uploadCertificate, uploadModel } = require('../utils/uploadConfig');
 
 const router = express.Router();
-
-// Cloudinary configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Configure multer for image uploads
-const imageStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'products/images',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [
-      { width: 1000, height: 1000, crop: 'limit', quality: 'auto' }
-    ]
-  }
-});
-
-// Configure multer for certificate uploads
-const certificateStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'products/certificates',
-    allowed_formats: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
-    resource_type: 'auto'
-  }
-});
-
-// Configure multer for 3D model uploads
-const modelStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'products/models',
-    resource_type: 'raw',
-    // Remove allowed_formats to allow any format for now
-    // allowed_formats: ['glb', 'gltf', 'obj', 'fbx'],
-  }
-});
-
-const uploadImage = multer({ 
-  storage: imageStorage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-const uploadCertificate = multer({ 
-  storage: certificateStorage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for certificates
-});
-
-const uploadModel = multer({ 
-  storage: modelStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit to match Cloudinary free plan
-  fileFilter: (req, file, cb) => {
-    console.log('File filter - Original name:', file.originalname);
-    console.log('File filter - Mimetype:', file.mimetype);
-    console.log('File filter - Size:', file.size || 'Size not available at this stage');
-    
-    // Check file extension
-    const allowedExtensions = ['.glb', '.gltf', '.obj', '.fbx'];
-    const fileExtension = file.originalname.toLowerCase().split('.').pop();
-    
-    if (allowedExtensions.includes(`.${fileExtension}`)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Invalid file type. Allowed formats: ${allowedExtensions.join(', ')}`), false);
-    }
-  }
-});
 
 /**
  * @route   GET /api/products
@@ -869,56 +798,3 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
-// /**
-//  * @route   POST /api/products/update-prices
-//  * @desc    Batch update products' totalPrice and latestPriceUpdate
-//  * @access  Public (safe operation) - accepts optional { productIds: [] }
-//  */
-// router.post('/update-prices', async (req, res) => {
-//   try {
-//     const { productIds } = req.body || {};
-
-//     const filter = { is_active: true };
-//     if (Array.isArray(productIds) && productIds.length) {
-//       filter.id = { $in: productIds };
-//     }
-
-//     const products = await Product.find(filter);
-
-//     let updatedCount = 0;
-
-//     for (const product of products) {
-//       try {
-//         const result = await computeProductPrice(product);
-//         if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
-//           // Use the first result (base product or first variant) for the main totalPrice
-//           const basePricing = result.data[0];
-//           product.totalPrice = basePricing.roundedTotal || Math.round(basePricing.total || 0);
-          
-//           // Update variant prices if variants exist
-//           if (product.variants && product.variants.length > 0) {
-//             for (const variant of product.variants) {
-//               const variantPricing = result.data.find(item => item.variant_id === variant.variant_id);
-//               if (variantPricing) {
-//                 variant.totalPrice = variantPricing.roundedTotal || Math.round(variantPricing.total || 0);
-//               }
-//             }
-//           }
-          
-//           product.latestPriceUpdate = new Date();
-//           await product.save();
-//           updatedCount++;
-//         }
-//       } catch (innerErr) {
-//         console.error('Error computing price for product', product.id, innerErr);
-//         // continue with next product
-//       }
-//     }
-
-//     return res.json({ success: true, updated: updatedCount });
-//   } catch (error) {
-//     console.error('Batch update prices error:', error);
-//     return res.status(500).json({ success: false, message: 'Server error' });
-//   }
-// });
-
