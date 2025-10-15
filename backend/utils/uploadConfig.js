@@ -42,6 +42,16 @@ const modelStorage = new CloudinaryStorage({
   }
 });
 
+// Configure multer for invoice uploads
+const invoiceStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'products/invoices',
+    allowed_formats: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
+    resource_type: 'auto'
+  }
+});
+
 // Create multer upload instances
 const uploadImage = multer({ 
   storage: imageStorage,
@@ -73,9 +83,85 @@ const uploadModel = multer({
   }
 });
 
+
+/**
+ * Upload PDF buffer to Cloudinary
+ * @param {Buffer} pdfBuffer - PDF buffer to upload
+ * @param {string} orderId - Order ID for naming
+ * @returns {Promise<Object>} - Cloudinary upload result
+ */
+async function uploadPDFToCloudinary(pdfBuffer, orderId) {
+  try {
+    console.log('🔄 Uploading PDF to Cloudinary...');
+    console.log('📄 PDF size:', pdfBuffer.length, 'bytes');
+    
+    // Upload options for public access
+    const uploadOptions = {
+      folder: 'products/invoices',
+      resource_type: 'auto',
+      public_id: `invoice_${orderId.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+      format: 'pdf',
+      type: 'upload', // Explicitly set to 'upload' type for public access
+      overwrite: true,
+      invalidate: true,
+      tags: ['invoice', 'pdf', 'jewelry'],
+    };
+
+    // Try upload using stream approach
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error('❌ Cloudinary upload error:', error);
+            
+            // Handle specific untrusted account error
+            if (error.message && error.message.includes('untrusted')) {
+              console.log('🔄 Attempting alternative upload method for untrusted account...');
+              // Fallback: try with minimal options for maximum compatibility
+              const fallbackOptions = {
+                folder: 'products/invoices',
+                resource_type: 'auto',
+                public_id: `invoice_${Date.now()}`,
+                type: 'upload', // Explicitly set to 'upload' type
+              };
+              
+              cloudinary.uploader.upload_stream(
+                fallbackOptions,
+                (fallbackError, fallbackResult) => {
+                  if (fallbackError) {
+                    reject(new Error(`Failed to upload invoice (fallback): ${fallbackError.message}`));
+                  } else {
+                    console.log('✅ Fallback upload successful:', fallbackResult.public_id);
+                    resolve(fallbackResult);
+                  }
+                }
+              ).end(pdfBuffer);
+            } else {
+              reject(new Error(`Failed to upload invoice: ${error.message}`));
+            }
+          } else {
+            console.log('✅ Invoice uploaded to Cloudinary:', result.public_id);
+            resolve(result);
+          }
+        }
+      );
+      
+      uploadStream.end(pdfBuffer);
+    });
+
+    return result;
+    
+  } catch (error) {
+    console.error('❌ PDF upload error:', error);
+    throw new Error(`Failed to upload invoice PDF: ${error.message}`);
+  }
+}
+
 module.exports = {
   cloudinary,
   uploadImage,
   uploadCertificate,
-  uploadModel
+  uploadModel,
+  uploadPDFToCloudinary
 };

@@ -119,7 +119,8 @@ const orderSchema = new mongoose.Schema({
     customerNotes: { type: String, maxlength: 500 },
     adminNotes: { type: String, maxlength: 1000 },
     specialInstructions: { type: String, maxlength: 300 }
-  }
+  },
+  invoiceUrl: { type: String, default: null } // Cloudinary URL for cached invoice PDF
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

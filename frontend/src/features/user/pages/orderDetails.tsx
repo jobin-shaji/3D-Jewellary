@@ -6,11 +6,13 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Separator } from "@/shared/components/ui/separator";
 import { CheckCircle, Package, Truck, CreditCard, MapPin, ArrowLeft, Download } from "lucide-react";
 import { useOrders } from "../hooks/useOrders";
+import { useInvoiceDownload } from "../hooks/useInvoiceDownload";
 
 const OrderConfirmation = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { fetchOrderById, currentOrder, loading, error } = useOrders();
+  const { downloadInvoice, isDownloading } = useInvoiceDownload();
   const [estimatedDelivery, setEstimatedDelivery] = useState<Date>();
   const location = useLocation();
 
@@ -304,14 +306,17 @@ const OrderConfirmation = () => {
             <div className="space-y-3">
               <Button 
                 className="w-full" 
-                onClick={() => {
-                  // Dummy download invoice functionality
-                  alert('Invoice download feature coming soon!');
-                }}
+                onClick={() => downloadInvoice(currentOrder.orderId)}
+                disabled={isDownloading || currentOrder.payment.paymentStatus === 'pending' || currentOrder.payment.paymentStatus === 'failed'}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Download Invoice
+                {isDownloading ? 'Downloading Invoice...' : 'Download Invoice'}
               </Button>
+              {(currentOrder.payment.paymentStatus === 'pending' || currentOrder.payment.paymentStatus === 'failed') && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Invoice is available only for paid orders
+                </p>
+              )}
 
               <Button variant="outline" className="w-full" asChild>
                 <Link to="/orders">

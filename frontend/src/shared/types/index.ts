@@ -203,6 +203,7 @@ export interface Order {
   status: string;
   orderHistory: OrderHistoryEntry[];
   notes: OrderNotes;
+  invoiceUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

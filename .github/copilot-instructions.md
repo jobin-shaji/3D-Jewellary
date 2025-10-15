@@ -34,7 +34,7 @@ Notes: environment variables drive behaviour. Backend expects `MONGODB_URI`, `PO
 - Keep API error messages and HTTP status codes consistent with existing routes (400 for validation, 401/403 for auth, 404 for not found, 500 for server errors).
 
 ## Integration points & external dependencies
-- Cloudinary: credentials in env vars (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`). See `backend/routes/products.js`.
+- Cloudinary: credentials in env vars (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`). See `backend/utils/uploadConfig.js`.
 - MongoDB: `MONGODB_URI` — backend connects on startup. Tests may assume a running test DB or mocking.
 - Payments: Razorpay is used (`razorpay` dependency) — see `backend/routes/payments.js` and services.
 
