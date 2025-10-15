@@ -52,25 +52,24 @@ class InvoiceService {
     return {
       // Company information
       company: {
-        name: '3D Marketplace Jewelry',
+        name: 'LuxeJewels',
         address: '123 Jewelry Street, Diamond District',
         city: 'Mumbai',
         state: 'Maharashtra',
         postalCode: '400001',
         country: 'India',
         phone: '+91 98765 43210',
-        email: 'info@3dmarketplace.com',
-        website: 'www.3dmarketplace.com',
-        logoUrl: 'https://via.placeholder.com/120x60?text=3D+Marketplace' // Replace with actual logo
+        email: 'info@luxejewels.com',
+        website: 'www.luxejewels.com',
+        // logoUrl: 'https://res.cloudinary.com/do5skdpv9/image/upload/v1760547730/Logo1_kdpkss.png'
+        logoUrl: 'https://res.cloudinary.com/do5skdpv9/image/upload/v1760548168/Logo3_dgzubk.png'
       },
-      
       // Invoice details
       invoice: {
         number: `INV-${order.orderId.replace('ORD-', '')}`,
         date: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 30 days from now
       },
-
       // Order information
       order: {
         ...order.toObject(),
@@ -81,18 +80,15 @@ class InvoiceService {
           day: 'numeric'
         })
       },
-
       // Customer information
       customer: {
         name: user.name,
         email: user.email,
         address: order.shippingAddress
       },
-
       // Formatting helpers
       formatCurrency: (amount) => `₹${amount.toLocaleString('en-IN')}`,
       formatDate: (date) => new Date(date).toLocaleDateString('en-IN'),
-      
       // Current date for generation
       generatedDate: new Date().toLocaleDateString('en-IN', {
         year: 'numeric',
@@ -111,7 +107,7 @@ class InvoiceService {
     try {
 
       // Read and render EJS template
-      const templatePath = path.join(__dirname, '../templates/invoice.ejs');
+      const templatePath = path.join(__dirname, '../templates/invoice3.ejs');
       console.log('📄 Template path:', templatePath);
       
       const template = await fs.readFile(templatePath, 'utf8');
@@ -155,15 +151,15 @@ class InvoiceService {
         format: 'A4',
         printBackground: true,
         margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm'
+          top: '10mm',
+          right: '8mm',
+          bottom: '12mm',
+          left: '8mm'
         },
         displayHeaderFooter: true,
         headerTemplate: '<div></div>', // Empty header
         footerTemplate: `
-          <div style="font-size: 10px; color: #666; text-align: center; width: 100%; padding: 10px;">
+          <div style="font-size: 10px; color: #666; text-align: center; width: 100%; padding: 6px;">
             Page <span class="pageNumber"></span> of <span class="totalPages"></span> | 
             Generated on ${invoiceData.generatedDate}
           </div>
