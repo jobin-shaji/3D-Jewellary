@@ -14,7 +14,7 @@ export const useDeleteProduct = () => {
       
       toast({
         title: "Confirm Delete",
-        description: `Double click delete to permanently delete ${productName}`,
+        description: `Double click delete to remove ${productName} from listings`,
         variant: "destructive",
         duration: 3000,
       });

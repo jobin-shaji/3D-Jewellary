@@ -36,6 +36,18 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  is_deleted: {
+    type: Boolean,
+    default: false
+  },
+  deleted_at: {
+    type: Date,
+    default: null
+  },
+  deleted_by: {
+    type: String,
+    default: null
+  },
   metals: [{
     type: {
       type: String, // e.g., "Gold", "Silver", "Platinum"

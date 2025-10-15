@@ -19,15 +19,15 @@ class CartService {
       console.log(`Looking for product with ID: ${productId}`);
 
       // Debug: Check what products exist
-      const allProducts = await Product.find({}, "id name");
+      const allProducts = await Product.find({ is_deleted: false }, "id name");
       console.log(
         `Available products:`,
         allProducts.map((p) => ({ id: p.id, name: p.name }))
       );
 
-      // Find the product
+      // Find the product (exclude deleted products)
       console.log("Searching for product:", productId);
-      const product = await Product.findOne({ id: productId });
+      const product = await Product.findOne({ id: productId, is_deleted: false });
       console.log("Product found:", product ? product.name : "NOT FOUND");
       if (!product) {
         return {
@@ -264,10 +264,11 @@ class CartService {
     for (let idx = 0; idx < cart.items.length; idx++) {
       const item = cart.items[idx];
       try {
-        // Only fetch active products - treat inactive products same as deleted
+        // Only fetch active and non-deleted products
         const product = await Product.findOne({ 
           id: item.productId,
-          is_active: true 
+          is_active: true,
+          is_deleted: false
         });
         
         if (!product) {

@@ -15,7 +15,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     // Get all active products with limit for performance
-    const products = await Product.find({ is_active: true })
+    const products = await Product.find({ is_active: true, is_deleted: false })
       .populate('category')
       .sort({ createdAt: -1 })
       .limit(50);
@@ -34,13 +34,13 @@ router.get('/', async (req, res) => {
     try {
       const PRICE_REFRESH_HOURS = Number(process.env.PRICE_REFRESH_HOURS) || 4;
       const staleThreshold = new Date(Date.now() - PRICE_REFRESH_HOURS * 60 * 60 * 1000);
-      const staleCount = await Product.countDocuments({ is_active: true, $or: [ { latestPriceUpdate: { $lt: staleThreshold } }, { latestPriceUpdate: null } ] });
+      const staleCount = await Product.countDocuments({ is_active: true, is_deleted: false, $or: [ { latestPriceUpdate: { $lt: staleThreshold } }, { latestPriceUpdate: null } ] });
       if (staleCount > 0) {
         // Fire-and-forget: run update in the same process without blocking the response
         (async () => {
           try {
             const limit = 100; // cap per run to avoid long blocking work
-            const staleProducts = await Product.find({ is_active: true, $or: [ { latestPriceUpdate: { $lt: staleThreshold } }, { latestPriceUpdate: null } ] }).limit(limit);
+            const staleProducts = await Product.find({ is_active: true, is_deleted: false, $or: [ { latestPriceUpdate: { $lt: staleThreshold } }, { latestPriceUpdate: null } ] }).limit(limit);
             let updated = 0;
             for (const p of staleProducts) {
               try {
@@ -105,8 +105,8 @@ router.get('/all',authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
-    // Get all active products with limit for performance
-    const products = await Product.find()
+    // Get all non-deleted products (even admins don't see deleted ones)
+    const products = await Product.find({ is_deleted: false })
       .populate('category')
       .sort({ createdAt: -1 })
       .limit(50);
@@ -146,8 +146,8 @@ router.get('/:id', async (req, res) => {
   try {
     const productId = req.params.id;
 
-    // Get product
-    const product = await Product.findOne({ id: productId });
+    // Get product (only if not deleted)
+    const product = await Product.findOne({ id: productId, is_deleted: false });
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -173,8 +173,8 @@ router.get('/:id/full', async (req, res) => {
   try {
     const productId = req.params.id;
 
-    // Get product
-    const product = await Product.findOne({ id: productId})
+    // Get product (only if not deleted)
+    const product = await Product.findOne({ id: productId, is_deleted: false })
       .populate('category');
 
     if (!product) {
@@ -778,13 +778,17 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // TODO: Optionally delete associated files from Cloudinary
-    // - product.images (image files)
-    // - product.model_3d_url (3D model file)
-    // - product.certificates (certificate files)
+    // Check if already deleted
+    if (product.is_deleted) {
+      return res.status(400).json({ message: 'Product is already deleted' });
+    }
 
-    // Delete the product from database
-    await Product.deleteOne({ id: productId });
+    // Soft delete: Mark as deleted instead of removing from database
+    product.is_deleted = true;
+    product.deleted_at = new Date();
+    product.deleted_by = req.user.id; // Track who deleted it
+    product.is_active = false; // Also mark as inactive
+    await product.save();
 
     res.json({
       message: 'Product deleted successfully',

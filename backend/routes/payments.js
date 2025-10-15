@@ -3,6 +3,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { authenticateToken } = require('../utils/jwt');
 const OrderService = require('../services/orderService');
+const CartService = require('../services/cartService');
 const Order = require('../models/order');
 
 const router = express.Router();
@@ -173,6 +174,15 @@ router.post('/verify', authenticateToken, async (req, res) => {
         'system',
         'order placed successfully'
       );
+
+      // Clear user's cart after successful order
+      try {
+        await CartService.clearCart(userId);
+        console.log(`Cart cleared for user: ${userId}`);
+      } catch (clearError) {
+        console.error('Error clearing cart:', clearError);
+        // Don't fail the entire request if cart clearing fails
+      }
 
       console.log(`Payment verified successfully for order: ${orderId}`);
 

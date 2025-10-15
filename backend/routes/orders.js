@@ -5,93 +5,6 @@ const OrderService = require('../services/orderService');
 const router = express.Router();
 
 /**
- * @route   POST /api/orders
- * @desc    Create a new order from checkout (DEPRECATED - Use /api/payments/create-order instead)
- * @access  Private (Authenticated users only)
- * @deprecated This route is deprecated. Use /api/payments/create-order for all orders with Razorpay integration
- */
-/* COMMENTED OUT - All orders now go through Razorpay payment flow
-router.post('/', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const orderData = req.body;
-
-    console.log(`Creating order for user: ${userId}`);
-
-    // Validate required fields
-    if (!orderData.address) {
-      return res.status(400).json({
-        message: 'Shipping address is required'
-      });
-    }
-
-    if (!orderData.paymentMethod) {
-      return res.status(400).json({
-        message: 'Payment method is required'
-      });
-    }
-
-    if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
-      return res.status(400).json({
-        message: 'Order items are required'
-      });
-    }
-
-    if (!orderData.total || orderData.total <= 0) {
-      return res.status(400).json({
-        message: 'Order total must be greater than 0'
-      });
-    }
-
-    // Create the order
-    const order = await OrderService.createOrder(userId, orderData);
-
-    console.log(`Order created successfully: ${order.orderId}`);
-
-    res.status(201).json({
-      message: 'Order created successfully',
-      order: {
-        orderId: order.orderId,
-        status: order.status,
-        totalPrice: order.totalPrice,
-        createdAt: order.createdAt,
-        estimatedDelivery: calculateEstimatedDelivery(),
-        shippingAddress: {
-          name: order.shippingAddress.name,
-          street: order.shippingAddress.street,
-          city: order.shippingAddress.city,
-          state: order.shippingAddress.state,
-          postalCode: order.shippingAddress.postalCode,
-          country: order.shippingAddress.country,
-          phone: order.shippingAddress.phone
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Error creating order:', error);
-    
-    if (error.message.includes('not found') || error.message.includes('not available')) {
-      return res.status(404).json({
-        message: error.message
-      });
-    }
-    
-    if (error.message.includes('No valid items')) {
-      return res.status(400).json({
-        message: 'Cart contains invalid items. Please refresh and try again.'
-      });
-    }
-
-    res.status(500).json({
-      message: 'Failed to create order',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    });
-  }
-});
-*/
-
-/**
  * @route   GET /api/orders
  * @desc    Get all orders for the authenticated user
  * @access  Private (Authenticated users only)
@@ -232,13 +145,5 @@ router.put('/:orderId/cancel', authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * Helper function to calculate estimated delivery date
- */
-function calculateEstimatedDelivery() {
-  const deliveryDate = new Date();
-  deliveryDate.setDate(deliveryDate.getDate() + 7); // 7 days from now
-  return deliveryDate;
-}
 
 module.exports = router;

@@ -19,8 +19,8 @@ router.post("/compute-price", async (req, res) => {
 
     // Validate productId input
     if (productId) {
-      // Fetch the product from database to ensure we have latest data
-      const product = await Product.findOne({ id: productId });
+      // Fetch the product from database to ensure we have latest data (exclude deleted)
+      const product = await Product.findOne({ id: productId, is_deleted: false });
       if (!product) {
         return res.status(404).json({
           success: false,
