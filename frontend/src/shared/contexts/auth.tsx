@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from "@/shared/types";
+import { apiUrl } from "@/shared/lib/api";
 
 // interface User {
 //   id: string;
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('token');    
     if (token) {
       // Verify token with backend
-      fetch('http://localhost:3000/api/auth/verify-token', {
+      fetch(apiUrl('/api/auth/verify-token'), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -59,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       console.log('Attempting login for:', email);
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (userData: { name: string; email: string; password: string }) => {
     try {
       console.log('Attempting registration for:', userData.email);
-      const response = await fetch('http://localhost:3000/api/auth/register', {
+      const response = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const googleLogin = async (token: string) => {
     try {
       console.log('Attempting Google login...');
-      const response = await fetch('http://localhost:3000/api/auth/google', {
+      const response = await fetch(apiUrl('/api/auth/google'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiUrl } from '@/shared/lib/api';
 
 export interface MetalPrice {
   name: string;
@@ -44,7 +45,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
       }
       
       const queryString = queryParams.toString();
-      const url = `http://localhost:3000/api/metal/prices${queryString ? `?${queryString}` : ''}`;
+      const url = apiUrl(`/api/metal/prices${queryString ? `?${queryString}` : ''}`);
       
       const response = await fetch(url);
       
@@ -123,7 +124,7 @@ export const useMetalPrices = (filters?: MetalPriceFilters) => {
 
   const fetchAvailableOptions = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/metal/types');
+      const response = await fetch(apiUrl('/api/metal/types'));
       if (response.ok) {
         const result = await response.json();
         if (result.success) {

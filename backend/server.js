@@ -20,22 +20,9 @@ const usersRouter = require('./routes/users');
 const invoicesRouter = require('./routes/invoices');
 
 const app = express(); 
-const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ['http://localhost:5173','http://localhost:8080','http://localhost:8081'];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else if (process.env.NODE_ENV === 'production') {
-      console.warn(`Blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'), false);
-    } else {
-      // In development, allow all origins (for testing)
-      callback(null, true);
-    }
-  },
+  origin: process.env.FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -46,18 +33,16 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Production Security Headers
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
-  
-  app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    next();
-  });
-}
+// Security Headers
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 
 //Hosting 
 const PORT = process.env.PORT || 3000;
@@ -65,19 +50,16 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth-d
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Validate required environment variables
-if (!MONGODB_URI || !PORT) {
+if (!MONGODB_URI || !PORT || !process.env.FRONTEND_URL) {
   console.error('❌ Missing required environment variables');
+  console.error('Required: MONGODB_URI, PORT, FRONTEND_URL');
   process.exit(1);
-}
-
-if (NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
-  console.warn('⚠️  Warning: FRONTEND_URL not set in production environment');
 }
 
 console.log('🚀 Starting server...');
 console.log(`📌 Environment: ${NODE_ENV}`);
 console.log(`📌 Port: ${PORT}`);
-console.log(`📌 Frontend URL: ${process.env.FRONTEND_URL || 'localhost'}`);
+console.log(`📌 Frontend URL: ${process.env.FRONTEND_URL}`);
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -149,19 +131,11 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message);
   
-  // Don't leak error details in production
-  const errorResponse = NODE_ENV === 'production'
-    ? {
-        error: 'Internal server error',
-        message: 'Something went wrong'
-      }
-    : {
-        error: err.message,
-        stack: err.stack,
-        path: req.originalUrl
-      };
-  
-  res.status(err.status || 500).json(errorResponse);
+  res.status(err.status || 500).json({
+    error: err.message,
+    stack: err.stack,
+    path: req.originalUrl
+  });
 });
 
 // Graceful Shutdown Handlers

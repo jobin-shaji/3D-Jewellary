@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/shared/hooks/use-toast';
+import { apiUrl } from '@/shared/lib/api';
 
 interface ToggleVisibilityResult {
   success: boolean;
@@ -24,7 +25,7 @@ export const useProductVisibility = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`http://localhost:3000/api/products/${productId}/toggle-active`, {
+      const response = await fetch(apiUrl(`/api/products/${productId}/toggle-active`), {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
