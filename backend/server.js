@@ -19,28 +19,15 @@ const paymentsRouter = require('./routes/payments');
 const usersRouter = require('./routes/users');
 const invoicesRouter = require('./routes/invoices');
 
-const app = express();
-
-// ==========================================
-// CORS Configuration - Production Ready
-// ==========================================
+const app = express(); 
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [
-      process.env.FRONTEND_URL,  // Your production frontend URL
-      // Add additional production domains if needed
-    ].filter(Boolean)  // Remove undefined values
-  : [
-      'http://localhost:5173',   // Vite dev server
-      'http://localhost:8080',   // Alternative frontend port
-      'http://localhost:8081',   // Another alternative
-    ];
+  ? [process.env.FRONTEND_URL].filter(Boolean)  // Remove undefined values
+  : ['http://localhost:5173','http://localhost:8080','http://localhost:8081'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // Check if origin is allowed
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else if (process.env.NODE_ENV === 'production') {
