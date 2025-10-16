@@ -20,9 +20,7 @@ const usersRouter = require('./routes/users');
 const invoicesRouter = require('./routes/invoices');
 
 const app = express(); 
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [process.env.FRONTEND_URL].filter(Boolean)  // Remove undefined values
-  : ['http://localhost:5173','http://localhost:8080','http://localhost:8081'];
+const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ['http://localhost:5173','http://localhost:8080','http://localhost:8081'];
 
 app.use(cors({
   origin: function (origin, callback) {
