@@ -110,7 +110,9 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
-              <AnalyticsTab analyticsData={analyticsData} />
+              <AnalyticsTab 
+                analyticsData={analyticsData} 
+              />
             </TabsContent>
           </Tabs>
         </div>

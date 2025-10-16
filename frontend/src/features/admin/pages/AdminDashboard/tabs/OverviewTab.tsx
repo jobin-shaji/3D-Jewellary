@@ -100,12 +100,6 @@ export const OverviewTab = ({ stats, metalPrices, metalPricesLoading, refreshPri
           description="Orders cancelled"
           icon={XCircle}
         />
-        <StatsCard
-          title="Total Revenue"
-          value={formatPrice(stats.totalRevenue)}
-          description="Total earnings"
-          icon={IndianRupee}
-        />
       </div>
 
       {/* Metal Prices */}
