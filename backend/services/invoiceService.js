@@ -63,7 +63,7 @@ class InvoiceService {
         country: "India",
         phone: "+91 98765 43210",
         email: "luxejewels@gmail.com",
-        website: "luxejewels.vercel.app/",
+        website: "luxejewels.vercel.app",
         // logoUrl: 'https://res.cloudinary.com/do5skdpv9/image/upload/v1760547730/Logo1_kdpkss.png'
         logoUrl:
           "https://res.cloudinary.com/do5skdpv9/image/upload/v1760548168/Logo3_dgzubk.png",
