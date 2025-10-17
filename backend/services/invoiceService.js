@@ -57,13 +57,13 @@ class InvoiceService {
       company: {
         name: "LuxeJewels",
         address: "123 Jewelry Street, Diamond District",
-        city: "Mumbai",
-        state: "Maharashtra",
-        postalCode: "400001",
+        city: "Kochi",
+        state: "Kerala",
+        postalCode: "682001",
         country: "India",
         phone: "+91 98765 43210",
-        email: "info@luxejewels.com",
-        website: "www.luxejewels.com",
+        email: "luxejewels@gmail.com",
+        website: "luxejewels.vercel.app/",
         // logoUrl: 'https://res.cloudinary.com/do5skdpv9/image/upload/v1760547730/Logo1_kdpkss.png'
         logoUrl:
           "https://res.cloudinary.com/do5skdpv9/image/upload/v1760548168/Logo3_dgzubk.png",
