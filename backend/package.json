@@ -8,7 +8,7 @@
     "test:watch": "jest --watch --testTimeout=10000",
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "postinstall": "npx playwright install --with-deps chromium"
+    "postinstall": "npx playwright install chromium"
 
   },
   "keywords": [],
