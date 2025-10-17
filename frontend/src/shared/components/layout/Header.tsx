@@ -28,7 +28,8 @@ import {
 import { useAuth } from "@/shared/contexts/auth";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useMetalPrices } from "@/shared/hooks/useMetalPrices";
-import { useCart } from "@/features/user/hooks/useCart";
+import { useCartContext } from "@/shared/contexts/cart";
+import { useWishlistContext } from "@/shared/contexts/wishlist";
 
 export const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,7 +37,8 @@ export const Header = () => {
   const { user, isLoggedIn, logout: authLogout } = useAuth();
   const { toast } = useToast();
   const { metalPrices, loading: metalLoading } = useMetalPrices();
-  const { cartCount } = useCart();
+  const { cartCount } = useCartContext();
+  const { wishlistCount } = useWishlistContext();
 
   // Get gold and silver prices - using new interface
   const goldPrice = metalPrices.find(metal => metal.type === 'Gold' && metal.purity === '24k');
@@ -208,9 +210,17 @@ export const Header = () => {
           <div className="flex items-center space-x-3">
             {/* Wishlist - Only show when logged in and not admin */}
             {isLoggedIn && user?.role !== "admin" && (
-              <Button variant="ghost" size="icon" asChild>
+              <Button variant="ghost" size="icon" className="relative" asChild>
                 <Link to="/wishlist">
                   <Heart className="h-5 w-5" />
+                  {wishlistCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {wishlistCount}
+                    </Badge>
+                  )}
                   <span className="sr-only">Wishlist</span>
                 </Link>
               </Button>
@@ -427,7 +437,7 @@ export const Header = () => {
                           >
                             <Link to="/wishlist">
                               <Heart className="mr-2 h-4 w-4" />
-                              Wishlist
+                              Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
                             </Link>
                           </Button>
                           <Button

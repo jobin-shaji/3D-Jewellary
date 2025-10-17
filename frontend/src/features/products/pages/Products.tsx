@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -6,16 +5,19 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Heart, Loader2 } from "lucide-react";
 import { Product3DViewer } from "@/features/products/components/Product3DViewer";
 import { useProducts } from "@/features/products/hooks/useProducts";
+import { useWishlist } from "@/features/user/hooks/useWishlist";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const category = searchParams.get("category");
   const search = searchParams.get("search");
-  const [wishlistedItems, setWishlistedItems] = useState<string[]>([]);
   
   // Use the centralized products hook instead of duplicate logic
   const { products, loading, error, fetchProducts } = useProducts();
+  
+  // Use wishlist hook
+  const { toggleWishlist, isInWishlist, loading: wishlistLoading } = useWishlist();
 
   const filteredProducts = products.filter(product => {
     if (category && product.category?.name.toLowerCase() !== category.toLowerCase()) return false;
@@ -29,12 +31,8 @@ const Products = () => {
     return "All Products";
   };
 
-  const handleWishlistToggle = (productId: string) => {
-    setWishlistedItems(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+  const handleWishlistToggle = async (productId: string) => {
+    await toggleWishlist(productId);
   };
 
   const handleProductClick = (productId: string) => {
@@ -123,14 +121,15 @@ const Products = () => {
                   )}
                   <Button
                     size="icon"
-                    variant={wishlistedItems.includes(product.id) ? "default" : "ghost"}
+                    variant={isInWishlist(product.id) ? "default" : "ghost"}
                     className="absolute top-2 right-2 bg-white/80 hover:bg-white"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleWishlistToggle(product.id);
                     }}
+                    disabled={wishlistLoading}
                   >
-                    <Heart className={`h-4 w-4 ${wishlistedItems.includes(product.id) ? "fill-current" : ""}`} />
+                    <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? "fill-current" : ""}`} />
                   </Button>
                 </div>
               </CardHeader>

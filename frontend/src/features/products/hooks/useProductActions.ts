@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Product, ProductVariant } from "@/shared/types";
 import { useToast } from "@/shared/hooks/use-toast";
 import { apiUrl } from "@/shared/lib/api";
+import { useWishlist } from "@/features/user/hooks/useWishlist";
 
 export const useProductActions = (product: Product | null, selectedVariant?: ProductVariant | null) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  
+  // Check if product is in wishlist
+  const isWishlisted = product ? isInWishlist(product.id) : false;
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -77,15 +81,10 @@ export const useProductActions = (product: Product | null, selectedVariant?: Pro
     }
   };
 
-  const handleWishlistToggle = () => {
+  const handleWishlistToggle = async () => {
     if (!product) return;
     
-    setIsWishlisted(!isWishlisted);
-    console.log(isWishlisted ? "Removed from wishlist" : "Added to wishlist", product.id);
-    toast({
-      title: isWishlisted ? "Removed from Wishlist" : "Added to Wishlist",
-      description: `${product.name} has been ${isWishlisted ? 'removed from' : 'added to'} your wishlist.`,
-    });
+    await toggleWishlist(product.id);
   };
 
   const handleShare = () => {

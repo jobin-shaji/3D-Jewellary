@@ -16,13 +16,10 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['admin', 'client'], default: 'client' },
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
-  // isVerified: { type: Boolean, default: true },
-  // Profile picture field (optional)
-  // profilePicture: { type: String },
-  // Additional fields for user dashboard
-  // totalOrders: { type: Number, default: 0 },
-  // totalSpent: { type: Number, default: 0 },
-  // loyaltyPoints: { type: Number, default: 0 }
+  wishlist: [{
+    productId: { type: String, required: true },
+    addedAt: { type: Date, default: Date.now }
+  }]
 }, {
   // This ensures createdAt and updatedAt are automatically managed
   timestamps: true

@@ -18,6 +18,7 @@ const pricingRouter = require('./routes/pricing');
 const paymentsRouter = require('./routes/payments');
 const usersRouter = require('./routes/users');
 const invoicesRouter = require('./routes/invoices');
+const wishlistRouter = require('./routes/wishlist');
 
 const app = express(); 
 
@@ -85,6 +86,7 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/invoices', invoicesRouter);
+app.use('/api/wishlist', wishlistRouter);
 
 // Mount routers for existing routes
 app.get('/api/test', (req, res) => {
