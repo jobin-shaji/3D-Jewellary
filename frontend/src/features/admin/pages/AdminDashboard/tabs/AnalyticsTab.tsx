@@ -235,10 +235,10 @@ export const NewAnalyticsTab = () => {
                         <Download className="h-4 w-4 mr-2" />
                         Orders Export (CSV)
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('sales-pdf')}>
+                    {/* <Button variant="outline" size="sm" onClick={() => handleDownloadReport('sales-pdf')}>
                         <Download className="h-4 w-4 mr-2" />
                         Sales Report (PDF)
-                    </Button>
+                    </Button> */}
                     <Button variant="outline" size="sm" onClick={() => handleDownloadReport('tax-report')}>
                         <FileText className="h-4 w-4 mr-2" />
                         Tax Report (CSV)
