@@ -121,15 +121,21 @@ const Products = () => {
                   )}
                   <Button
                     size="icon"
-                    variant={isInWishlist(product.id) ? "default" : "ghost"}
-                    className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                    variant="ghost"
+                    className="absolute top-2 right-2 bg-white/80 hover:bg-white hover:bg-white/90"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleWishlistToggle(product.id);
                     }}
                     disabled={wishlistLoading}
                   >
-                    <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? "fill-current" : ""}`} />
+                    <Heart 
+                      className={`h-4 w-4 transition-colors ${
+                        isInWishlist(product.id) 
+                          ? "fill-red-500 text-red-500" 
+                          : "text-gray-600"
+                      }`} 
+                    />
                   </Button>
                 </div>
               </CardHeader>
