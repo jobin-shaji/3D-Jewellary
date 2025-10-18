@@ -35,6 +35,7 @@ import {
     ChartConfig
 } from "@/shared/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { useExports } from '@/features/admin/hooks/useExports';
 
 // Map UI timeframe values to API period values
 const timeFrameToPeriod = (timeframe: string): Period => {
@@ -107,6 +108,8 @@ export const NewAnalyticsTab = () => {
         bestSellersPeriod,
     });
 
+    const { exportOrdersCsv, exportRevenueCsv, exportTaxReport } = useExports();
+
     // Chart configurations
     const salesChartConfig = {
         revenue: {
@@ -136,6 +139,18 @@ export const NewAnalyticsTab = () => {
 
     const handleDownloadReport = (type: string) => {
         console.log(`Downloading ${type} report...`);
+        if (type === 'orders-csv') {
+            exportOrdersCsv();
+            return;
+        }
+        if (type === 'revenue-csv') {
+            exportRevenueCsv();
+            return;
+        }
+        if (type === 'tax-report') {
+            exportTaxReport();
+            return;
+        }
         // TODO: Implement actual download logic
     };
 
@@ -216,17 +231,17 @@ export const NewAnalyticsTab = () => {
                         <Download className="h-4 w-4 mr-2" />
                         Revenue Report (CSV)
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('orders-csv')}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Orders Export (CSV)
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleDownloadReport('sales-pdf')}>
                         <Download className="h-4 w-4 mr-2" />
                         Sales Report (PDF)
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('inventory-xml')}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Inventory Report (XML)
-                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleDownloadReport('tax-report')}>
                         <FileText className="h-4 w-4 mr-2" />
-                        Tax Report
+                        Tax Report (CSV)
                     </Button>
                 </div>
             </div>

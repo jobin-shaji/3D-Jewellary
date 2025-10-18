@@ -1,8 +1,47 @@
 const express = require('express');
-const { authenticateToken } = require('../utils/jwt');
+const { authenticateToken, isAdmin } = require('../utils/jwt');
 const OrderService = require('../services/orderService');
 
+const Order = require('../models/order');
+const { Parser } = require('json2csv');
+
 const router = express.Router();
+
+/**
+ * @route   GET /api/orders/export
+ * @desc    Export all orders as CSV (admin only)
+ * @access  Private (Admin only)
+ */
+router.get('/export', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    // Fetch all orders
+    const orders = await Order.find().lean();
+
+    // Define fields to export (customize as needed)
+    const fields = [
+      'orderId',
+      'userId',
+      'status',
+      'totalPrice',
+      'payment.method',
+      'payment.paymentStatus',
+      'createdAt',
+      'updatedAt',
+      // Add more fields as needed
+    ];
+    const parser = new Parser({ fields });
+    const csv = parser.parse(orders);
+    res.header('Content-Type', 'text/csv');
+    res.attachment('orders.csv');
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting orders as CSV:', error);
+    res.status(500).json({
+      message: 'Failed to export orders',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
 
 /**
  * @route   GET /api/orders
