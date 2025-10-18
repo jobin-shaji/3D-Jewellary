@@ -15,6 +15,7 @@ import {
   UsersTab, 
   AnalyticsTab 
 } from "@/features/admin/pages/AdminDashboard/tabs";
+import { NewAnalyticsTab } from "./tabs/NewAnalyticsTab";
 
 
 const AdminDashboard = () => {
@@ -110,8 +111,10 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
-              <AnalyticsTab 
+              {/* <AnalyticsTab 
                 analyticsData={analyticsData} 
+              /> */}
+              <NewAnalyticsTab 
               />
             </TabsContent>
           </Tabs>
