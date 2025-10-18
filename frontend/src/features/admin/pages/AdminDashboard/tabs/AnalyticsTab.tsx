@@ -11,7 +11,7 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select";
 import {
-    DollarSign,
+    IndianRupee,
     ShoppingCart,
     BarChart3,
     TrendingUp,
@@ -236,7 +236,7 @@ export const NewAnalyticsTab = () => {
                 <StatsCard
                     title="Total Revenue"
                     value={formatPrice(totalRevenue)}
-                    icon={DollarSign}
+                    icon={IndianRupee}
                     description={`${revenueChange >= 0 ? '↑' : '↓'} ${Math.abs(revenueChange).toFixed(1)}% from previous period`}
                 />
                 <StatsCard
