@@ -54,9 +54,9 @@ export interface BestSellerData {
 }
 
 interface UseAnalyticsOptions {
-  period?: Period;
-  salesInterval?: Interval;
-  userInterval?: Interval;
+  salesPeriod?: Period;
+  userPeriod?: Period;
+  bestSellersPeriod?: Period;
   autoRefresh?: boolean;
   refreshInterval?: number; // in milliseconds
 }
@@ -73,9 +73,9 @@ interface UseAnalyticsReturn {
 }
 
 export const useAnalytics = ({
-  period = '30d',
-  salesInterval = 'day',
-  userInterval = 'day',
+  salesPeriod = '30d',
+  userPeriod = '30d',
+  bestSellersPeriod = '30d',
   autoRefresh = false,
   refreshInterval = 60000, // 1 minute default
 }: UseAnalyticsOptions = {}): UseAnalyticsReturn => {
@@ -110,11 +110,11 @@ export const useAnalytics = ({
         inventoryRes,
         sellersRes,
       ] = await Promise.all([
-        fetch(apiUrl(`/api/analytics/overview?period=${period}`), { headers }),
-        fetch(apiUrl(`/api/analytics/sales-trends?period=${period}&interval=${salesInterval}`), { headers }),
-        fetch(apiUrl(`/api/analytics/user-growth?period=${period}&interval=${userInterval}`), { headers }),
+        fetch(apiUrl('/api/analytics/overview'), { headers }),
+        fetch(apiUrl(`/api/analytics/sales-trends?period=${salesPeriod}`), { headers }),
+        fetch(apiUrl(`/api/analytics/user-growth?period=${userPeriod}`), { headers }),
         fetch(apiUrl('/api/analytics/inventory'), { headers }),
-        fetch(apiUrl(`/api/analytics/best-sellers?period=${period}&limit=5`), { headers }),
+        fetch(apiUrl(`/api/analytics/best-sellers?period=${bestSellersPeriod}&limit=5`), { headers }),
       ]);
 
       // Check for errors
@@ -172,7 +172,7 @@ export const useAnalytics = ({
   // Initial fetch
   useEffect(() => {
     fetchAnalytics();
-  }, [period, salesInterval, userInterval]);
+  }, [salesPeriod, userPeriod, bestSellersPeriod]);
 
   // Auto-refresh if enabled
   useEffect(() => {
@@ -183,7 +183,7 @@ export const useAnalytics = ({
     }, refreshInterval);
 
     return () => clearInterval(intervalId);
-  }, [autoRefresh, refreshInterval, period, salesInterval, userInterval]);
+  }, [autoRefresh, refreshInterval, salesPeriod, userPeriod, bestSellersPeriod]);
 
   return {
     overview,

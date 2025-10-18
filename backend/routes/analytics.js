@@ -6,27 +6,16 @@ const router = express.Router();
 
 /**
  * @route   GET /api/analytics/overview
- * @desc    Get overview analytics (revenue, orders, users, inventory)
+ * @desc    Get overview analytics (revenue, orders, users, inventory) - uses all data
  * @access  Private (Admin only)
- * @query   period - '7d', '30d', '90d', '1y', 'all' (default: '30d')
  */
 router.get('/overview', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const { period = '30d' } = req.query;
-
-    // Validate period
-    const validPeriods = ['7d', '30d', '90d', '1y', 'all'];
-    if (!validPeriods.includes(period)) {
-      return res.status(400).json({
-        message: 'Invalid period. Valid options: 7d, 30d, 90d, 1y, all'
-      });
-    }
-
-    const overview = await AnalyticsService.getOverview(period);
+    // Use 'all' period to get complete data
+    const overview = await AnalyticsService.getOverview('all');
 
     res.status(200).json({
       message: 'Overview analytics fetched successfully',
-      period,
       data: overview
     });
 
@@ -44,11 +33,11 @@ router.get('/overview', authenticateToken, isAdmin, async (req, res) => {
  * @desc    Get sales trends over time
  * @access  Private (Admin only)
  * @query   period - '7d', '30d', '90d', '1y', 'all' (default: '30d')
- * @query   interval - 'day', 'week', 'month' (default: 'day')
+ * @query   interval - 'day', 'week', 'month' (optional, auto-determined if not provided)
  */
 router.get('/sales-trends', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const { period = '30d', interval = 'day' } = req.query;
+    let { period = '30d', interval } = req.query;
 
     // Validate period
     const validPeriods = ['7d', '30d', '90d', '1y', 'all'];
@@ -58,7 +47,18 @@ router.get('/sales-trends', authenticateToken, isAdmin, async (req, res) => {
       });
     }
 
-    // Validate interval
+    // Auto-determine interval based on period if not provided
+    if (!interval) {
+      if (period === '7d' || period === '30d') {
+        interval = 'day';
+      } else if (period === '90d') {
+        interval = 'week';
+      } else { // '1y' or 'all'
+        interval = 'month';
+      }
+    }
+
+    // Validate interval if provided
     const validIntervals = ['day', 'week', 'month'];
     if (!validIntervals.includes(interval)) {
       return res.status(400).json({
@@ -89,11 +89,11 @@ router.get('/sales-trends', authenticateToken, isAdmin, async (req, res) => {
  * @desc    Get user growth trends over time
  * @access  Private (Admin only)
  * @query   period - '7d', '30d', '90d', '1y', 'all' (default: '30d')
- * @query   interval - 'day', 'week', 'month' (default: 'day')
+ * @query   interval - 'day', 'week', 'month' (optional, auto-determined if not provided)
  */
 router.get('/user-growth', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const { period = '30d', interval = 'day' } = req.query;
+    let { period = '30d', interval } = req.query;
 
     // Validate period
     const validPeriods = ['7d', '30d', '90d', '1y', 'all'];
@@ -103,7 +103,18 @@ router.get('/user-growth', authenticateToken, isAdmin, async (req, res) => {
       });
     }
 
-    // Validate interval
+    // Auto-determine interval based on period if not provided
+    if (!interval) {
+      if (period === '7d' || period === '30d') {
+        interval = 'day';
+      } else if (period === '90d') {
+        interval = 'week';
+      } else { // '1y' or 'all'
+        interval = 'month';
+      }
+    }
+
+    // Validate interval if provided
     const validIntervals = ['day', 'week', 'month'];
     if (!validIntervals.includes(interval)) {
       return res.status(400).json({
@@ -131,7 +142,7 @@ router.get('/user-growth', authenticateToken, isAdmin, async (req, res) => {
 
 /**
  * @route   GET /api/analytics/inventory
- * @desc    Get inventory statistics
+ * @desc    Get inventory statistics - uses all data
  * @access  Private (Admin only)
  */
 router.get('/inventory', authenticateToken, isAdmin, async (req, res) => {
