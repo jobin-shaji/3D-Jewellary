@@ -15,7 +15,7 @@ import {
   UsersTab, 
   AnalyticsTab 
 } from "@/features/admin/pages/AdminDashboard/tabs";
-import { NewAnalyticsTab } from "./tabs/NewAnalyticsTab";
+import { NewAnalyticsTab } from "./tabs/AnalyticsTab";
 
 
 const AdminDashboard = () => {
