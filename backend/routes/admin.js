@@ -2,7 +2,7 @@ const express = require('express');
 const Product = require('../models/product');
 const User = require('../models/user');
 const OrderService = require('../services/orderService');
-const { authenticateToken } = require('../utils/jwt');
+const { authenticateToken, isAdmin } = require('../utils/jwt');
 const router = express.Router();
 
 // GET /api/admin/stats - Get admin dashboard statistics
@@ -41,11 +41,6 @@ router.get('/stats', async (req, res) => {
 // GET /api/admin/users - Get all users
 router.get('/users', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin role required.' });
-    }
-
     const users = await User.find({})
       .select('-password') // Exclude password from response
       .sort({ createdAt: -1 }); // Sort by newest first
@@ -63,11 +58,6 @@ router.get('/users', authenticateToken, async (req, res) => {
 // PUT /api/admin/users/:id/toggle-active - Toggle user active status
 router.put('/users/:id/toggle-active', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin role required.' });
-    }
-
     const userId = req.params.id;
     const user = await User.findOne({ id: userId });
 
@@ -97,11 +87,6 @@ router.put('/users/:id/toggle-active', authenticateToken, async (req, res) => {
 // PUT /api/admin/users/:id/change-role - Change user role
 router.put('/users/:id/change-role', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin role required.' });
-    }
-
     const userId = req.params.id;
     const { role } = req.body;
 
@@ -142,11 +127,6 @@ router.put('/users/:id/change-role', authenticateToken, async (req, res) => {
 // GET /api/admin/orders - Get all orders for admin
 router.get('/orders', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin role required.' });
-    }
-
     const {
       page = 1,
       limit = 20,
@@ -189,11 +169,6 @@ router.get('/orders', authenticateToken, async (req, res) => {
 // GET /api/admin/orders/:orderId - Get specific order details for admin
 router.get('/orders/:orderId', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin role required.' });
-    }
-
     const { orderId } = req.params;
 
     console.log(`Admin fetching order details: ${orderId}`);
@@ -225,11 +200,6 @@ router.get('/orders/:orderId', authenticateToken, async (req, res) => {
 // PUT /api/admin/orders/:orderId/status - Update order status
 router.put('/orders/:orderId/status', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin role required.' });
-    }
-
     const { orderId } = req.params;
     const { status, notes } = req.body;
 

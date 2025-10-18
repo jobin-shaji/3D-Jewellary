@@ -19,6 +19,7 @@ const paymentsRouter = require('./routes/payments');
 const usersRouter = require('./routes/users');
 const invoicesRouter = require('./routes/invoices');
 const wishlistRouter = require('./routes/wishlist');
+const analyticsRouter = require('./routes/analytics');
 
 const app = express(); 
 
@@ -87,6 +88,7 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/invoices', invoicesRouter);
 app.use('/api/wishlist', wishlistRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // Mount routers for existing routes
 app.get('/api/test', (req, res) => {

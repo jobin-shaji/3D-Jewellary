@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const Product = require('../models/product');
-const { authenticateToken } = require('../utils/jwt');
+const { authenticateToken, isAdmin } = require('../utils/jwt');
 const { computeProductPrice} = require('../utils/priceUtils');
 const { uploadImage, uploadCertificate, uploadModel } = require('../utils/uploadConfig');
 
@@ -100,11 +100,8 @@ router.get('/', async (req, res) => {
  * @desc    Get all products with primary images
  * @access  admin
  */
-router.get('/all',authenticateToken, async (req, res) => {
+router.get('/all', authenticateToken, isAdmin, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
     // Get all non-deleted products (even admins don't see deleted ones)
     const products = await Product.find({ is_deleted: false })
       .populate('category')
@@ -200,12 +197,8 @@ router.get('/:id/full', async (req, res) => {
  * @desc    Create a new product (admin only)
  * @access  Private (Admin)
  */
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, isAdmin, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     let { 
       name, 
       makingPrice, 
@@ -384,13 +377,8 @@ router.post('/', authenticateToken, async (req, res) => {
  * @desc    Upload multiple images for a product (admin only)
  * @access  Private (Admin)
  */
-router.post('/:id/images', authenticateToken, uploadImage.array('images', 10), async (req, res) => {
+router.post('/:id/images', authenticateToken, isAdmin, uploadImage.array('images', 10), async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     const productId = req.params.id;
 
     // Check if product exists
@@ -436,7 +424,7 @@ router.post('/:id/images', authenticateToken, uploadImage.array('images', 10), a
  * @desc    Upload 3D model for a product (admin only)
  * @access  Private (Admin)
  */
-router.post('/:id/model', authenticateToken, (req, res, next) => {
+router.post('/:id/model', authenticateToken, isAdmin, (req, res, next) => {
   uploadModel.single('model')(req, res, (err) => {
     if (err) {
       console.error('Multer error:', err);
@@ -467,12 +455,6 @@ router.post('/:id/model', authenticateToken, (req, res, next) => {
       mimetype: req.file.mimetype,
       size: req.file.size
     } : 'No file received');
-
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      console.log('Unauthorized: User is not admin');
-      return res.status(403).json({ message: 'Admin access required' });
-    }
 
     const productId = req.params.id;
 
@@ -517,13 +499,8 @@ router.post('/:id/model', authenticateToken, (req, res, next) => {
  * @desc    Upload certificates for a product (admin only)
  * @access  Private (Admin)
  */
-router.post('/:id/certificates', authenticateToken, uploadCertificate.array('certificates', 10), async (req, res) => {
+router.post('/:id/certificates', authenticateToken, isAdmin, uploadCertificate.array('certificates', 10), async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     const productId = req.params.id;
 
     // Check if product exists
@@ -579,13 +556,8 @@ router.post('/:id/certificates', authenticateToken, uploadCertificate.array('cer
  * @desc    Toggle product active status (admin only)
  * @access  Private (Admin)
  */
-router.patch('/:id/toggle-active', authenticateToken, async (req, res) => {
+router.patch('/:id/toggle-active', authenticateToken, isAdmin, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     const productId = req.params.id;
 
     // Check if product exists
@@ -618,13 +590,8 @@ router.patch('/:id/toggle-active', authenticateToken, async (req, res) => {
  * @desc    Update a product (admin only)
  * @access  Private (Admin)
  */
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     const productId = req.params.id;
     const updateData = req.body;
 
@@ -763,13 +730,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
  * @desc    Delete a product (admin only)
  * @access  Private (Admin)
  */
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     const productId = req.params.id;
 
     // Check if product exists
