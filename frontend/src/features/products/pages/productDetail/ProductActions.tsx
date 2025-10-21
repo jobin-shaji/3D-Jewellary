@@ -105,20 +105,22 @@ export const ProductActions = ({
           </Button>
         )}
 
-        {/* Wishlist and Share buttons - Available for all users */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onWishlistToggle}
-        >
-          <Heart 
-            className={`h-4 w-4 transition-colors ${
-              isWishlisted 
-                ? "fill-red-500 text-red-500" 
-                : "text-current"
-            }`} 
-          />
-        </Button>
+        {/* Wishlist button - Hidden for Admins */}
+        {!isAdmin && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onWishlistToggle}
+          >
+            <Heart 
+              className={`h-4 w-4 transition-colors ${
+                isWishlisted 
+                  ? "fill-red-500 text-red-500" 
+                  : "text-current"
+              }`} 
+            />
+          </Button>
+        )}
         <Button
           variant="outline"
           size="icon"
