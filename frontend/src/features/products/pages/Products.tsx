@@ -6,6 +6,7 @@ import { Heart, Loader2 } from "lucide-react";
 import { Product3DViewer } from "@/features/products/components/Product3DViewer";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { useWishlist } from "@/features/user/hooks/useWishlist";
+import { useAuth } from "@/shared/contexts/auth";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -13,11 +14,16 @@ const Products = () => {
   const category = searchParams.get("category");
   const search = searchParams.get("search");
   
+
   // Use the centralized products hook instead of duplicate logic
   const { products, loading, error, fetchProducts } = useProducts();
-  
+
   // Use wishlist hook
   const { toggleWishlist, isInWishlist, loading: wishlistLoading } = useWishlist();
+
+  // Get user role
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const filteredProducts = products.filter(product => {
     if (category && product.category?.name.toLowerCase() !== category.toLowerCase()) return false;
@@ -119,24 +125,27 @@ const Products = () => {
                       <p className="text-muted-foreground">No image available</p>
                     </div>
                   )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="absolute top-2 right-2 bg-white/80 hover:bg-white hover:bg-white/90"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleWishlistToggle(product.id);
-                    }}
-                    disabled={wishlistLoading}
-                  >
-                    <Heart 
-                      className={`h-4 w-4 transition-colors ${
-                        isInWishlist(product.id) 
-                          ? "fill-red-500 text-red-500" 
-                          : "text-gray-600"
-                      }`} 
-                    />
-                  </Button>
+                  {/* Wishlist button - Hidden for Admins */}
+                  {!isAdmin && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white hover:bg-white/90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleWishlistToggle(product.id);
+                      }}
+                      disabled={wishlistLoading}
+                    >
+                      <Heart 
+                        className={`h-4 w-4 transition-colors ${
+                          isInWishlist(product.id) 
+                            ? "fill-red-500 text-red-500" 
+                            : "text-gray-600"
+                        }`} 
+                      />
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-4" onClick={() => handleProductClick(product.id)}>
