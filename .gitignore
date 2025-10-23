@@ -1,6 +1,13 @@
 # Ignore node_modules directory in the project
 frontend/node_modules
 backend/node_modules
+serverless/node_modules
+serverless/routes
+.node_modules
+.vercel
+
+# all env files
+*.env
 
 # Logs
 logs
@@ -25,6 +32,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# all env files
-*.env
